@@ -65,57 +65,57 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
       body: Column(
-        children: [
-          MenuBar(
-            children: [
-              SubmenuButton(
-                menuChildren: [
-                  MenuItemButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AccountsScreen()),
-                      );
-                    },
-                    child: const Text('Accounts'),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {},
-                    child: const Text('Appearance'),
-                  ),
-                ],
-                child: const Text('Settings'),
-              ),
-              SubmenuButton(
-                menuChildren: [
-                  MenuItemButton(
-                    onPressed: () {},
-                    child: const Text('Daily'),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {},
-                    child: const Text('Repair'),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {},
-                    child: const Text('Setup'),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {},
-                    child: const Text('Strategy'),
-                  ),
-                  MenuItemButton(
-                    onPressed: () {},
-                    child: const Text('Save'),
-                  ),
-                ],
-                child: const Text('Actions'),
-              ),
-            ],
+        children: <Widget>[
+          Align(
+            alignment: Alignment.topLeft,
+            child: MenuBar(
+              children: [
+                SubmenuButton(
+                  menuChildren: [
+                    MenuItemButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AccountsScreen()),
+                        );
+                      },
+                      child: const Text('Accounts'),
+                    ),
+                    MenuItemButton(
+                      onPressed: () {},
+                      child: const Text('Appearance'),
+                    ),
+                  ],
+                  child: const Text('Settings'),
+                ),
+                SubmenuButton(
+                  menuChildren: [
+                    MenuItemButton(
+                      onPressed: () {},
+                      child: const Text('Daily'),
+                    ),
+                    MenuItemButton(
+                      onPressed: () {},
+                      child: const Text('Repair'),
+                    ),
+                    MenuItemButton(
+                      onPressed: () {},
+                      child: const Text('Setup'),
+                    ),
+                    MenuItemButton(
+                      onPressed: () {},
+                      child: const Text('Strategy'),
+                    ),
+                    MenuItemButton(
+                      onPressed: () {},
+                      child: const Text('Save'),
+                    ),
+                  ],
+                  child: const Text('Actions'),
+                ),
+              ],
+            ),
           ),
           Center(
             child: Column(
