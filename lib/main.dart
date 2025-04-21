@@ -324,32 +324,33 @@ class _MyHomePageState extends State<MyHomePage> {
                                   return Column(
                                     children: [
                                       Expanded(
-                                        child: PageView.builder(
+                                        child: CarouselSlider.builder(
                                           itemCount: pageCount,
-                                          onPageChanged: (index) {
-                                            setState(() {
-                                              _currentPageIndex = index;
-                                            });
-                                          },
-                                          itemBuilder: (context, pageIndex) {
+                                          options: CarouselOptions(
+                                            viewportFraction: 1 / itemsPerPage, // Display multiple items per page
+                                            enableInfiniteScroll: false,
+                                            onPageChanged: (index, reason) {
+                                              setState(() {
+                                                _currentPageIndex = index;
+                                              });
+                                            },
+                                            height: constraints.maxHeight,
+                                          ),
+                                          itemBuilder: (context, pageIndex, realIdx) {
                                             final startIndex = pageIndex * itemsPerPage;
                                             final endIndex = (startIndex + itemsPerPage).clamp(0, accounts.length);
 
-                                            final pageAccounts = <Widget>[];
-                                            for (int i = startIndex; i < endIndex; i++) {
-                                              pageAccounts.add(
-                                                AccountMainContainer(
-                                                  account: accounts[i],
-                                                  minWindowWidth: minWindowWidth,
-                                                  minWindowHeight: minWindowHeight,
-                                                  canStackWindowsHorizontally: true, // Windows side-by-side
-                                                ),
-                                              );
-                                            }
-
-                                            return VerticalAccountStack(
-                                              accounts: pageAccounts,
-                                              maxHeight: constraints.maxHeight,
+                                            return Column(
+                                              mainAxisSize: MainAxisSize.max, // Take available space
+                                              children: [
+                                                for (int i = startIndex; i < endIndex; i++)
+                                                  AccountMainContainer(
+                                                    account: accounts[i],
+                                                    minWindowWidth: minWindowWidth,
+                                                    minWindowHeight: minWindowHeight,
+                                                    canStackWindowsHorizontally: true, // Windows side-by-side
+                                                  ),
+                                              ],
                                             );
                                           },
                                         ),
@@ -382,7 +383,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         child: CarouselSlider.builder(
                                           itemCount: accounts.length,
                                           options: CarouselOptions(
-                                            scrollDirection: Axis.vertical,
+                                            scrollDirection: Axis.horizontal, // Make it horizontal
                                             viewportFraction: 1.0,
                                             enableInfiniteScroll: false,
                                             onPageChanged: (index, reason) {
@@ -404,13 +405,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                       ),
                                       // Indicator dots for the narrow screen
-                                      Column( // Changed to Column for vertical dots
+                                      Row( // Changed to Row for horizontal dots
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: List.generate(accounts.length, (index) {
                                           return Container(
                                             width: 8.0,
                                             height: 8.0,
-                                            margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 10.0), // Adjusted margin
+                                            margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0), // Adjusted margin
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: _currentNarrowCarouselIndex == index
