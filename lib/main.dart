@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 
 final ValueNotifier<List<dynamic>> accountsNotifier = ValueNotifier<List<dynamic>>([]);
 final Map<String, CookieJar> cookieJars = {};
@@ -378,15 +379,20 @@ class _MyHomePageState extends State<MyHomePage> {
                                   return Column(
                                     children: [
                                       Expanded(
-                                        child: PageView.builder(
-                                          controller: _pageController,
+                                        child: CarouselSlider.builder(
                                           itemCount: accounts.length,
-                                          onPageChanged: (index) {
-                                            setState(() {
-                                              _currentNarrowCarouselIndex = index;
-                                            });
-                                          },
-                                          itemBuilder: (context, index) {
+                                          options: CarouselOptions(
+                                            scrollDirection: Axis.vertical,
+                                            viewportFraction: 1.0,
+                                            enableInfiniteScroll: false,
+                                            onPageChanged: (index, reason) {
+                                              setState(() {
+                                                _currentNarrowCarouselIndex = index;
+                                              });
+                                            },
+                                            height: constraints.maxHeight,
+                                          ),
+                                          itemBuilder: (context, index, realIdx) {
                                             final account = accounts[index];
                                             return AccountMainContainer(
                                               account: account,
@@ -398,13 +404,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                         ),
                                       ),
                                       // Indicator dots for the narrow screen
-                                      Row(
+                                      Column( // Changed to Column for vertical dots
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: List.generate(accounts.length, (index) {
                                           return Container(
                                             width: 8.0,
                                             height: 8.0,
-                                            margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                                            margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 10.0), // Adjusted margin
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
                                               color: _currentNarrowCarouselIndex == index
