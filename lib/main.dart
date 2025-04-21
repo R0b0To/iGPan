@@ -131,19 +131,29 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       final response = await dio.post(
         url.toString(),
-        data: loginData,
+        data: FormData.fromMap(loginData),
       );
       debugPrint('Response for $username: ${response.data}');
-      // Make the fireUp request
-      final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
-      try {
-        final fireUpResponse = await dio.get(
-          fireUpUrl.toString(),
-        );
-        final fireUpJson = jsonDecode(fireUpResponse.data);
-        debugPrint('fireUp response for $username: ${fireUpJson['guestAccount']}');
-      } catch (e) {
-        debugPrint('Error making fireUp request for $username: $e');
+      final loginResponseJson = jsonDecode(response.data);
+
+      // Assuming the response contains a 'success' field or similar
+      // You might need to adjust this based on the actual API response structure
+      if (loginResponseJson != null && loginResponseJson['status'] == 1) {
+        debugPrint('Login successful for $username');
+        // Make the fireUp request
+        final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
+        try {
+          final fireUpResponse = await dio.get(
+            fireUpUrl.toString(),
+          );
+          final fireUpJson = jsonDecode(fireUpResponse.data);
+          debugPrint('fireUp response for $username: ${fireUpJson['guestAccount']}');
+        } catch (e) {
+          debugPrint('Error making fireUp request for $username: $e');
+        }
+      } else {
+        debugPrint('Login failed for $username. Response: ${response.data}');
+        // Handle failed login, e.g., show an error message to the user
       }
     } catch (e) {
       debugPrint('Error logging in $username: $e');
