@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'main.dart'; // Import main.dart
 
 class AccountsScreen extends StatefulWidget {
   const AccountsScreen({Key? key}) : super(key: key);
@@ -21,11 +22,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
   Future<void> _loadAccounts() async {
     try {
-      final file = File('c:/Users/Ghost/Documents/accounts.json');
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/accounts.json');
       final jsonString = await file.readAsString();
       setState(() {
         _accounts = jsonDecode(jsonString);
       });
+      accountsNotifier.value = _accounts; // Update the ValueNotifier
     } catch (e) {
       // Handle file not found or other errors
       print('Error loading accounts: $e');
@@ -37,6 +40,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final file = File('${directory.path}/accounts.json');
     final jsonString = jsonEncode(_accounts);
     await file.writeAsString(jsonString);
+    accountsNotifier.value = _accounts; // Update the ValueNotifier
   }
 
   Future<void> _addAccount() async {
