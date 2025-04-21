@@ -55,13 +55,21 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = true;
   int _currentPageIndex = 0; // State for horizontal page index (wide screen)
+  int _currentNarrowCarouselIndex = 0; // State for narrow screen carousel
+  PageController _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
      _loadAccounts();
-
   }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -325,17 +333,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                           itemBuilder: (context, pageIndex) {
                                             final startIndex = pageIndex * itemsPerPage;
                                             final endIndex = (startIndex + itemsPerPage).clamp(0, accounts.length);
-                                            // Use ListView for scrolling within the page if needed, or just Column
-                                            return ListView( // Allows scrolling if a single page overflows slightly
-                                              children: [
-                                                for (int i = startIndex; i < endIndex; i++)
-                                                  AccountMainContainer(
-                                                    account: accounts[i],
-                                                    minWindowWidth: minWindowWidth,
-                                                    minWindowHeight: minWindowHeight,
-                                                    canStackWindowsHorizontally: true, // Windows side-by-side
-                                                  ),
-                                              ],
+
+                                            final pageAccounts = <Widget>[];
+                                            for (int i = startIndex; i < endIndex; i++) {
+                                              pageAccounts.add(
+                                                AccountMainContainer(
+                                                  account: accounts[i],
+                                                  minWindowWidth: minWindowWidth,
+                                                  minWindowHeight: minWindowHeight,
+                                                  canStackWindowsHorizontally: true, // Windows side-by-side
+                                                ),
+                                              );
+                                            }
+
+                                            return VerticalAccountStack(
+                                              accounts: pageAccounts,
+                                              maxHeight: constraints.maxHeight,
                                             );
                                           },
                                         ),
@@ -362,17 +375,46 @@ class _MyHomePageState extends State<MyHomePage> {
                                   );
                                 } else {
                                   // Narrow screen: Horizontal PageView for individual accounts
-                                  return PageView.builder(
-                                    itemCount: accounts.length,
-                                    itemBuilder: (context, index) {
-                                      final account = accounts[index];
-                                      return AccountMainContainer(
-                                        account: account,
-                                        minWindowWidth: minWindowWidth,
-                                        minWindowHeight: minWindowHeight,
-                                        canStackWindowsHorizontally: false, // Windows stacked vertically
-                                      );
-                                    },
+                                  return Column(
+                                    children: [
+                                      Expanded(
+                                        child: PageView.builder(
+                                          controller: _pageController,
+                                          itemCount: accounts.length,
+                                          onPageChanged: (index) {
+                                            setState(() {
+                                              _currentNarrowCarouselIndex = index;
+                                            });
+                                          },
+                                          itemBuilder: (context, index) {
+                                            final account = accounts[index];
+                                            return AccountMainContainer(
+                                              account: account,
+                                              minWindowWidth: minWindowWidth,
+                                              minWindowHeight: minWindowHeight,
+                                              canStackWindowsHorizontally: false, // Windows stacked vertically
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      // Indicator dots for the narrow screen
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: List.generate(accounts.length, (index) {
+                                          return Container(
+                                            width: 8.0,
+                                            height: 8.0,
+                                            margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: _currentNarrowCarouselIndex == index
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                            ),
+                                          );
+                                        }),
+                                      ),
+                                    ],
                                   );
                                 }
                               },
@@ -485,5 +527,26 @@ class AccountMainContainer extends StatelessWidget {
           ],
         );
       }
+  }
+}
+
+class VerticalAccountStack extends StatelessWidget {
+  final List<Widget> accounts;
+  final double maxHeight;
+
+  const VerticalAccountStack({Key? key, required this.accounts, required this.maxHeight}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: maxHeight,
+      child: SingleChildScrollView( // Enable scrolling if content overflows
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: accounts,
+        ),
+      ),
+    );
   }
 }
