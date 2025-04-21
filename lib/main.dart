@@ -327,7 +327,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         child: CarouselSlider.builder(
                                           itemCount: pageCount,
                                           options: CarouselOptions(
-                                            viewportFraction: 1 / itemsPerPage, // Display multiple items per page
+                                            viewportFraction: 1 , // Display multiple items per page
                                             enableInfiniteScroll: false,
                                             onPageChanged: (index, reason) {
                                               setState(() {
