@@ -9,8 +9,8 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
 
 final ValueNotifier<List<dynamic>> accountsNotifier = ValueNotifier<List<dynamic>>([]);
-final cookieJar = CookieJar();
-final dio = Dio();
+final Map<String, CookieJar> cookieJars = {};
+final Map<String, Dio> dioClients = {};
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +20,7 @@ void main() {
 void initCookieManager() async {
   Directory appDocDir = await getApplicationDocumentsDirectory();
   String appDocPath = appDocDir.path;
-  dio.interceptors.add(CookieManager(cookieJar));
+  // dio.interceptors.add(CookieManager(cookieJar)); // Remove global cookie manager
 }
 
 class MyApp extends StatelessWidget {
@@ -114,10 +114,16 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _login(String username, String password) async {
-    final url = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1');
-    final loginData = {
-      'loginUsername': username,
-      'loginPassword': password,
+      CookieJar cookieJar = cookieJars.putIfAbsent(username, () => CookieJar());
+      Dio dio = dioClients.putIfAbsent(username, () {
+        Dio newDio = Dio();
+        newDio.interceptors.add(CookieManager(cookieJar));
+        return newDio;
+      });
+      final url = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1');
+      final loginData = {
+        'loginUsername': username,
+        'loginPassword': password,
       'loginRemember': 'on',
       'csrfName': '',
       'csrfToken': ''
@@ -131,7 +137,9 @@ class _MyHomePageState extends State<MyHomePage> {
       // Make the fireUp request
       final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
       try {
-        final fireUpResponse = await dio.get(fireUpUrl.toString());
+        final fireUpResponse = await dio.get(
+          fireUpUrl.toString(),
+        );
         final fireUpJson = jsonDecode(fireUpResponse.data);
         debugPrint('fireUp response for $username: ${fireUpJson['guestAccount']}');
       } catch (e) {
