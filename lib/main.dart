@@ -491,7 +491,7 @@ class AccountMainContainer extends StatelessWidget {
                   minWidth: minWindowWidth,
                   minHeight: minWindowHeight,
                 ),
-                color: Colors.blue[100], // Placeholder color
+                color: const Color.fromARGB(255, 96, 121, 141), // Placeholder color
                 child: const Center(child: Text('Window 1')),
               ),
             ),
@@ -502,7 +502,7 @@ class AccountMainContainer extends StatelessWidget {
                   minWidth: minWindowWidth,
                   minHeight: minWindowHeight,
                 ),
-                color: Colors.green[100], // Placeholder color
+                color: const Color.fromARGB(255, 98, 121, 99), // Placeholder color
                 child: const Center(child: Text('Window 2')),
               ),
             ),
@@ -519,7 +519,7 @@ class AccountMainContainer extends StatelessWidget {
                 minWidth: minWindowWidth, // Should be maxWidth of parent?
                 minHeight: minWindowHeight,
               ),
-              color: Colors.blue[100], // Placeholder color
+              color: const Color.fromARGB(255, 93, 108, 121), // Placeholder color
               child: const Center(child: Text('Window 1')),
             ),
             const SizedBox(height: 8.0),
@@ -528,7 +528,7 @@ class AccountMainContainer extends StatelessWidget {
                  minWidth: minWindowWidth, // Should be maxWidth of parent?
                  minHeight: minWindowHeight,
               ),
-              color: Colors.green[100], // Placeholder color
+              color: const Color.fromARGB(255, 111, 133, 112), // Placeholder color
               child: const Center(child: Text('Window 2')),
             ),
           ],
