@@ -1,9 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AccountsScreen extends StatefulWidget {
@@ -31,7 +28,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       });
     } catch (e) {
       // Handle file not found or other errors
-      print('Error loading accounts: \$e');
+      print('Error loading accounts: $e');
     }
   }
 
@@ -40,6 +37,152 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final file = File('${directory.path}/accounts.json');
     final jsonString = jsonEncode(_accounts);
     await file.writeAsString(jsonString);
+  }
+
+  Future<void> _addAccount() async {
+    TextEditingController emailController = TextEditingController();
+    TextEditingController passwordController = TextEditingController();
+    TextEditingController nicknameController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Add Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+              ),
+              TextField(
+                controller: nicknameController,
+                decoration: const InputDecoration(labelText: 'Nickname (optional)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                String email = emailController.text;
+                String password = passwordController.text;
+                String nickname = nicknameController.text;
+
+                setState(() {
+                  _accounts.add({
+                    'email': email,
+                    'password': password,
+                    'nickname': nickname,
+                  });
+                });
+                _saveAccounts();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _editAccount(int index) async {
+    TextEditingController emailController = TextEditingController(text: _accounts[index]['email']);
+    TextEditingController passwordController = TextEditingController(text: _accounts[index]['password']);
+    TextEditingController nicknameController = TextEditingController(text: _accounts[index]['nickname']);
+
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Account'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              TextField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: 'Password'),
+              ),
+              TextField(
+                controller: nicknameController,
+                decoration: const InputDecoration(labelText: 'Nickname (optional)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                String email = emailController.text;
+                String password = passwordController.text;
+                String nickname = nicknameController.text;
+
+                setState(() {
+                  _accounts[index] = {
+                    'email': email,
+                    'password': password,
+                    'nickname': nickname,
+                  };
+                });
+                _saveAccounts();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteAccount(int index) async {
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Account'),
+          content: const Text('Are you sure you want to delete this account?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _accounts.removeAt(index);
+                });
+                _saveAccounts();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -53,15 +196,30 @@ class _AccountsScreenState extends State<AccountsScreen> {
         itemBuilder: (context, index) {
           final account = _accounts[index];
           return ListTile(
-            title: Text(account['username'] ?? ''),
+            title: Text(account['email'] ?? ''),
             subtitle: Text(account['nickname'] ?? ''),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    _editAccount(index);
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () {
+                    _deleteAccount(index);
+                  },
+                ),
+              ],
+            ),
           );
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Add account logic here
-        },
+        onPressed: _addAccount,
         child: const Icon(Icons.add),
       ),
     );
