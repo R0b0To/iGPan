@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import 'accounts_screen.dart';
-import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:dio/dio.dart';
 
 final ValueNotifier<List<dynamic>> accountsNotifier = ValueNotifier<List<dynamic>>([]);
+final cookieJar = CookieJar();
+final dio = Dio();
 
 void main() {
   runApp(const MyApp());
+  initCookieManager();
+}
+
+void initCookieManager() async {
+  Directory appDocDir = await getApplicationDocumentsDirectory();
+  String appDocPath = appDocDir.path;
+  dio.interceptors.add(CookieManager(cookieJar));
 }
 
 class MyApp extends StatelessWidget {
@@ -44,8 +56,17 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _loadAccounts();
+     _loadAccounts();
+
   }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    setState(() {
+    _isLoading = false;
+  });
+    _startClientSessions();
+}
 
   Future<void> _loadAccounts() async {
     try {
@@ -53,13 +74,71 @@ class _MyHomePageState extends State<MyHomePage> {
       final file = File('${directory.path}/accounts.json');
       final jsonString = await file.readAsString();
       accountsNotifier.value = jsonDecode(jsonString);
+      debugPrint('Accounts loaded: ${accountsNotifier.value}');
     } catch (e) {
       // Handle file not found or other errors
-      print('Error loading accounts: $e');
+      debugPrint('Error loading accounts: $e');
     } finally {
       setState(() {
         _isLoading = false;
       });
+      final accounts = accountsNotifier.value;
+      debugPrint('starting client sessions... $accounts');
+      if (accountsNotifier.value.isNotEmpty) {
+        debugPrint('Accounts found: $accountsNotifier.value');
+        for (var account in accountsNotifier.value) {
+          final username = account['email'];
+          final password = account['password'];
+          if (username != null && password != null) {
+            await _login(username, password);
+          } else {
+            debugPrint('Username or password missing for account: $account');
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _startClientSessions() async {
+    if (accountsNotifier.value.isNotEmpty) {
+      for (var account in accountsNotifier.value) {
+        final username = account['username'];
+        final password = account['password'];
+        if (username != null && password != null) {
+          await _login(username, password);
+        } else {
+          debugPrint('Username or password missing for account: $account');
+        }
+      }
+    }
+  }
+
+  Future<void> _login(String username, String password) async {
+    final url = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1');
+    final loginData = {
+      'loginUsername': username,
+      'loginPassword': password,
+      'loginRemember': 'on',
+      'csrfName': '',
+      'csrfToken': ''
+    };
+    try {
+      final response = await dio.post(
+        url.toString(),
+        data: loginData,
+      );
+      debugPrint('Response for $username: ${response.data}');
+      // Make the fireUp request
+      final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
+      try {
+        final fireUpResponse = await dio.get(fireUpUrl.toString());
+        final fireUpJson = jsonDecode(fireUpResponse.data);
+        debugPrint('fireUp response for $username: ${fireUpJson['guestAccount']}');
+      } catch (e) {
+        debugPrint('Error making fireUp request for $username: $e');
+      }
+    } catch (e) {
+      debugPrint('Error logging in $username: $e');
     }
   }
 
@@ -141,18 +220,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ],
                             ),
                           ),
-                          const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: <Widget>[
-                                Text('You have pushed the button this many times:'),
-                                Text(
-                                  '0',
-                                  style: TextStyle(fontSize: 24),
-                                ),
-                              ],
-                            ),
-                          ),
+                         
                         ],
                       );
               },

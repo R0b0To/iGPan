@@ -31,7 +31,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
       accountsNotifier.value = _accounts; // Update the ValueNotifier
     } catch (e) {
       // Handle file not found or other errors
-      print('Error loading accounts: $e');
+      debugPrint('Error loading accounts: $e');
     }
   }
 
