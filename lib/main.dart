@@ -17,9 +17,11 @@ void main() {
   initCookieManager();
 }
 
+String? appDocumentPath;
+
 void initCookieManager() async {
   Directory appDocDir = await getApplicationDocumentsDirectory();
-  String appDocPath = appDocDir.path;
+  appDocumentPath = appDocDir.path;
   // dio.interceptors.add(CookieManager(cookieJar)); // Remove global cookie manager
 }
 
@@ -75,6 +77,19 @@ class _MyHomePageState extends State<MyHomePage> {
       final jsonString = await file.readAsString();
       accountsNotifier.value = jsonDecode(jsonString);
       debugPrint('Accounts loaded: ${accountsNotifier.value}');
+
+      // Initialize persistent cookie jars for each account
+      if (appDocumentPath != null) {
+        for (var account in accountsNotifier.value) {
+          final username = account['email'];
+          if (username != null) {
+            cookieJars[username] = PersistCookieJar(
+              storage: FileStorage('$appDocumentPath/.cookies/$username/'),
+            );
+          }
+        }
+      }
+
     } catch (e) {
       // Handle file not found or other errors
       debugPrint('Error loading accounts: $e');
@@ -85,12 +100,42 @@ class _MyHomePageState extends State<MyHomePage> {
       final accounts = accountsNotifier.value;
       debugPrint('starting client sessions... $accounts');
       if (accountsNotifier.value.isNotEmpty) {
-        debugPrint('Accounts found: $accountsNotifier.value');
+        debugPrint('Accounts found: ${accountsNotifier.value}');
         for (var account in accountsNotifier.value) {
           final username = account['email'];
           final password = account['password'];
           if (username != null && password != null) {
-            await _login(username, password);
+            // Attempt to use existing cookies first by making the fireUp request
+            bool sessionValid = false;
+            try {
+              CookieJar? cookieJar = cookieJars[username];
+               if (cookieJar != null) {
+                Dio dio = dioClients.putIfAbsent(username, () {
+                  Dio newDio = Dio();
+                  newDio.interceptors.add(CookieManager(cookieJar!));
+                  return newDio;
+                });
+                final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
+                final fireUpResponse = await dio.get(fireUpUrl.toString());
+                final fireUpJson = jsonDecode(fireUpResponse.data);
+
+                if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
+                  debugPrint('Session is valid for $username using saved cookies.');
+                  sessionValid = true;
+                } else {
+                   debugPrint('Session invalid for $username based on fireUp response.');
+                }
+               }
+            } catch (e) {
+              debugPrint('Error during initial fireUp request for $username: $e. Session likely invalid.');
+              // Error likely means session is not valid
+            }
+
+            if (!sessionValid) {
+              debugPrint('Attempting full login for $username.');
+              await _login(username, password);
+            }
+
           } else {
             debugPrint('Username or password missing for account: $account');
           }
@@ -114,10 +159,17 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _login(String username, String password) async {
-      CookieJar cookieJar = cookieJars.putIfAbsent(username, () => CookieJar());
+      CookieJar? cookieJar = cookieJars[username];
+      if (cookieJar == null) {
+        debugPrint('No persistent cookie jar found for $username. Creating a new one.');
+        // Fallback to a non-persistent cookie jar if persistent storage is not available
+        cookieJar = CookieJar();
+        cookieJars[username] = cookieJar; // Store it for potential future use (though not persistent)
+      }
+
       Dio dio = dioClients.putIfAbsent(username, () {
         Dio newDio = Dio();
-        newDio.interceptors.add(CookieManager(cookieJar));
+        newDio.interceptors.add(CookieManager(cookieJar!));
         return newDio;
       });
       final url = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1');
@@ -136,8 +188,6 @@ class _MyHomePageState extends State<MyHomePage> {
       debugPrint('Response for $username: ${response.data}');
       final loginResponseJson = jsonDecode(response.data);
 
-      // Assuming the response contains a 'success' field or similar
-      // You might need to adjust this based on the actual API response structure
       if (loginResponseJson != null && loginResponseJson['status'] == 1) {
         debugPrint('Login successful for $username');
         // Make the fireUp request
@@ -147,7 +197,7 @@ class _MyHomePageState extends State<MyHomePage> {
             fireUpUrl.toString(),
           );
           final fireUpJson = jsonDecode(fireUpResponse.data);
-          debugPrint('fireUp response for $username: ${fireUpJson['guestAccount']}');
+          debugPrint('is $username a guest? ${fireUpJson['guestAccount']}');
         } catch (e) {
           debugPrint('Error making fireUp request for $username: $e');
         }
