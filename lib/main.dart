@@ -288,11 +288,152 @@ class _MyHomePageState extends State<MyHomePage> {
                               ],
                             ),
                           ),
-                         
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                // Define minimum size for sub-windows
+                                const double minWindowWidth = 400;
+                                const double minWindowHeight = 200;
+
+                                // Check if there's enough horizontal space for two windows side-by-side
+                                bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
+
+                                // Re-interpreting the requirement based on the user's description:
+                                // - If horizontal space allows two windows side-by-side (>= 800px approx):
+                                //   - Stack main containers vertically. If more accounts than fit vertically, the list scrolls (ListView).
+                                // - If horizontal space does NOT allow two windows side-by-side (< 800px approx):
+                                //   - Stack windows vertically.
+                                //   - Use a horizontal carousel for the main containers (PageView).
+
+                                if (canStackWindowsHorizontally) {
+                                  // Horizontal space is sufficient for windows side-by-side.
+                                  // Stack main containers vertically.
+                                  return ListView.builder(
+                                    itemCount: accounts.length,
+                                    itemBuilder: (context, index) {
+                                      final account = accounts[index];
+                                      return AccountMainContainer(
+                                        account: account,
+                                        minWindowWidth: minWindowWidth,
+                                        minWindowHeight: minWindowHeight,
+                                        canStackWindowsHorizontally: true, // Windows side-by-side
+                                      );
+                                    },
+                                  );
+                                } else {
+                                  // Horizontal space is NOT sufficient for windows side-by-side.
+                                  // Stack windows vertically.
+                                  // Use a horizontal carousel for main containers.
+                                  return PageView.builder(
+                                    itemCount: accounts.length,
+                                    itemBuilder: (context, index) {
+                                      final account = accounts[index];
+                                      return AccountMainContainer(
+                                        account: account,
+                                        minWindowWidth: minWindowWidth,
+                                        minWindowHeight: minWindowHeight,
+                                        canStackWindowsHorizontally: false, // Windows stacked vertically
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                            ),
+                          ),
                         ],
                       );
               },
             ),
+    );
+  }
+}
+
+class AccountMainContainer extends StatelessWidget {
+  final dynamic account;
+  final double minWindowWidth;
+  final double minWindowHeight;
+  final bool canStackWindowsHorizontally;
+
+  const AccountMainContainer({
+    Key? key,
+    required this.account,
+    required this.minWindowWidth,
+    required this.minWindowHeight,
+    required this.canStackWindowsHorizontally,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              account['nickname'] ?? account['email'] ?? 'Unnamed Account',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8.0),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (canStackWindowsHorizontally) {
+                  // Stack windows horizontally
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          constraints: BoxConstraints(
+                            minWidth: minWindowWidth,
+                            minHeight: minWindowHeight,
+                          ),
+                          color: Colors.blue[100], // Placeholder color
+                          child: const Center(child: Text('Window 1')),
+                        ),
+                      ),
+                      const SizedBox(width: 8.0),
+                      Expanded(
+                        child: Container(
+                          constraints: BoxConstraints(
+                            minWidth: minWindowWidth,
+                            minHeight: minWindowHeight,
+                          ),
+                          color: Colors.green[100], // Placeholder color
+                          child: const Center(child: Text('Window 2')),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // Stack windows vertically
+                  return Column(
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(
+                          minWidth: minWindowWidth,
+                          minHeight: minWindowHeight,
+                        ),
+                        color: Colors.blue[100], // Placeholder color
+                        child: const Center(child: Text('Window 1')),
+                      ),
+                      const SizedBox(height: 8.0),
+                      Container(
+                        constraints: BoxConstraints(
+                          minWidth: minWindowWidth,
+                          minHeight: minWindowHeight,
+                        ),
+                        color: Colors.green[100], // Placeholder color
+                        child: const Center(child: Text('Window 2')),
+                      ),
+                    ],
+                  );
+                }
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
