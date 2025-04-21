@@ -54,6 +54,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = true;
+  int _currentPageIndex = 0; // State for horizontal page index (wide screen)
 
   @override
   void initState() {
@@ -306,24 +307,61 @@ class _MyHomePageState extends State<MyHomePage> {
                                 //   - Use a horizontal carousel for the main containers (PageView).
 
                                 if (canStackWindowsHorizontally) {
-                                  // Horizontal space is sufficient for windows side-by-side.
-                                  // Stack main containers vertically.
-                                  return ListView.builder(
-                                    itemCount: accounts.length,
-                                    itemBuilder: (context, index) {
-                                      final account = accounts[index];
-                                      return AccountMainContainer(
-                                        account: account,
-                                        minWindowWidth: minWindowWidth,
-                                        minWindowHeight: minWindowHeight,
-                                        canStackWindowsHorizontally: true, // Windows side-by-side
-                                      );
-                                    },
+                                  // Wide screen: Paginated Vertical Stack (Horizontal PageView)
+                                  const double estimatedItemHeight = minWindowHeight + 50; // Estimate height + padding
+                                  final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, accounts.length); // Ensure at least 1
+                                  final pageCount = (accounts.length / itemsPerPage).ceil();
+
+                                  return Column(
+                                    children: [
+                                      Expanded(
+                                        child: PageView.builder(
+                                          itemCount: pageCount,
+                                          onPageChanged: (index) {
+                                            setState(() {
+                                              _currentPageIndex = index;
+                                            });
+                                          },
+                                          itemBuilder: (context, pageIndex) {
+                                            final startIndex = pageIndex * itemsPerPage;
+                                            final endIndex = (startIndex + itemsPerPage).clamp(0, accounts.length);
+                                            // Use ListView for scrolling within the page if needed, or just Column
+                                            return ListView( // Allows scrolling if a single page overflows slightly
+                                              children: [
+                                                for (int i = startIndex; i < endIndex; i++)
+                                                  AccountMainContainer(
+                                                    account: accounts[i],
+                                                    minWindowWidth: minWindowWidth,
+                                                    minWindowHeight: minWindowHeight,
+                                                    canStackWindowsHorizontally: true, // Windows side-by-side
+                                                  ),
+                                              ],
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      // Indicator dots for the horizontal pages
+                                      if (pageCount > 1) // Only show dots if multiple pages
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: List.generate(pageCount, (index) {
+                                            return Container(
+                                              width: 8.0,
+                                              height: 8.0,
+                                              margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: _currentPageIndex == index
+                                                    ? Theme.of(context).colorScheme.primary
+                                                    : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                              ),
+                                            );
+                                          }),
+                                        ),
+                                    ],
                                   );
                                 } else {
-                                  // Horizontal space is NOT sufficient for windows side-by-side.
-                                  // Stack windows vertically.
-                                  // Use a horizontal carousel for main containers.
+                                  // Narrow screen: Horizontal PageView for individual accounts
                                   return PageView.builder(
                                     itemCount: accounts.length,
                                     itemBuilder: (context, index) {
@@ -364,76 +402,88 @@ class AccountMainContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Estimate height based on internal layout
+    // Add some padding/margin allowance
+    final estimatedHeight = canStackWindowsHorizontally
+        ? minWindowHeight + 50 // Approx height when windows are horizontal
+        : (minWindowHeight * 2) + 60; // Approx height when windows are vertical
+
     return Card(
       margin: const EdgeInsets.all(8.0),
-      child: Padding(
+      child: Container( // Use Container to constrain height if needed, though Card might handle it
+        // height: estimatedHeight, // Maybe not needed if PageView/Column handles sizing
         padding: const EdgeInsets.all(8.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Important for Column height in ListView/PageView
           children: [
             Text(
               account['nickname'] ?? account['email'] ?? 'Unnamed Account',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8.0),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                if (canStackWindowsHorizontally) {
-                  // Stack windows horizontally
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          constraints: BoxConstraints(
-                            minWidth: minWindowWidth,
-                            minHeight: minWindowHeight,
-                          ),
-                          color: Colors.blue[100], // Placeholder color
-                          child: const Center(child: Text('Window 1')),
-                        ),
-                      ),
-                      const SizedBox(width: 8.0),
-                      Expanded(
-                        child: Container(
-                          constraints: BoxConstraints(
-                            minWidth: minWindowWidth,
-                            minHeight: minWindowHeight,
-                          ),
-                          color: Colors.green[100], // Placeholder color
-                          child: const Center(child: Text('Window 2')),
-                        ),
-                      ),
-                    ],
-                  );
-                } else {
-                  // Stack windows vertically
-                  return Column(
-                    children: [
-                      Container(
-                        constraints: BoxConstraints(
-                          minWidth: minWindowWidth,
-                          minHeight: minWindowHeight,
-                        ),
-                        color: Colors.blue[100], // Placeholder color
-                        child: const Center(child: Text('Window 1')),
-                      ),
-                      const SizedBox(height: 8.0),
-                      Container(
-                        constraints: BoxConstraints(
-                          minWidth: minWindowWidth,
-                          minHeight: minWindowHeight,
-                        ),
-                        color: Colors.green[100], // Placeholder color
-                        child: const Center(child: Text('Window 2')),
-                      ),
-                    ],
-                  );
-                }
-              },
-            ),
+            // Use Flexible or Expanded if windows need to fill space,
+            // but for fixed min size, direct Container might be okay.
+            _buildInternalWindows(context),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildInternalWindows(BuildContext context) {
+     if (canStackWindowsHorizontally) {
+        // Stack windows horizontally
+        return Row(
+          children: [
+            Expanded(
+              child: Container(
+                constraints: BoxConstraints(
+                  minWidth: minWindowWidth,
+                  minHeight: minWindowHeight,
+                ),
+                color: Colors.blue[100], // Placeholder color
+                child: const Center(child: Text('Window 1')),
+              ),
+            ),
+            const SizedBox(width: 8.0),
+            Expanded(
+              child: Container(
+                constraints: BoxConstraints(
+                  minWidth: minWindowWidth,
+                  minHeight: minWindowHeight,
+                ),
+                color: Colors.green[100], // Placeholder color
+                child: const Center(child: Text('Window 2')),
+              ),
+            ),
+          ],
+        );
+      } else {
+        // Stack windows vertically
+        // Wrap in IntrinsicHeight or give fixed height if needed in PageView
+        return Column(
+           mainAxisSize: MainAxisSize.min, // Ensure column takes minimum required height
+           children: [
+            Container(
+              constraints: BoxConstraints(
+                minWidth: minWindowWidth, // Should be maxWidth of parent?
+                minHeight: minWindowHeight,
+              ),
+              color: Colors.blue[100], // Placeholder color
+              child: const Center(child: Text('Window 1')),
+            ),
+            const SizedBox(height: 8.0),
+            Container(
+              constraints: BoxConstraints(
+                 minWidth: minWindowWidth, // Should be maxWidth of parent?
+                 minHeight: minWindowHeight,
+              ),
+              color: Colors.green[100], // Placeholder color
+              child: const Center(child: Text('Window 2')),
+            ),
+          ],
+        );
+      }
   }
 }
