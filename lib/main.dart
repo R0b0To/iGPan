@@ -351,7 +351,7 @@ class AccountMainContainer extends StatelessWidget {
                   minHeight: minWindowHeight,
                 ),
                 color: const Color.fromARGB(255, 96, 121, 141), // Placeholder color
-                child: Window1Content(minWindowHeight: minWindowHeight),
+                child: Window1Content(minWindowHeight: minWindowHeight, account: account),
               ),
             ),
             const SizedBox(width: 8.0),
@@ -379,7 +379,7 @@ class AccountMainContainer extends StatelessWidget {
                 minHeight: minWindowHeight,
               ),
               color: const Color.fromARGB(255, 93, 108, 121), // Placeholder color
-              child: Window1Content(minWindowHeight: minWindowHeight),
+              child: Window1Content(minWindowHeight: minWindowHeight, account: account),
             ),
             const SizedBox(height: 8.0),
             Container(
@@ -398,8 +398,9 @@ class AccountMainContainer extends StatelessWidget {
 
 class Window1Content extends StatelessWidget {
  final double minWindowHeight;
+ final dynamic account;
 
- const Window1Content({Key? key, required this.minWindowHeight}) : super(key: key);
+ const Window1Content({Key? key, required this.minWindowHeight, required this.account}) : super(key: key);
 
  @override
  Widget build(BuildContext context) {
@@ -416,7 +417,10 @@ class Window1Content extends StatelessWidget {
 
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
-               child: const Text('Money', style: TextStyle(fontSize: 10)), // Shorter text
+               child: Text(
+                 'Money: ${account.fireUpData?.team?._balance != null ? abbreviateNumber(account.fireUpData.team._balance) : 'Loading...'}',
+                 style: TextStyle(fontSize: 10),
+               ), // Shorter text
              ),
            ),
 
@@ -492,3 +496,14 @@ class Window1Content extends StatelessWidget {
 
 
 
+
+String abbreviateNumber(double n) {
+  if (n == 0) return '0';
+  final suffixes = ['', 'K', 'M', 'B', 'T', 'P', 'E', 'Z', 'Y'];
+  int magnitude = 0;
+  while (n.abs() >= 1000 && magnitude < suffixes.length - 1) {
+    magnitude++;
+    n /= 1000.0;
+  }
+  return '${n.toStringAsFixed(1)}${suffixes[magnitude]}';
+}
