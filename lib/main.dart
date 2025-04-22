@@ -427,16 +427,8 @@ class Window1Content extends StatelessWidget {
 
            Text(account.fireUpData['manager']['tokens']), // Keep text as is for now
            const SizedBox(width: 4), // Small spacer
-           SizedBox( // Wrap button for size control
 
-             child: ElevatedButton(
-               onPressed: () {
-                 // Placeholder action
-               },
-               style: ElevatedButton.styleFrom(
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
-               ),
-               child: Builder(
+             Builder(
                  builder: (BuildContext context) {
                    bool reward_status;
                    if (account.fireUpData['notify'] == null || !account.fireUpData['notify'].containsKey('page') || !account.fireUpData['notify']['page'].containsKey('nDailyReward')) {
@@ -453,8 +445,6 @@ class Window1Content extends StatelessWidget {
                    );
                  },
                ),
-             ),
-           ),
 
            Column( // Keep sponsor buttons in a column, but make them square
              children: [
