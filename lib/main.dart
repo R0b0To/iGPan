@@ -492,7 +492,61 @@ class AccountMainContainer extends StatelessWidget {
                   minHeight: minWindowHeight,
                 ),
                 color: const Color.fromARGB(255, 96, 121, 141), // Placeholder color
-                child: const Center(child: Text('Window 1')),
+                child: Column(
+                  children: [
+                    Row( // First row with buttons and label
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute space
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {},
+                          child: const Text('Account Money'),
+                        ),
+                        const Text('Tokens: 100'),
+                        ElevatedButton(
+                          onPressed: () {},
+                          child: const Text('Daily Reward Status'),
+                        ),
+                        Container( // Sponsor Container
+                          child: Column(
+                            children: [
+                              ElevatedButton(
+                                onPressed: () {},
+                                child: const Text('Sponsor 1'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {},
+                                child: const Text('Sponsor 2'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10), // Spacer between row and tab bar
+                    DefaultTabController( // Second row with tab bar
+                      length: 2,
+                      child: Column(
+                        children: [
+                          const TabBar(
+                            tabs: [
+                              Tab(text: 'Car'),
+                              Tab(text: 'Reports'),
+                            ],
+                          ),
+                          SizedBox(
+                            height: minWindowHeight * 0.8, // 80% of minWindowHeight
+                            child: const TabBarView(
+                              children: [
+                                Center(child: Text('Car Content')),
+                                Center(child: Text('Reports Content')),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 8.0),
@@ -557,3 +611,4 @@ class VerticalAccountStack extends StatelessWidget {
     );
   }
 }
+
