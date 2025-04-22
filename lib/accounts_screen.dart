@@ -30,7 +30,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
         final List<dynamic> jsonList = jsonDecode(jsonString);
         _accounts = jsonList.map((json) => Account.fromJson(json)).toList();
       });
-      accountsNotifier.value = _accounts; // Update the ValueNotifier
+      //accountsNotifier.value = _accounts; // Update the ValueNotifier
     } catch (e) {
       // Handle file not found or other errors
       debugPrint('Error loading accounts: $e');
@@ -43,7 +43,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     final jsonList = _accounts.map((account) => account.toJson()).toList();
     final jsonString = jsonEncode(jsonList);
     await file.writeAsString(jsonString);
-    accountsNotifier.value = _accounts; // Update the ValueNotifier
+    //accountsNotifier.value = _accounts; // Update the ValueNotifier
   }
 
   Future<void> _addAccount() async {

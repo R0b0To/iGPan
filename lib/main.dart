@@ -73,10 +73,10 @@ class _MyHomePageState extends State<MyHomePage> {
     await startClientSessions(accountsNotifier);
   }
 
-  // Removed _login function as it's now in igp_client.dart
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('Current screen size: ${MediaQuery.of(context).size.width} x ${MediaQuery.of(context).size.height}');
     return Scaffold(
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -308,6 +308,7 @@ class AccountMainContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     // Check if fireUpData is available
     if (account.fireUpData == null) {
+      debugPrint('Account data is null or not loaded yet.');
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -415,7 +416,6 @@ class Window1Content extends StatelessWidget {
              child: ElevatedButton(
                onPressed: () {},
                style: ElevatedButton.styleFrom(
-
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
                child: Text(
