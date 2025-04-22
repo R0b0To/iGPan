@@ -430,12 +430,29 @@ class Window1Content extends StatelessWidget {
            SizedBox( // Wrap button for size control
 
              child: ElevatedButton(
-               onPressed: () {},
+               onPressed: () {
+                 // Placeholder action
+               },
                style: ElevatedButton.styleFrom(
-
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
-               child: const Text('Daily', style: TextStyle(fontSize: 10)), // Shorter text
+               child: Builder(
+                 builder: (BuildContext context) {
+                   bool reward_status;
+                   if (account.fireUpData['notify'] == null || !account.fireUpData['notify'].containsKey('page') || !account.fireUpData['notify']['page'].containsKey('nDailyReward')) {
+                     reward_status = false;
+                   } else {
+                     reward_status = true;
+                   }
+                   return ElevatedButton(
+                     onPressed: reward_status ? () {} : null,
+                     style: ElevatedButton.styleFrom(
+                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                     ),
+                     child: const Text('Daily', style: TextStyle(fontSize: 10)),
+                   );
+                 },
+               ),
              ),
            ),
 
