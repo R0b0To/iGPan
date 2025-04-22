@@ -425,7 +425,7 @@ class Window1Content extends StatelessWidget {
              ),
            ),
 
-           const Text('Tokens: 100'), // Keep text as is for now
+           Text(account.fireUpData['manager']['tokens']), // Keep text as is for now
            const SizedBox(width: 4), // Small spacer
            SizedBox( // Wrap button for size control
 
