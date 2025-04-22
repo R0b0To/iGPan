@@ -494,35 +494,64 @@ class AccountMainContainer extends StatelessWidget {
                 color: const Color.fromARGB(255, 96, 121, 141), // Placeholder color
                 child: Column(
                   children: [
-                    Row( // First row with buttons and label
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute space
+                    Row( // First row with buttons and label - Compacted
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align start
                       children: [
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Text('Account Money'),
-                        ),
-                        const Text('Tokens: 100'),
-                        ElevatedButton(
-                          onPressed: () {},
-                          child: const Text('Daily Reward Status'),
-                        ),
-                        Container( // Sponsor Container
-                          child: Column(
-                            children: [
-                              ElevatedButton(
-                                onPressed: () {},
-                                child: const Text('Sponsor 1'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {},
-                                child: const Text('Sponsor 2'),
-                              ),
-                            ],
+                        SizedBox( // Wrap button for size control
+                          
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.zero, // Remove padding
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                            ),
+                            child: const Text('Money', style: TextStyle(fontSize: 10)), // Shorter text
                           ),
+                        ),
+                        
+                        const Text('Tokens: 100'), // Keep text as is for now
+                        const SizedBox(width: 4), // Small spacer
+                        SizedBox( // Wrap button for size control
+      
+                          child: ElevatedButton(
+                            onPressed: () {},
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.zero, // Remove padding
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                            ),
+                            child: const Text('Daily', style: TextStyle(fontSize: 10)), // Shorter text
+                          ),
+                        ),
+                       
+                        Column( // Keep sponsor buttons in a column, but make them square
+                          children: [
+                            SizedBox(
+                              child: ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                                ),
+                                child: const Text('S1', style: TextStyle(fontSize: 10)), // Shorter text
+                              ),
+                            ),
+                            const SizedBox(height: 2), // Small vertical space
+                            SizedBox(
+                             
+                              child: ElevatedButton(
+                                onPressed: () {},
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.zero,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                                ),
+                                child: const Text('S2', style: TextStyle(fontSize: 10)), // Shorter text
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    SizedBox(height: 10), // Spacer between row and tab bar
+                    SizedBox(height: 4), // Reduced spacer height
                     DefaultTabController( // Second row with tab bar
                       length: 2,
                       child: Column(
