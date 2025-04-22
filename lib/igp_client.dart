@@ -70,40 +70,54 @@ Future<void> loadAccounts(ValueNotifier<List<Account>> accountsNotifier) async {
 }
 
 Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) async {
-  if (accountsNotifier.value.isNotEmpty) {
-    for (var account in accountsNotifier.value) {
-      // Attempt to use existing cookies first by making the fireUp request
-      bool sessionValid = false;
-      try {
-        CookieJar? cookieJar = cookieJars[account.email];
-         if (cookieJar != null) {
-          Dio dio = dioClients.putIfAbsent(account.email, () {
-            Dio newDio = Dio();
-            newDio.interceptors.add(CookieManager(cookieJar!));
-            return newDio;
-          });
-          final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
-          final fireUpResponse = await dio.get(fireUpUrl.toString());
-          final fireUpJson = jsonDecode(fireUpResponse.data);
-
-          if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
-            debugPrint('Session is valid for ${account.email} using saved cookies.');
-            account.fireUpData = fireUpJson; // Store fireUp data
-            sessionValid = true;
-          } else {
-             debugPrint('Session invalid for ${account.email} based on fireUp response.');
-          }
-         }
-      } catch (e) {
-        debugPrint('Error during initial fireUp request for ${account.email}: $e. Session likely invalid.');
-        // Error likely means session is not valid
+  if (accountsNotifier.value.isEmpty) return;
+  
+  // Create a new list copy to work with
+  final updatedAccounts = List<Account>.from(accountsNotifier.value);
+  bool anyAccountUpdated = false;
+  
+  for (int i = 0; i < updatedAccounts.length; i++) {
+    var account = updatedAccounts[i];
+    // Attempt to use existing cookies first by making the fireUp request
+    bool sessionValid = false;
+    try {
+      CookieJar? cookieJar = cookieJars[account.email];
+      if (cookieJar != null) {
+        Dio dio = dioClients.putIfAbsent(account.email, () {
+          Dio newDio = Dio();
+          newDio.interceptors.add(CookieManager(cookieJar));
+          return newDio;
+        });
+        final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
+        final fireUpResponse = await dio.get(fireUpUrl.toString());
+        final fireUpJson = jsonDecode(fireUpResponse.data);
+        if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
+          debugPrint('Session is valid for ${account.email} using saved cookies.');
+          // Update the account in our copy
+          updatedAccounts[i].fireUpData = fireUpJson;
+          anyAccountUpdated = true;
+          sessionValid = true;
+        } else {
+          debugPrint('Session invalid for ${account.email} based on fireUp response.');
+        }
       }
-
-      if (!sessionValid) {
-        debugPrint('Attempting full login for ${account.email}.');
-        await login(account);
-      }
+    } catch (e) {
+      debugPrint('Error during initial fireUp request for ${account.email}: $e. Session likely invalid.');
+      // Error likely means session is not valid
     }
+    if (!sessionValid) {
+      debugPrint('Attempting full login for ${account.email}.');
+      // If login modifies the account, make sure to update the copy
+      await login(account);
+      // If login modifies account, we need to update our copy
+      updatedAccounts[i] = account;
+      anyAccountUpdated = true;
+    }
+  }
+  
+  // Only update the notifier if changes were made
+  if (anyAccountUpdated) {
+    accountsNotifier.value = updatedAccounts;
   }
 }
 
