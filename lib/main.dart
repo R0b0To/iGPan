@@ -1,30 +1,16 @@
 import 'package:flutter/material.dart';
 import 'accounts_screen.dart';
-import 'dart:io';
-import 'dart:convert';
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:dio/dio.dart';
+import 'igp_client.dart'; // Import the new file
 import 'package:carousel_slider/carousel_slider.dart';
 
-final ValueNotifier<List<dynamic>> accountsNotifier = ValueNotifier<List<dynamic>>([]);
-final Map<String, CookieJar> cookieJars = {};
-final Map<String, Dio> dioClients = {};
+final ValueNotifier<List<Account>> accountsNotifier = ValueNotifier<List<Account>>([]);
 
 void main() {
   runApp(const MyApp());
   initCookieManager();
 }
 
-String? appDocumentPath;
 
-void initCookieManager() async {
-  Directory appDocDir = await getApplicationDocumentsDirectory();
-  appDocumentPath = appDocDir.path;
-  // dio.interceptors.add(CookieManager(cookieJar)); // Remove global cookie manager
-}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -80,144 +66,18 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
   Future<void> _loadAccounts() async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/accounts.json');
-      final jsonString = await file.readAsString();
-      accountsNotifier.value = jsonDecode(jsonString);
-      debugPrint('Accounts loaded: ${accountsNotifier.value}');
-
-      // Initialize persistent cookie jars for each account
-      if (appDocumentPath != null) {
-        for (var account in accountsNotifier.value) {
-          final username = account['email'];
-          if (username != null) {
-            cookieJars[username] = PersistCookieJar(
-              storage: FileStorage('$appDocumentPath/.cookies/$username/'),
-            );
-          }
-        }
-      }
-
-    } catch (e) {
-      // Handle file not found or other errors
-      debugPrint('Error loading accounts: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-      final accounts = accountsNotifier.value;
-      debugPrint('starting client sessions... $accounts');
-      if (accountsNotifier.value.isNotEmpty) {
-        debugPrint('Accounts found: ${accountsNotifier.value}');
-        for (var account in accountsNotifier.value) {
-          final username = account['email'];
-          final password = account['password'];
-          if (username != null && password != null) {
-            // Attempt to use existing cookies first by making the fireUp request
-            bool sessionValid = false;
-            try {
-              CookieJar? cookieJar = cookieJars[username];
-               if (cookieJar != null) {
-                Dio dio = dioClients.putIfAbsent(username, () {
-                  Dio newDio = Dio();
-                  newDio.interceptors.add(CookieManager(cookieJar!));
-                  return newDio;
-                });
-                final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
-                final fireUpResponse = await dio.get(fireUpUrl.toString());
-                final fireUpJson = jsonDecode(fireUpResponse.data);
-
-                if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
-                  debugPrint('Session is valid for $username using saved cookies.');
-                  sessionValid = true;
-                } else {
-                   debugPrint('Session invalid for $username based on fireUp response.');
-                }
-               }
-            } catch (e) {
-              debugPrint('Error during initial fireUp request for $username: $e. Session likely invalid.');
-              // Error likely means session is not valid
-            }
-
-            if (!sessionValid) {
-              debugPrint('Attempting full login for $username.');
-              await _login(username, password);
-            }
-
-          } else {
-            debugPrint('Username or password missing for account: $account');
-          }
-        }
-      }
-    }
+    await loadAccounts(accountsNotifier);
+    setState(() {
+      _isLoading = false;
+      _startClientSessions();
+    });
   }
 
   Future<void> _startClientSessions() async {
-    if (accountsNotifier.value.isNotEmpty) {
-      for (var account in accountsNotifier.value) {
-        final username = account['username'];
-        final password = account['password'];
-        if (username != null && password != null) {
-          await _login(username, password);
-        } else {
-          debugPrint('Username or password missing for account: $account');
-        }
-      }
-    }
+    await startClientSessions(accountsNotifier);
   }
 
-  Future<void> _login(String username, String password) async {
-      CookieJar? cookieJar = cookieJars[username];
-      if (cookieJar == null) {
-        debugPrint('No persistent cookie jar found for $username. Creating a new one.');
-        // Fallback to a non-persistent cookie jar if persistent storage is not available
-        cookieJar = CookieJar();
-        cookieJars[username] = cookieJar; // Store it for potential future use (though not persistent)
-      }
-
-      Dio dio = dioClients.putIfAbsent(username, () {
-        Dio newDio = Dio();
-        newDio.interceptors.add(CookieManager(cookieJar!));
-        return newDio;
-      });
-      final url = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1');
-      final loginData = {
-        'loginUsername': username,
-        'loginPassword': password,
-      'loginRemember': 'on',
-      'csrfName': '',
-      'csrfToken': ''
-    };
-    try {
-      final response = await dio.post(
-        url.toString(),
-        data: FormData.fromMap(loginData),
-      );
-      debugPrint('Response for $username: ${response.data}');
-      final loginResponseJson = jsonDecode(response.data);
-
-      if (loginResponseJson != null && loginResponseJson['status'] == 1) {
-        debugPrint('Login successful for $username');
-        // Make the fireUp request
-        final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
-        try {
-          final fireUpResponse = await dio.get(
-            fireUpUrl.toString(),
-          );
-          final fireUpJson = jsonDecode(fireUpResponse.data);
-          debugPrint('is $username a guest? ${fireUpJson['guestAccount']}');
-        } catch (e) {
-          debugPrint('Error making fireUp request for $username: $e');
-        }
-      } else {
-        debugPrint('Login failed for $username. Response: ${response.data}');
-        // Handle failed login, e.g., show an error message to the user
-      }
-    } catch (e) {
-      debugPrint('Error logging in $username: $e');
-    }
-  }
+  // Removed _login function as it's now in igp_client.dart
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +326,7 @@ class AccountMainContainer extends StatelessWidget {
           mainAxisSize: MainAxisSize.min, // Important for Column height in ListView/PageView
           children: [
             Text(
-              account['nickname'] ?? account['email'] ?? 'Unnamed Account',
+              account.nickname ?? account.email ?? 'Unnamed Account',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8.0),
@@ -631,23 +491,4 @@ class Window1Content extends StatelessWidget {
 }
 
 
-class VerticalAccountStack extends StatelessWidget {
- final List<Widget> accounts;
- final double maxHeight;
 
- const VerticalAccountStack({Key? key, required this.accounts, required this.maxHeight}) : super(key: key);
-
- @override
- Widget build(BuildContext context) {
-   return SizedBox(
-     height: maxHeight,
-     child: SingleChildScrollView( // Enable scrolling if content overflows
-       child: Column(
-         mainAxisSize: MainAxisSize.min,
-         crossAxisAlignment: CrossAxisAlignment.stretch,
-         children: accounts,
-       ),
-     ),
-   );
- }
-}

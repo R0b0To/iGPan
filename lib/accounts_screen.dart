@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'main.dart'; // Import main.dart
+import 'igp_client.dart'; // Import igp_client.dart for the Account class
 
 class AccountsScreen extends StatefulWidget {
   const AccountsScreen({Key? key}) : super(key: key);
@@ -12,7 +13,7 @@ class AccountsScreen extends StatefulWidget {
 }
 
 class _AccountsScreenState extends State<AccountsScreen> {
-  List<dynamic> _accounts = [];
+  List<Account> _accounts = [];
 
   @override
   void initState() {
@@ -26,7 +27,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
       final file = File('${directory.path}/accounts.json');
       final jsonString = await file.readAsString();
       setState(() {
-        _accounts = jsonDecode(jsonString);
+        final List<dynamic> jsonList = jsonDecode(jsonString);
+        _accounts = jsonList.map((json) => Account.fromJson(json)).toList();
       });
       accountsNotifier.value = _accounts; // Update the ValueNotifier
     } catch (e) {
@@ -38,7 +40,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
   Future<void> _saveAccounts() async {
     final directory = await getApplicationDocumentsDirectory();
     final file = File('${directory.path}/accounts.json');
-    final jsonString = jsonEncode(_accounts);
+    final jsonList = _accounts.map((account) => account.toJson()).toList();
+    final jsonString = jsonEncode(jsonList);
     await file.writeAsString(jsonString);
     accountsNotifier.value = _accounts; // Update the ValueNotifier
   }
@@ -84,11 +87,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 String nickname = nicknameController.text;
 
                 setState(() {
-                  _accounts.add({
-                    'email': email,
-                    'password': password,
-                    'nickname': nickname,
-                  });
+                  _accounts.add(Account(
+                    email: email,
+                    password: password,
+                    nickname: nickname.isNotEmpty ? nickname : null,
+                  ));
                 });
                 _saveAccounts();
                 Navigator.of(context).pop();
@@ -102,9 +105,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   Future<void> _editAccount(int index) async {
-    TextEditingController emailController = TextEditingController(text: _accounts[index]['email']);
-    TextEditingController passwordController = TextEditingController(text: _accounts[index]['password']);
-    TextEditingController nicknameController = TextEditingController(text: _accounts[index]['nickname']);
+    TextEditingController emailController = TextEditingController(text: _accounts[index].email);
+    TextEditingController passwordController = TextEditingController(text: _accounts[index].password);
+    TextEditingController nicknameController = TextEditingController(text: _accounts[index].nickname);
 
     await showDialog(
       context: context,
@@ -142,11 +145,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 String nickname = nicknameController.text;
 
                 setState(() {
-                  _accounts[index] = {
-                    'email': email,
-                    'password': password,
-                    'nickname': nickname,
-                  };
+                  _accounts[index] = Account(
+                    email: email,
+                    password: password,
+                    nickname: nickname.isNotEmpty ? nickname : null,
+                  );
                 });
                 _saveAccounts();
                 Navigator.of(context).pop();
@@ -200,8 +203,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
         itemBuilder: (context, index) {
           final account = _accounts[index];
           return ListTile(
-            title: Text(account['email'] ?? ''),
-            subtitle: Text(account['nickname'] ?? ''),
+            title: Text(account.email),
+            subtitle: Text(account.nickname ?? ''),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
