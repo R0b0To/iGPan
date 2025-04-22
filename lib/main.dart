@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'accounts_screen.dart';
 import 'igp_client.dart'; // Import the new file
@@ -48,7 +49,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-     _loadAccounts();
+    _loadAccounts();
+    // Refresh data every 30 seconds
+    //Timer.periodic(const Duration(seconds: 30), (timer) {_startClientSessions();});
   }
 
   @override
@@ -310,6 +313,11 @@ class AccountMainContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Check if fireUpData is available
+    if (account.fireUpData == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     // Estimate height based on internal layout
     // Add some padding/margin allowance
     final estimatedHeight = canStackWindowsHorizontally
@@ -418,7 +426,7 @@ class Window1Content extends StatelessWidget {
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
                child: Text(
-                 'Money: ${account.fireUpData?.team?._balance != null ? abbreviateNumber(account.fireUpData.team._balance) : 'Loading...'}',
+                 abbreviateNumber(account.fireUpData['team']['_balance']),
                  style: TextStyle(fontSize: 10),
                ), // Shorter text
              ),
@@ -497,13 +505,18 @@ class Window1Content extends StatelessWidget {
 
 
 
-String abbreviateNumber(double n) {
-  if (n == 0) return '0';
+String abbreviateNumber(String input) {
+  final n = double.tryParse(input);
+  if (n == null || n == 0) return '0';
+
   final suffixes = ['', 'K', 'M', 'B', 'T', 'P', 'E', 'Z', 'Y'];
   int magnitude = 0;
-  while (n.abs() >= 1000 && magnitude < suffixes.length - 1) {
+  double value = n;
+
+  while (value.abs() >= 1000 && magnitude < suffixes.length - 1) {
     magnitude++;
-    n /= 1000.0;
+    value /= 1000.0;
   }
-  return '${n.toStringAsFixed(1)}${suffixes[magnitude]}';
+
+  return '${value.toStringAsFixed(1)}${suffixes[magnitude]}';
 }
