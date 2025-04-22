@@ -59,14 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _pageController.dispose();
     super.dispose();
   }
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    setState(() {
-    _isLoading = false;
-  });
-    _startClientSessions();
-}
+
 
   Future<void> _loadAccounts() async {
     await loadAccounts(accountsNotifier);
