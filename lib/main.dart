@@ -365,7 +365,7 @@ class AccountMainContainer extends StatelessWidget {
                   minHeight: minWindowHeight,
                 ),
                 color: const Color.fromARGB(255, 98, 121, 99), // Placeholder color
-                child: const Center(child: Text('Window 2')),
+                child: Window2Content(minWindowHeight: minWindowHeight, account: account),
               ),
             ),
           ],
@@ -391,7 +391,7 @@ class AccountMainContainer extends StatelessWidget {
                  minHeight: minWindowHeight,
               ),
               color: const Color.fromARGB(255, 111, 133, 112), // Placeholder color
-              child: const Center(child: Text('Window 2')),
+              child: Window2Content(minWindowHeight: minWindowHeight, account: account),
             ),
           ],
         );
@@ -520,4 +520,64 @@ String abbreviateNumber(String input) {
   }
 
   return '${value.toStringAsFixed(1)}${suffixes[magnitude]}';
+}
+
+class Window2Content extends StatelessWidget {
+  final double minWindowHeight;
+  final dynamic account;
+
+  const Window2Content({Key? key, required this.minWindowHeight, required this.account}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row( // First row with buttons and label
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+               ),
+              child: const Text('R'),
+            ),
+            const Text('Label'),
+            ElevatedButton(
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+               ),
+              child: const Text('S'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        DefaultTabController( // Second row with tab bar
+          length: 3,
+          child: Column(
+            children: [
+              const TabBar(             
+                tabs: [
+                  Tab(text: 'Setup'),
+                  Tab(text: 'Practice'),
+                  Tab(text: 'Strategy'),
+                ],
+              ),
+              SizedBox(
+                height: minWindowHeight * 0.8,
+                child: const TabBarView(
+                  children: [
+                    Center(child: Text('Setup Content')),
+                    Center(child: Text('Practice Content')),
+                    Center(child: Text('Strategy Content')),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
