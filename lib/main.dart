@@ -70,7 +70,6 @@ class _MyHomePageState extends State<MyHomePage> {
     _pageController.dispose();
     super.dispose();
   }
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -492,90 +491,7 @@ class AccountMainContainer extends StatelessWidget {
                   minHeight: minWindowHeight,
                 ),
                 color: const Color.fromARGB(255, 96, 121, 141), // Placeholder color
-                child: Column(
-                  children: [
-                    Row( // First row with buttons and label - Compacted
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align start
-                      children: [
-                        SizedBox( // Wrap button for size control
-                          
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.zero, // Remove padding
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
-                            ),
-                            child: const Text('Money', style: TextStyle(fontSize: 10)), // Shorter text
-                          ),
-                        ),
-                        
-                        const Text('Tokens: 100'), // Keep text as is for now
-                        const SizedBox(width: 4), // Small spacer
-                        SizedBox( // Wrap button for size control
-      
-                          child: ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.zero, // Remove padding
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
-                            ),
-                            child: const Text('Daily', style: TextStyle(fontSize: 10)), // Shorter text
-                          ),
-                        ),
-                       
-                        Column( // Keep sponsor buttons in a column, but make them square
-                          children: [
-                            SizedBox(
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
-                                ),
-                                child: const Text('S1', style: TextStyle(fontSize: 10)), // Shorter text
-                              ),
-                            ),
-                            const SizedBox(height: 2), // Small vertical space
-                            SizedBox(
-                             
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
-                                ),
-                                child: const Text('S2', style: TextStyle(fontSize: 10)), // Shorter text
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4), // Reduced spacer height
-                    DefaultTabController( // Second row with tab bar
-                      length: 2,
-                      child: Column(
-                        children: [
-                          const TabBar(
-                            tabs: [
-                              Tab(text: 'Car'),
-                              Tab(text: 'Reports'),
-                            ],
-                          ),
-                          SizedBox(
-                            height: minWindowHeight * 0.8, // 80% of minWindowHeight
-                            child: const TabBarView(
-                              children: [
-                                Center(child: Text('Car Content')),
-                                Center(child: Text('Reports Content')),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                child: Window1Content(minWindowHeight: minWindowHeight),
               ),
             ),
             const SizedBox(width: 8.0),
@@ -603,7 +519,7 @@ class AccountMainContainer extends StatelessWidget {
                 minHeight: minWindowHeight,
               ),
               color: const Color.fromARGB(255, 93, 108, 121), // Placeholder color
-              child: const Center(child: Text('Window 1')),
+              child: Window1Content(minWindowHeight: minWindowHeight),
             ),
             const SizedBox(height: 8.0),
             Container(
@@ -620,24 +536,118 @@ class AccountMainContainer extends StatelessWidget {
   }
 }
 
-class VerticalAccountStack extends StatelessWidget {
-  final List<Widget> accounts;
-  final double maxHeight;
+class Window1Content extends StatelessWidget {
+ final double minWindowHeight;
 
-  const VerticalAccountStack({Key? key, required this.accounts, required this.maxHeight}) : super(key: key);
+ const Window1Content({Key? key, required this.minWindowHeight}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: maxHeight,
-      child: SingleChildScrollView( // Enable scrolling if content overflows
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: accounts,
-        ),
-      ),
-    );
-  }
+ @override
+ Widget build(BuildContext context) {
+   return Column(
+     children: [
+       Row( // First row with buttons and label - Compacted
+         mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align start
+         children: [
+           SizedBox( // Wrap button for size control
+
+             child: ElevatedButton(
+               onPressed: () {},
+               style: ElevatedButton.styleFrom(
+
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+               ),
+               child: const Text('Money', style: TextStyle(fontSize: 10)), // Shorter text
+             ),
+           ),
+
+           const Text('Tokens: 100'), // Keep text as is for now
+           const SizedBox(width: 4), // Small spacer
+           SizedBox( // Wrap button for size control
+
+             child: ElevatedButton(
+               onPressed: () {},
+               style: ElevatedButton.styleFrom(
+
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+               ),
+               child: const Text('Daily', style: TextStyle(fontSize: 10)), // Shorter text
+             ),
+           ),
+
+           Column( // Keep sponsor buttons in a column, but make them square
+             children: [
+               SizedBox(
+                 child: ElevatedButton(
+                   onPressed: () {},
+                   style: ElevatedButton.styleFrom(
+                     padding: EdgeInsets.zero,
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                   ),
+                   child: const Text('S1', style: TextStyle(fontSize: 10)), // Shorter text
+                 ),
+               ),
+
+               SizedBox(
+
+                 child: ElevatedButton(
+                   onPressed: () {},
+                   style: ElevatedButton.styleFrom(
+                     padding: EdgeInsets.zero,
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                   ),
+                   child: const Text('S2', style: TextStyle(fontSize: 10)), // Shorter text
+                 ),
+               ),
+             ],
+           ),
+         ],
+       ),
+       SizedBox(height: 4), // Reduced spacer height
+       DefaultTabController( // Second row with tab bar
+         length: 2,
+         child: Column(
+           children: [
+             const TabBar(
+               tabs: [
+                 Tab(text: 'Car'),
+                 Tab(text: 'Reports'),
+               ],
+             ),
+             SizedBox(
+               height: minWindowHeight * 0.8, // 80% of minWindowHeight
+               child: const TabBarView(
+                 children: [
+                   Center(child: Text('Car Content')),
+                   Center(child: Text('Reports Content')),
+                 ],
+               ),
+             ),
+           ],
+         ),
+       ),
+     ],
+   );
+ }
 }
 
+
+class VerticalAccountStack extends StatelessWidget {
+ final List<Widget> accounts;
+ final double maxHeight;
+
+ const VerticalAccountStack({Key? key, required this.accounts, required this.maxHeight}) : super(key: key);
+
+ @override
+ Widget build(BuildContext context) {
+   return SizedBox(
+     height: maxHeight,
+     child: SingleChildScrollView( // Enable scrolling if content overflows
+       child: Column(
+         mainAxisSize: MainAxisSize.min,
+         crossAxisAlignment: CrossAxisAlignment.stretch,
+         children: accounts,
+       ),
+     ),
+   );
+ }
+}
