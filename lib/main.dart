@@ -566,11 +566,11 @@ class Window2Content extends StatelessWidget {
               ),
               SizedBox(
                 height: minWindowHeight * 0.8,
-                child: TabBarView(
+                child: const TabBarView(
                   children: [
-                    CarTabContent(minWindowHeight: minWindowHeight, account: account, tabName: 'Setup'),
-                    CarTabContent(minWindowHeight: minWindowHeight, account: account, tabName: 'Practice'),
-                    CarTabContent(minWindowHeight: minWindowHeight, account: account, tabName: 'Strategy'),
+                    Center(child: Text('Setup Content')),
+                    Center(child: Text('Practice Content')),
+                    Center(child: Text('Strategy Content')),
                   ],
                 ),
               ),
@@ -578,40 +578,6 @@ class Window2Content extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class CarTabContent extends StatelessWidget {
-  final double minWindowHeight;
-  final dynamic account;
-  final String tabName; // To identify which tab content to show
-
-  const CarTabContent({
-    Key? key,
-    required this.minWindowHeight,
-    required this.account,
-    required this.tabName,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    // Check if fireUpData and team and _numCars are available
-    String? rawValue = account.fireUpData?['team']?['_numCars'];
-    final numCars = int.tryParse(rawValue ?? '');
-    
-
-    return CarouselSlider.builder(
-      itemCount: numCars,
-      options: CarouselOptions(
-        height: minWindowHeight * 0.8, // Match the height of the previous TabBarView
-        viewportFraction: 1.0,
-        enableInfiniteScroll: false,
-      ),
-      itemBuilder: (context, index, realIdx) {
-        // Content for each car - Placeholder for now
-        return Center(child: Text('$tabName Content for Car ${index + 1}'));
-      },
     );
   }
 }
