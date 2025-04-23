@@ -100,6 +100,18 @@ Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) 
           updatedAccounts[i].fireUpData = fireUpJson;
           anyAccountUpdated = true;
           sessionValid = true;
+
+          // Check if the account has a team and is in a league
+          if (updatedAccounts[i].fireUpData != null &&
+              updatedAccounts[i].fireUpData!['team'] != null &&
+              updatedAccounts[i].fireUpData!['team']['_league'] != '0') {
+            debugPrint('Account ${account.email} is in a league. Fetching race data.');
+            // Fetch race data for this account
+            await fetchRaceData(updatedAccounts[i], accountsNotifier);
+          } else {
+            debugPrint('Account ${account.email} is not in a league. Skipping race data fetch.');
+          }
+
         } else {
           debugPrint('Session invalid for ${account.email} based on fireUp response.');
         }
