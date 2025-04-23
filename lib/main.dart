@@ -522,14 +522,77 @@ String abbreviateNumber(String input) {
   return '${value.toStringAsFixed(1)}${suffixes[magnitude]}';
 }
 
-class Window2Content extends StatelessWidget {
+class Window2Content extends StatefulWidget {
   final double minWindowHeight;
   final dynamic account;
 
   const Window2Content({Key? key, required this.minWindowHeight, required this.account}) : super(key: key);
 
   @override
+  _Window2ContentState createState() => _Window2ContentState();
+}
+
+class _Window2ContentState extends State<Window2Content> with TickerProviderStateMixin {
+  late TabController _tabController;
+  final CarouselSliderController _carouselController = CarouselSliderController();
+  int _currentTabIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize tab controller with a length that will be updated in build
+    _tabController = TabController(length: 0, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Get the number of cars, default to 1 if not available or invalid
+    final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
+    final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
+
+    // Define the tabs and content, which are always the same for each car
+    const List<Tab> tabs = [
+      Tab(text: 'Setup'),
+      Tab(text: 'Practice'),
+      Tab(text: 'Strategy'),
+    ];
+
+    const List<Widget> tabContents = [
+      Center(child: Text('Setup Content')),
+      Center(child: Text('Practice Content')),
+      Center(child: Text('Strategy Content')),
+    ];
+
+    // Create a list of widgets for the carousel, one for each car
+    // Each item is a DefaultTabController with its own TabBar and TabBarView
+    final List<Widget> carouselItems = List.generate(numCars, (carIndex) {
+      return DefaultTabController(
+        length: tabs.length,
+        child: Column(
+          children: [
+            // TabBar for the current car
+            const TabBar(
+              tabs: tabs,
+            ),
+            // TabBarView for the current car's content
+            SizedBox(
+              height: widget.minWindowHeight * 0.8,
+              child: const TabBarView(
+                children: tabContents,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+
+
     return Column(
       children: [
         Row( // First row with buttons and label
@@ -553,30 +616,47 @@ class Window2Content extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 4),
-        DefaultTabController( // Second row with tab bar
-          length: 3,
-          child: Column(
-            children: [
-              const TabBar(             
-                tabs: [
-                  Tab(text: 'Setup'),
-                  Tab(text: 'Practice'),
-                  Tab(text: 'Strategy'),
-                ],
-              ),
-              SizedBox(
-                height: minWindowHeight * 0.8,
-                child: const TabBarView(
-                  children: [
-                    Center(child: Text('Setup Content')),
-                    Center(child: Text('Practice Content')),
-                    Center(child: Text('Strategy Content')),
-                  ],
-                ),
-              ),
-            ],
+        // CarouselSlider for the tab bars and their content (one item per car)
+        SizedBox(
+          // Calculate height: TabBar height (approx 48-50) + TabBarView height
+          height: widget.minWindowHeight * 0.8 + 50, // Adjust 50 if needed
+          child: CarouselSlider.builder(
+            carouselController: _carouselController,
+            itemCount: carouselItems.length, // Number of items is number of cars
+            options: CarouselOptions(
+              height: widget.minWindowHeight * 0.8 + 50, // Match SizedBox height
+              viewportFraction: 1.0,
+              enableInfiniteScroll: false,
+              onPageChanged: (index, reason) {
+                setState(() {
+                  // Update the current carousel page index for the indicator dots
+                  _currentTabIndex = index;
+                });
+              },
+            ),
+            itemBuilder: (context, index, realIdx) {
+              return carouselItems[index];
+            },
           ),
         ),
+        // Indicator dots (only show if numCars is 2)
+        if (numCars == 2)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(numCars, (index) { // Generate dots based on number of cars
+              return Container(
+                width: 8.0,
+                height: 8.0,
+                margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentTabIndex == index
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                ),
+              );
+            }),
+          ),
       ],
     );
   }
