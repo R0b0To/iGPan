@@ -345,7 +345,7 @@ class AccountMainContainer extends StatelessWidget {
   Widget _buildInternalWindows(BuildContext context) {
     // Create instances of the window content widgets once
     final window1Content = Window1Content(minWindowHeight: minWindowHeight, account: account);
-    final window2Content = Window2Content(minWindowHeight: minWindowHeight, account: account);
+    final window2Content = account.fireUpData['team']['_league'] == '0' ? null : Window2Content(minWindowHeight: minWindowHeight, account: account);
 
      if (canStackWindowsHorizontally) {
         // Stack windows horizontally
