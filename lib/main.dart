@@ -425,6 +425,7 @@ class _Window1ContentState extends State<Window1Content> {
         widget.account.fireUpData['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData['notify']['page']['nDailyReward'] == '0'; // Assuming true means available
     return Column(
+     mainAxisAlignment: MainAxisAlignment.start, // Align children to the top
      children: [
        Row( // First row with buttons and label - Compacted
          mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align start
@@ -594,7 +595,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             ),
             // TabBarView for the current car's content
             SizedBox(
-              height: widget.minWindowHeight * 0.8,
+              height: widget.minWindowHeight * 0.25,
               child: TabBarView( // Removed const
                 children: [
                   // Setup Content (Car-specific)
