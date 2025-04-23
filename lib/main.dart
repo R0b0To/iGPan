@@ -622,7 +622,21 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                ),
               child: const Text('R'),
             ),
-            const Text('Label'),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  // Extract the race name by removing the img tag
+                  (widget.account.raceData?['vars']?['raceName'] as String?)
+                      ?.replaceAll(RegExp(r'<img[^>]*>'), '')
+                      .trim() ?? 'No Race Data',
+                ),
+                SizedBox(height: 4), // Add some spacing
+                Text(
+                  widget.account.raceData?['vars']?['raceTime'] ?? 'No Race Time',
+                ),
+              ],
+            ),
             ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
