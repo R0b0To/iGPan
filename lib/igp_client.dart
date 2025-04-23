@@ -174,3 +174,24 @@ Future<void> login(Account account) async {
       debugPrint('Error logging in ${account.email}: $e');
     }
 }
+Future<void> claimDailyReward(Account account) async {
+  Dio? dio = dioClients[account.email];
+  if (dio == null) {
+    debugPrint('Error: Dio client not found for ${account.email}. Cannot claim daily reward.');
+    throw Exception('Dio client not initialized for account');
+  }
+
+  final url = Uri.parse('https://igpmanager.com/content/misc/igp/ajax/dailyReward.php');
+  debugPrint('Attempting to claim daily reward for ${account.email} at $url');
+
+  try {
+    final response = await dio.get(url.toString());
+    debugPrint('Daily reward response for ${account.email}: ${response.statusCode}');
+    debugPrint('Response data: ${response.data}');
+    // You can add more logic here based on the response content if needed
+  } catch (e) {
+    debugPrint('Error claiming daily reward for ${account.email}: $e');
+    // Re-throw the error if you want the caller (_handleDailyReward) to handle it
+    rethrow;
+  }
+}
