@@ -343,6 +343,10 @@ class AccountMainContainer extends StatelessWidget {
   }
 
   Widget _buildInternalWindows(BuildContext context) {
+    // Create instances of the window content widgets once
+    final window1Content = Window1Content(minWindowHeight: minWindowHeight, account: account);
+    final window2Content = Window2Content(minWindowHeight: minWindowHeight, account: account);
+
      if (canStackWindowsHorizontally) {
         // Stack windows horizontally
         return Row(
@@ -354,7 +358,7 @@ class AccountMainContainer extends StatelessWidget {
                   minHeight: minWindowHeight,
                 ),
                 color: const Color.fromARGB(255, 96, 121, 141), // Placeholder color
-                child: Window1Content(minWindowHeight: minWindowHeight, account: account),
+                child: window1Content,
               ),
             ),
             const SizedBox(width: 8.0),
@@ -365,7 +369,7 @@ class AccountMainContainer extends StatelessWidget {
                   minHeight: minWindowHeight,
                 ),
                 color: const Color.fromARGB(255, 98, 121, 99), // Placeholder color
-                child: Window2Content(minWindowHeight: minWindowHeight, account: account),
+                child: window2Content,
               ),
             ),
           ],
@@ -382,7 +386,7 @@ class AccountMainContainer extends StatelessWidget {
                 minHeight: minWindowHeight,
               ),
               color: const Color.fromARGB(255, 93, 108, 121), // Placeholder color
-              child: Window1Content(minWindowHeight: minWindowHeight, account: account),
+              child: window1Content,
             ),
             const SizedBox(height: 8.0),
             Container(
@@ -391,7 +395,7 @@ class AccountMainContainer extends StatelessWidget {
                  minHeight: minWindowHeight,
               ),
               color: const Color.fromARGB(255, 111, 133, 112), // Placeholder color
-              child: Window2Content(minWindowHeight: minWindowHeight, account: account),
+              child: window2Content,
             ),
           ],
         );
@@ -410,10 +414,17 @@ class Window1Content extends StatefulWidget {
 }
 
 class _Window1ContentState extends State<Window1Content> {
-  bool _dailyRewardClaimed = false;
-
   @override
   Widget build(BuildContext context) {
+    // Determine reward status directly from account data
+    bool rewardStatus = widget.account.fireUpData != null &&
+        widget.account.fireUpData.containsKey('notify') &&
+        widget.account.fireUpData['notify'] != null &&
+        widget.account.fireUpData['notify'].containsKey('page') &&
+        widget.account.fireUpData['notify']['page'] != null &&
+        widget.account.fireUpData['notify']['page'].containsKey('nDailyReward') &&
+        widget.account.fireUpData['notify']['page']['nDailyReward'] == '0'; // Assuming true means available
+    debugPrint('Reward status: $rewardStatus');
     return Column(
      children: [
        Row( // First row with buttons and label - Compacted
@@ -438,20 +449,12 @@ class _Window1ContentState extends State<Window1Content> {
 
              Builder(
                  builder: (BuildContext context) {
-                   bool reward_status;
-                   if (widget.account.fireUpData['notify'] == null || !widget.account.fireUpData['notify'].containsKey('page') || !widget.account.fireUpData['notify']['page'].containsKey('nDailyReward')) {
-                     reward_status = false;
-                   } else {
-                     reward_status = true;
-                   }
-                   reward_status = reward_status && !_dailyRewardClaimed;
+                   
                    return ElevatedButton(
-                     onPressed: reward_status
+                     onPressed: rewardStatus
                          ? () {
                              claimDailyReward(widget.account);
-                             setState(() {
-                               _dailyRewardClaimed = true;
-                             });
+                             // No need to setState here if claimDailyReward updates the account object
                            }
                          : null,
                      style: ElevatedButton.styleFrom(

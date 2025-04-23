@@ -188,7 +188,19 @@ Future<void> claimDailyReward(Account account) async {
     final response = await dio.get(url.toString());
     debugPrint('Daily reward response for ${account.email}: ${response.statusCode}');
     debugPrint('Response data: ${response.data}');
-    // You can add more logic here based on the response content if needed
+    
+    // Assuming a successful response means the reward was claimed
+    // Remove the nDailyReward key from the account's fireUpData
+    if (account.fireUpData != null &&
+        account.fireUpData!.containsKey('notify') &&
+        account.fireUpData!['notify'] != null &&
+        account.fireUpData!['notify'].containsKey('page') &&
+        account.fireUpData!['notify']['page'] != null &&
+        account.fireUpData!['notify']['page'].containsKey('nDailyReward')) {
+      account.fireUpData!['notify']['page'].remove('nDailyReward');
+      debugPrint('Removed nDailyReward key for ${account.email}');
+    }
+
   } catch (e) {
     debugPrint('Error claiming daily reward for ${account.email}: $e');
     // Re-throw the error if you want the caller (_handleDailyReward) to handle it
