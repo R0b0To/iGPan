@@ -6,6 +6,8 @@ import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart'; // Import for debugPrint and ValueNotifier
+import 'package:html/parser.dart' as html_parser;
+
 
 class Account {
   final String email;
@@ -94,9 +96,11 @@ Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) 
         final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
         final fireUpResponse = await dio.get(fireUpUrl.toString());
         final fireUpJson = jsonDecode(fireUpResponse.data);
+        
         if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
           debugPrint('Session is valid for ${account.email} using saved cookies.');
           // Update the account in our copy
+          fireUpJson['drivers'] = parseDriversFromHtml(fireUpJson['preCache']['p=staff']['vars']['drivers']);
           updatedAccounts[i].fireUpData = fireUpJson;
           anyAccountUpdated = true;
           sessionValid = true;
@@ -106,6 +110,8 @@ Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) 
               updatedAccounts[i].fireUpData!['team'] != null &&
               updatedAccounts[i].fireUpData!['team']['_league'] != '0') {
             debugPrint('Account ${account.email} is in a league. Fetching race data.');
+            
+            
             // Fetch race data for this account
             await fetchRaceData(updatedAccounts[i], accountsNotifier);
           } else {
@@ -245,7 +251,7 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
   try {
     final response = await dio.get(url.toString());
     debugPrint('Race data response status for ${account.email}: ${response.statusCode}');
-    debugPrint('Response data: ${response.data}');
+    //debugPrint('Response data: ${response.data}');
 
     final raceDataJson = jsonDecode(response.data);
 
@@ -266,4 +272,75 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
     debugPrint('Error fetching race data for ${account.email}: $e');
     rethrow;
   }
+}
+
+class Driver {
+  final String name;
+  final List<dynamic> attributes;
+  final String contract;
+  
+  Driver({required this.name, required this.attributes, required this.contract});
+  
+  @override
+  String toString() {
+    return 'Driver{name: $name, attributes: $attributes, contract: $contract}';
+  }
+}
+
+List<Driver> parseDriversFromHtml(String htmlString) {
+  final document = html_parser.parse(htmlString);
+  final List<Driver> drivers = [];
+  
+  // Find driver names
+  final driverNameDivs = document.querySelectorAll('.driverName');
+  
+  // Find driver attributes from hoverData
+  final driverAttributesSpans = document.querySelectorAll('.hoverData');
+  
+  // Find contract info
+  final contractTds = document.querySelectorAll('[id^="nDriverC"]');
+  
+  for (int i = 0; i < driverNameDivs.length; i++) {
+    // Extract name - correctly combining first name and last name
+final nameElement = driverNameDivs[i];
+final nameText = nameElement.text.trim();
+final nameSpan = nameElement.querySelector('.medium');
+
+
+String firstName, lastName;
+if (nameSpan != null) {
+  lastName = nameSpan.text.trim();
+  // Remove the lastName and any whitespace/newlines to get firstName
+  firstName = nameText.replaceAll(lastName, '').trim();
+  // Further clean up any newlines
+  firstName = firstName.replaceAll('\n', '').trim();
+}
+else {
+  // Fallback if structure isn't as expected
+  final parts = nameText.split('\n');
+  firstName = parts[0].trim();
+  lastName = parts.length > 1 ? parts[1].trim() : '';
+}
+
+final fullName = '$firstName $lastName';
+    
+    // Extract attributes
+    final attributesData = driverAttributesSpans[i].attributes['data-driver'] ?? '';
+    final attributes = attributesData.split(',').map((attr) {
+      // Convert to appropriate type (number or empty string)
+      if (attr.isEmpty) return '';
+      return double.tryParse(attr) ?? attr;
+    }).toList();
+    
+    // Extract contract
+    final contract = contractTds[i].text.trim();
+    
+    drivers.add(Driver(
+      name: fullName,
+      attributes: attributes,
+      contract: contract
+    ));
+  }
+  
+  return drivers;
 }

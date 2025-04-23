@@ -39,6 +39,7 @@ dependencies:
   cookie_jar: ^4.0.0
   dio_cookie_manager: ^3.2.0
   carousel_slider: ^5.0.0
+  html: ^0.15.0
 
 dev_dependencies:
   flutter_test:
