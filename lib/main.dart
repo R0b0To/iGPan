@@ -580,11 +580,6 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
       Tab(text: 'Strategy'),
     ];
 
-    const List<Widget> tabContents = [
-      Center(child: Text('Setup Content')),
-      Center(child: Text('Practice Content')),
-      Center(child: Text('Strategy Content')),
-    ];
 
     // Create a list of widgets for the carousel, one for each car
     // Each item is a DefaultTabController with its own TabBar and TabBarView
@@ -600,8 +595,15 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             // TabBarView for the current car's content
             SizedBox(
               height: widget.minWindowHeight * 0.8,
-              child: const TabBarView(
-                children: tabContents,
+              child: TabBarView( // Removed const
+                children: [
+                  // Setup Content (Car-specific)
+                  SetupContent(account: widget.account, carIndex: carIndex), // Use widget.account
+                  // Practice Content (Same for all cars)
+                  Center(child: Text('Practice Content')),
+                  // Strategy Content (Same for all cars)
+                  Center(child: Text('Strategy Content')),
+                ],
               ),
             ),
           ],
@@ -688,6 +690,40 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               );
             }),
           ),
+      ],
+    );
+  }
+}
+
+class SetupContent extends StatelessWidget {
+  final dynamic account;
+  final int carIndex;
+
+  const SetupContent({Key? key, required this.account, required this.carIndex}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            // TODO: Implement Driver button action
+          },
+          child: Text(account.fireUpData['drivers'][carIndex].name),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // TODO: Implement Stamina button action
+          },
+          child: Text(account.fireUpData['drivers'][carIndex].attributes[12].toString()),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // TODO: Implement Contract button action
+          },
+          child: Text(account.fireUpData['drivers'][carIndex].contract.toString()),
+        ),
       ],
     );
   }
