@@ -453,7 +453,7 @@ class _Window1ContentState extends State<Window1Content> {
                    return ElevatedButton(
                      onPressed: rewardStatus
                          ? () {
-                             claimDailyReward(widget.account);
+                             claimDailyReward(widget.account, accountsNotifier);
                              // No need to setState here if claimDailyReward updates the account object
                            }
                          : null,

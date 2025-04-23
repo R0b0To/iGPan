@@ -174,7 +174,7 @@ Future<void> login(Account account) async {
       debugPrint('Error logging in ${account.email}: $e');
     }
 }
-Future<void> claimDailyReward(Account account) async {
+Future<void> claimDailyReward(Account account, ValueNotifier<List<Account>> accountsNotifier) async {
   Dio? dio = dioClients[account.email];
   if (dio == null) {
     debugPrint('Error: Dio client not found for ${account.email}. Cannot claim daily reward.');
@@ -199,6 +199,15 @@ Future<void> claimDailyReward(Account account) async {
         account.fireUpData!['notify']['page'].containsKey('nDailyReward')) {
       account.fireUpData!['notify']['page'].remove('nDailyReward');
       debugPrint('Removed nDailyReward key for ${account.email}');
+
+      // Find the account in the notifier's list and update it
+      final updatedAccounts = List<Account>.from(accountsNotifier.value);
+      final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
+      if (index != -1) {
+        updatedAccounts[index] = account;
+        accountsNotifier.value = updatedAccounts; // Notify listeners
+        debugPrint('Accounts notifier updated after claiming daily reward for ${account.email}');
+      }
     }
 
   } catch (e) {
