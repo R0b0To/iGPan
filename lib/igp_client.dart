@@ -12,8 +12,9 @@ class Account {
   final String password;
   final String? nickname;
   Map<String, dynamic>? fireUpData; // To store fireUp response data
+  Map<String, dynamic>? raceData; // To store race data
 
-  Account({required this.email, required this.password, this.nickname, this.fireUpData});
+  Account({required this.email, required this.password, this.nickname, this.fireUpData, this.raceData});
 
   // Factory constructor to create an Account from a JSON map
   factory Account.fromJson(Map<String, dynamic> json) {
@@ -22,6 +23,7 @@ class Account {
       password: json['password'],
       nickname: json['nickname'],
       fireUpData: json['fireUpData'], // Load existing fireUpData if available
+      raceData: json['raceData'], // Load existing raceData if available
     );
   }
 
@@ -32,6 +34,7 @@ class Account {
       'password': password,
       'nickname': nickname,
       'fireUpData': fireUpData,
+      'raceData': raceData,
     };
   }
 }
@@ -213,6 +216,42 @@ Future<void> claimDailyReward(Account account, ValueNotifier<List<Account>> acco
   } catch (e) {
     debugPrint('Error claiming daily reward for ${account.email}: $e');
     // Re-throw the error if you want the caller (_handleDailyReward) to handle it
+    rethrow;
+  }
+}
+
+Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> accountsNotifier) async {
+  Dio? dio = dioClients[account.email];
+  if (dio == null) {
+    debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
+    throw Exception('Dio client not initialized for account');
+  }
+
+  final url = Uri.parse('https://igpmanager.com/index.php?action=fetch&p=race&csrfName=&csrfToken=');
+  debugPrint('Attempting to fetch race data for ${account.email} at $url');
+
+  try {
+    final response = await dio.get(url.toString());
+    debugPrint('Race data response status for ${account.email}: ${response.statusCode}');
+    debugPrint('Response data: ${response.data}');
+
+    final raceDataJson = jsonDecode(response.data);
+
+    // Update the account's raceData with the fetched data
+    account.raceData = raceDataJson;
+    debugPrint('Updated raceData for ${account.email}');
+
+    // Find the account in the notifier's list and update it
+    final updatedAccounts = List<Account>.from(accountsNotifier.value);
+    final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
+    if (index != -1) {
+      updatedAccounts[index] = account;
+      accountsNotifier.value = updatedAccounts; // Notify listeners
+      debugPrint('Accounts notifier updated after fetching race data for ${account.email}');
+    }
+
+  } catch (e) {
+    debugPrint('Error fetching race data for ${account.email}: $e');
     rethrow;
   }
 }

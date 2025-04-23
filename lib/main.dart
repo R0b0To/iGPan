@@ -424,7 +424,6 @@ class _Window1ContentState extends State<Window1Content> {
         widget.account.fireUpData['notify']['page'] != null &&
         widget.account.fireUpData['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData['notify']['page']['nDailyReward'] == '0'; // Assuming true means available
-    debugPrint('Reward status: $rewardStatus');
     return Column(
      children: [
        Row( // First row with buttons and label - Compacted
