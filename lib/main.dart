@@ -159,7 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               builder: (context, constraints) {
                                 // Define minimum size for sub-windows
                                 const double minWindowWidth = 400;
-                                const double minWindowHeight = 200;
+                                const double minWindowHeight = 250;
 
                                 // Check if there's enough horizontal space for two windows side-by-side
                                 bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
@@ -595,7 +595,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             ),
             // TabBarView for the current car's content
             SizedBox(
-              height: widget.minWindowHeight * 0.25,
+              height: widget.minWindowHeight,
               child: TabBarView( // Removed const
                 children: [
                   // Setup Content (Car-specific)
@@ -704,26 +704,138 @@ class SetupContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    debugPrint('SetupContent: account: $account, carIndex: $carIndex');
+    // Define keys
+    String skey = 'd\$${carIndex+1}Suspension';
+    String akey = 'd\$${carIndex+1}Aerodynamics';
+    String rkey = 'd\$${carIndex+1}Ride';
+
+    // Map suspension values
+    Map<int, String> suspensionMap = {
+      1: 'soft',
+      2: 'neutral',
+      3: 'firm',
+    };
+
+    // Get initial suspension value
+    String initialSuspension = suspensionMap[account.raceData['vars'][skey]] ?? 'neutral'; // Default to neutral if value is unexpected
+
+
+    return Column( // Wrap in Column
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Adjust alignment for Column if needed
       children: [
-        ElevatedButton(
-          onPressed: () {
-            // TODO: Implement Driver button action
-          },
-          child: Text(account.fireUpData['drivers'][carIndex].name),
+        
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+               ),
+              onPressed: () {
+
+                // TODO: Implement Driver button action
+              },
+              child: Text(account.fireUpData['drivers'][carIndex].name),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+               ),
+              onPressed: () {
+                // TODO: Implement Stamina button action
+              },
+              child: Text(account.fireUpData['drivers'][carIndex].attributes[12].toString()),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                   ),
+              onPressed: () {
+                // TODO: Implement Contract button action
+              },
+              child: Text(account.fireUpData['drivers'][carIndex].contract.toString()),
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: () {
-            // TODO: Implement Stamina button action
-          },
-          child: Text(account.fireUpData['drivers'][carIndex].attributes[12].toString()),
+        // New Row 1: Suspension
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Text('Suspension'),
+            DropdownButton<String>(
+              value: initialSuspension,
+              items: suspensionMap.values.map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                // TODO: Implement Suspension dropdown change
+                debugPrint('Suspension changed to: $newValue');
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                   ),
+              onPressed: () {
+                // TODO: Implement Suspension button action
+              },
+              child: Text('Button'), // Placeholder text
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: () {
-            // TODO: Implement Contract button action
-          },
-          child: Text(account.fireUpData['drivers'][carIndex].contract.toString()),
+        // New Row 2: Height
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Text('Height'),
+            SizedBox( // Wrap TextField in SizedBox to give it a defined width
+              width: 100, // Adjust width as needed
+              child: TextField(
+                controller: TextEditingController(text: account.raceData['vars'][rkey].toString()),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(border: OutlineInputBorder()),
+                // TODO: Implement Height input change
+              ),
+            ),
+             SizedBox( // Wrap TextField in SizedBox to give it a defined width
+              width: 100, // Adjust width as needed
+              child: TextField(
+                controller: TextEditingController(text: '0'),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(border: OutlineInputBorder()),
+                // TODO: Implement Height input change
+              ),
+            ),
+          ],
+        ),
+        // New Row 3: Wing
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            Text('Wing'),
+             SizedBox( // Wrap TextField in SizedBox to give it a defined width
+              width: 100, // Adjust width as needed
+              child: TextField(
+                controller: TextEditingController(text: account.raceData['vars'][akey].toString()),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(border: OutlineInputBorder()),
+                // TODO: Implement Wing input change
+              ),
+            ),
+             SizedBox( // Wrap TextField in SizedBox to give it a defined width
+              width: 100, // Adjust width as needed
+              child: TextField(
+                controller: TextEditingController(text: '0'),
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(border: OutlineInputBorder()),
+                // TODO: Implement Wing input change
+              ),
+            ),
+          ],
         ),
       ],
     );
