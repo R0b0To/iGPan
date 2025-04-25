@@ -158,16 +158,22 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
         if (numCars > 1)
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(numCars, (index) { // Generate dots based on number of cars
-              return Container(
-                width: 8.0,
-                height: 8.0,
-                margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _currentCarouselIndex == index
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+            children: List.generate(numCars, (index) { // Generate labels based on number of cars
+              return GestureDetector( // Make the label clickable
+                onTap: () {
+                  _carouselController.animateToPage(index); // Animate to the tapped page
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0), // Add some padding
+                  child: Text(
+                    'Car ${index + 1}', // Generate label text
+                    style: TextStyle(
+                      fontWeight: _currentCarouselIndex == index ? FontWeight.bold : FontWeight.normal, // Bold if selected
+                      color: _currentCarouselIndex == index
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.secondary.withOpacity(0.6), // Adjust opacity/color as needed
+                    ),
+                  ),
                 ),
               );
             }),
@@ -190,7 +196,10 @@ class SetupContent extends StatefulWidget {
   _SetupContentState createState() => _SetupContentState();
 }
 
-class _SetupContentState extends State<SetupContent> {
+class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   // Map suspension values
   final Map<String, String> suspensionMap = {
     '1': 'soft',
@@ -297,7 +306,7 @@ class _SetupContentState extends State<SetupContent> {
           // Ride Height Row
           _buildSetupRow(
             context,
-            label: 'Ride Height',
+            label: 'Ride',
             control: _buildTextField(_rideController, TextInputType.number),
             control2: _buildTextField(_rideOffsetController, TextInputType.number), // Offset field
           ),
@@ -305,7 +314,7 @@ class _SetupContentState extends State<SetupContent> {
           // Wing Row
           _buildSetupRow(
             context,
-            label: 'Wing Angle',
+            label: 'Wing',
             control: _buildTextField(_aeroController, TextInputType.number),
             control2: _buildTextField(_aeroOffsetController, TextInputType.number), // Offset field
           ),
@@ -368,22 +377,32 @@ class _SetupContentState extends State<SetupContent> {
 
 // --- StrategyContent Widget ---
 
-class StrategyContent extends StatelessWidget { // Changed to StatelessWidget
+class StrategyContent extends StatefulWidget { // Changed to StatefulWidget
   final Account account; // Use specific Account type
   final int carIndex;
 
   const StrategyContent({Key? key, required this.account, required this.carIndex}) : super(key: key);
 
   @override
+  _StrategyContentState createState() => _StrategyContentState();
+}
+
+class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context); // Important for AutomaticKeepAliveClientMixin
+
     // Calculate pitKey and number of segments
-    String pitKey = 'd${carIndex + 1}Pits'; // Use carIndex directly
+    String pitKey = 'd${widget.carIndex + 1}Pits'; // Use widget.carIndex
     int numberOfPits = 0;
     // Safely parse the number of pits
-    if (account.raceData != null && // Use account directly
-        account.raceData!['vars'] != null &&
-        account.raceData!['vars'][pitKey] is String) {
-      numberOfPits = int.tryParse(account.raceData!['vars'][pitKey]) ?? 0; // Use account directly
+    if (widget.account.raceData != null && // Use widget.account
+        widget.account.raceData!['vars'] != null &&
+        widget.account.raceData!['vars'][pitKey] is String) {
+      numberOfPits = int.tryParse(widget.account.raceData!['vars'][pitKey]) ?? 0; // Use widget.account
     }
     final numberOfSegments = numberOfPits + 1; // Segments = Pits + 1
 
@@ -391,14 +410,14 @@ class StrategyContent extends StatelessWidget { // Changed to StatelessWidget
     Widget strategyDisplay;
     // Check if parsedStrategy exists and has data for the current carIndex
     if (numberOfSegments > 0 &&
-        account.raceData != null && // Use account directly
-        account.raceData!['parsedStrategy'] != null &&
-        account.raceData!['parsedStrategy'] is List &&
-        carIndex < account.raceData!['parsedStrategy'].length && // Use carIndex and account directly
-        account.raceData!['parsedStrategy'][carIndex] is List) { // Use account and carIndex directly
+        widget.account.raceData != null && // Use widget.account
+        widget.account.raceData!['parsedStrategy'] != null &&
+        widget.account.raceData!['parsedStrategy'] is List &&
+        widget.carIndex < widget.account.raceData!['parsedStrategy'].length && // Use widget.carIndex and widget.account
+        widget.account.raceData!['parsedStrategy'][widget.carIndex] is List) { // Use widget.account and widget.carIndex
 
       List<Widget> strategyItems = [];
-      List<dynamic> carStrategy = account.raceData!['parsedStrategy'][carIndex]; // Use account and carIndex directly
+      List<dynamic> carStrategy = widget.account.raceData!['parsedStrategy'][widget.carIndex]; // Use widget.account and widget.carIndex
 
       // Iterate up to numberOfSegments, ensuring we don't go out of bounds of carStrategy
       for (int i = 0; i < numberOfSegments && i < carStrategy.length; i++) {
