@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart'; // Import for debugPrint and ValueNotifier
 import 'package:html/parser.dart' as html_parser;
 
+final ValueNotifier<List<Account>> accountsNotifier = ValueNotifier<List<Account>>([]);
 
 class Account {
   final String email;
