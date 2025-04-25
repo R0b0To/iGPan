@@ -17,18 +17,23 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentCarouselIndex = 0; // Renamed for clarity
 
+  // Define the tabs as a class member
+  final List<Tab> tabs = const [
+    Tab(text: 'Setup'),
+    Tab(text: 'Practice'),
+    Tab(text: 'Strategy'),
+  ];
+
   @override
   void initState() {
     super.initState();
-    // Initialize tab controller with a length that will be updated in build
-    // We don't really need a stateful TabController here since each carousel item
-    // will have its own DefaultTabController.
-    // _tabController = TabController(length: 0, vsync: this);
+    // Initialize tab controller with the number of tabs
+    _tabController = TabController(length: tabs.length, vsync: this);
   }
 
   @override
   void dispose() {
-    // _tabController.dispose(); // Dispose if it were used
+    _tabController.dispose(); // Dispose the tab controller
     super.dispose();
   }
 
@@ -38,12 +43,6 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
     final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
     final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
 
-    // Define the tabs - these are constant
-    const List<Tab> tabs = [
-      Tab(text: 'Setup'),
-      Tab(text: 'Practice'),
-      Tab(text: 'Strategy'),
-    ];
 
 
     // Create a list of widgets for the carousel, one for each car
@@ -61,33 +60,32 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
       }
 
 
-      return DefaultTabController(
-        length: tabs.length,
-        child: Column(
-          children: [
-            // TabBar for the current car
-            const TabBar(
-              tabs: tabs,
+      return Column(
+        children: [
+          // TabBar for the current car, using the shared _tabController
+          TabBar(
+            controller: _tabController, // Use the shared controller
+            tabs: tabs,
+          ),
+          // TabBarView for the current car's content, using the shared _tabController
+          SizedBox(
+            // Use Flexible/Expanded instead of fixed height if possible,
+            // but for now, keep the calculation based on minWindowHeight.
+            height: widget.minWindowHeight * 0.8,
+            child: TabBarView(
+              controller: _tabController, // Use the shared controller
+              children: [
+                // Setup Content (Car-specific)
+                SetupContent(account: widget.account, carIndex: carIndex),
+                // Practice Content (Placeholder)
+                // TODO: Implement Practice Content
+                Center(child: Text('Practice Content Placeholder')),
+                // Strategy Content (Car-specific)
+                StrategyContent(account: widget.account, carIndex: carIndex),
+              ],
             ),
-            // TabBarView for the current car's content
-            SizedBox(
-              // Use Flexible/Expanded instead of fixed height if possible,
-              // but for now, keep the calculation based on minWindowHeight.
-              height: widget.minWindowHeight * 0.8,
-              child: TabBarView( // Removed const
-                children: [
-                  // Setup Content (Car-specific)
-                  SetupContent(account: widget.account, carIndex: carIndex),
-                  // Practice Content (Placeholder)
-                  // TODO: Implement Practice Content
-                  Center(child: Text('Practice Content Placeholder')),
-                  // Strategy Content (Car-specific)
-                  StrategyContent(account: widget.account, carIndex: carIndex),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     });
 
