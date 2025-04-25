@@ -197,6 +197,11 @@ class _SetupContentState extends State<SetupContent> {
     '2': 'neutral',
     '3': 'firm',
   };
+  final Map<String, String> suspensionMapRev = {
+    'soft': '1',
+    'neutral': '2',
+    'firm': '3',
+  };
 
   // Get initial suspension value
   late String initialSuspension;
@@ -277,6 +282,8 @@ class _SetupContentState extends State<SetupContent> {
                 if (newValue != null) {
                   setState(() {
                     initialSuspension = newValue;
+                    String skey = 'd${widget.carIndex + 1}Suspension';
+                    widget.account.raceData?['vars']?[skey] = suspensionMapRev[newValue];
                   });
                   // TODO: Save suspension change
                   debugPrint('Suspension changed to: $newValue');
