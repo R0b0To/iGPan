@@ -603,7 +603,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                   // Practice Content (Same for all cars)
                   Center(child: Text('Practice Content')),
                   // Strategy Content (Same for all cars)
-                  Center(child: Text('Strategy Content')),
+                  StrategyContent(account: widget.account, carIndex: carIndex),
                 ],
               ),
             ),
@@ -878,3 +878,105 @@ class _SetupContentState extends State<SetupContent> {
     );
   }
 }
+
+class StrategyContent extends StatefulWidget {
+  final dynamic account;
+  final int carIndex;
+
+  const StrategyContent({Key? key, required this.account, required this.carIndex}) : super(key: key);
+
+  @override
+  _StrategyContentState createState() => _StrategyContentState();
+}
+
+class _StrategyContentState extends State<StrategyContent> {
+  @override
+  Widget build(BuildContext context) {
+    // Calculate pitKey and number of segments
+    String pitKey = 'd${widget.carIndex+1}Pits';
+    int numberOfSegments = 0;
+    if (widget.account.raceData != null &&
+        widget.account.raceData.containsKey('vars') &&
+        widget.account.raceData['vars'] != null &&
+        widget.account.raceData['vars'].containsKey(pitKey) &&
+        widget.account.raceData['vars'][pitKey] is String) {
+      numberOfSegments = int.parse(widget.account.raceData['vars'][pitKey]);
+    }
+
+    // Build the strategy display
+    Widget strategyContent;
+    if (numberOfSegments > 0 &&
+        widget.account.raceData != null &&
+        widget.account.raceData.containsKey('parsedStrategy') &&
+        widget.account.raceData['parsedStrategy'] != null &&
+        widget.account.raceData['parsedStrategy'] is List &&
+        widget.carIndex < widget.account.raceData['parsedStrategy'].length &&
+        widget.account.raceData['parsedStrategy'][widget.carIndex] is List) {
+
+      List<Widget> strategyItems = [];
+      // Iterate up to numberOfSegments, assuming parsedStrategy has enough data
+      for (int i = 0; i < numberOfSegments; i++) {
+        // Add checks for parsedStrategy[widget.carIndex][i] existence and format
+        if (i < widget.account.raceData['parsedStrategy'][widget.carIndex].length &&
+            widget.account.raceData['parsedStrategy'][widget.carIndex][i] is List &&
+            widget.account.raceData['parsedStrategy'][widget.carIndex][i].length >= 2 &&
+            widget.account.raceData['parsedStrategy'][widget.carIndex][i][0] is String &&
+            widget.account.raceData['parsedStrategy'][widget.carIndex][i][1] is String) {
+
+          String tyreAsset = widget.account.raceData['parsedStrategy'][widget.carIndex][i][0];
+          String labelText = widget.account.raceData['parsedStrategy'][widget.carIndex][i][1];
+
+          strategyItems.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.asset(
+                    'assets/tyres/$tyreAsset.png',
+                    width: 40, // Adjusted size
+                    height: 40, // Adjusted size
+                  ),
+                  Text(
+                    labelText,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10, // Adjusted size
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        } else {
+          // Handle unexpected data format for a segment
+          strategyItems.add(
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: Text('Invalid data for segment $i'),
+            ),
+          );
+        }
+      }
+
+      strategyContent = Container(
+        padding: const EdgeInsets.all(8.0), // Add padding around the container
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center, // Center the row content if it doesn't fill the width
+            children: strategyItems,
+          ),
+        ),
+      );
+
+    } else {
+      // Handle cases where there's no strategy data or no pits
+      strategyContent = Center(child: Text('No strategy data available.'));
+    }
+
+    return strategyContent;
+  }
+}
+
