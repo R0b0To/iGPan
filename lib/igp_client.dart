@@ -256,6 +256,7 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
     final raceDataJson = jsonDecode(response.data);
 
     // Update the account's raceData with the fetched data
+    raceDataJson['parsedStrategy'] = extractStrategyData(raceDataJson['vars']);
     account.raceData = raceDataJson;
     debugPrint('Updated raceData for ${account.email}');
 
@@ -343,4 +344,37 @@ final fullName = '$firstName $lastName';
   }
   
   return drivers;
+}
+
+List<List<List<dynamic>>> extractStrategyData(Map<String, dynamic> jsonData) {
+  List<List<List<dynamic>>> allStrategies = [];
+  
+  // Process first strategy (d1) - always included
+  allStrategies.add(_extractStrategySet(jsonData, 'd1'));
+  
+  // Process second strategy (d2) if d2Pits is not 0
+  if (jsonData['d2Pits'] != 0) {
+    allStrategies.add(_extractStrategySet(jsonData, 'd2'));
+  }
+  
+  return allStrategies;
+}
+
+// Helper function to extract a strategy set
+List<List<dynamic>> _extractStrategySet(Map<String, dynamic> jsonData, String prefix) {
+  var document = html_parser.parse(jsonData['${prefix}FuelOrLaps']);
+  List<List<dynamic>> strategyData = [];
+  
+  for (int i = 1; i <= 5; i++) {
+    var lapsInput = document.querySelector('input[name="laps$i"]');
+    var fuelInput = document.querySelector('input[name="fuel$i"]');
+    
+    strategyData.add([
+      jsonData['${prefix}s${i}Tyre'],
+      lapsInput?.attributes['value'] ?? '',
+      fuelInput?.attributes['value'] ?? ''
+    ]);
+  }
+  
+  return strategyData;
 }
