@@ -417,11 +417,11 @@ class _Window1ContentState extends State<Window1Content> {
   @override
   Widget build(BuildContext context) {
     // Determine reward status directly from account data
-    bool rewardStatus = widget.account.fireUpData != null &&
+bool rewardStatus = widget.account.fireUpData != null &&
         widget.account.fireUpData.containsKey('notify') &&
         widget.account.fireUpData['notify'] != null &&
-        widget.account.fireUpData['notify'].containsKey('page') &&
-        widget.account.fireUpData['notify']['page'] != null &&
+        widget.account.fireUpData['notify'] is Map &&
+        widget.account.fireUpData['notify']!['page'] != null &&
         widget.account.fireUpData['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData['notify']['page']['nDailyReward'] == '0'; // Assuming true means available
     return Column(
@@ -696,30 +696,41 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
   }
 }
 
-class SetupContent extends StatelessWidget {
+class SetupContent extends StatefulWidget {
   final dynamic account;
   final int carIndex;
 
   const SetupContent({Key? key, required this.account, required this.carIndex}) : super(key: key);
 
   @override
+  _SetupContentState createState() => _SetupContentState();
+}
+
+class _SetupContentState extends State<SetupContent> {
+  // Map suspension values
+  Map<String, String> suspensionMap = {
+    '1': 'soft',
+    '2': 'neutral',
+    '3': 'firm',
+  };
+
+  // Get initial suspension value
+  late String initialSuspension;
+
+  @override
+  void initState() {
+    super.initState();
+    String skey = 'd${widget.carIndex+1}Suspension';
+    initialSuspension = suspensionMap[widget.account.raceData['vars'][skey]] ?? 'neutral'; // Default to neutral if value is unexpected
+  }
+
+  @override
   Widget build(BuildContext context) {
-    debugPrint('SetupContent: account: $account, carIndex: $carIndex');
+    debugPrint('SetupContent: account: ${widget.account}, carIndex: ${widget.carIndex}');
     // Define keys
-    String skey = 'd${carIndex+1}Suspension';
-    String akey = 'd${carIndex+1}Aerodynamics';
-    String rkey = 'd${carIndex+1}Ride';
 
-    // Map suspension values
-    Map<String, String> suspensionMap = {
-      '1': 'soft',
-      '2': 'neutral',
-      '3': 'firm',
-    };
-
-    // Get initial suspension value
-    String initialSuspension = suspensionMap[account.raceData['vars'][skey]] ?? 'neutral'; // Default to neutral if value is unexpected
-
+    String akey = 'd${widget.carIndex+1}Aerodynamics';
+    String rkey = 'd${widget.carIndex+1}Ride';
 
     return Column( // Wrap in Column
       mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align children to the start
@@ -740,7 +751,7 @@ class SetupContent extends StatelessWidget {
 
                   // TODO: Implement Driver button action
                 },
-                child: Text(account.fireUpData['drivers'][carIndex].name),
+                child: Text(widget.account.fireUpData['drivers'][widget.carIndex].name),
               ),
             ),
             SizedBox( // Wrap in SizedBox to control height
@@ -753,7 +764,7 @@ class SetupContent extends StatelessWidget {
                 onPressed: () {
                   // TODO: Implement Stamina button action
                 },
-                child: Text(account.fireUpData['drivers'][carIndex].attributes[12].toString()),
+                child: Text(widget.account.fireUpData['drivers'][widget.carIndex].attributes[12].toString()),
               ),
             ),
             SizedBox( // Wrap in SizedBox to control height
@@ -765,7 +776,7 @@ class SetupContent extends StatelessWidget {
                 onPressed: () {
                   // TODO: Implement Contract button action
                 },
-                child: Text(account.fireUpData['drivers'][carIndex].contract.toString()),
+                child: Text(widget.account.fireUpData['drivers'][widget.carIndex].contract.toString()),
               ),
             ),
           ],
@@ -787,7 +798,9 @@ class SetupContent extends StatelessWidget {
                   );
                 }).toList(),
                 onChanged: (String? newValue) {
-                  // TODO: Implement Suspension dropdown change
+                  setState(() {
+                    initialSuspension = newValue!;
+                  });
                   debugPrint('Suspension changed to: $newValue');
                 },
               ),
@@ -816,7 +829,7 @@ class SetupContent extends StatelessWidget {
               width: 35, // Adjust width as needed
               
               child: TextField(
-                controller: TextEditingController(text: account.raceData['vars'][rkey].toString()),
+                controller: TextEditingController(text: widget.account.raceData['vars'][rkey].toString()),
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)), // Reduced padding
                 // TODO: Implement Height input change
@@ -843,7 +856,7 @@ class SetupContent extends StatelessWidget {
               width: 35, // Adjust width as needed
               
               child: TextField(
-                controller: TextEditingController(text: account.raceData['vars'][akey].toString()),
+                controller: TextEditingController(text: widget.account.raceData['vars'][akey].toString()),
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)), // Reduced padding
                 // TODO: Implement Wing input change
