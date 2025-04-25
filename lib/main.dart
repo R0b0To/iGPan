@@ -900,7 +900,7 @@ class _StrategyContentState extends State<StrategyContent> {
         widget.account.raceData['vars'] != null &&
         widget.account.raceData['vars'].containsKey(pitKey) &&
         widget.account.raceData['vars'][pitKey] is String) {
-      numberOfSegments = int.parse(widget.account.raceData['vars'][pitKey]);
+      numberOfSegments = int.parse(widget.account.raceData['vars'][pitKey])+1;
     }
 
     // Build the strategy display
@@ -934,15 +934,15 @@ class _StrategyContentState extends State<StrategyContent> {
                 children: [
                   Image.asset(
                     'assets/tyres/$tyreAsset.png',
-                    width: 40, // Adjusted size
-                    height: 40, // Adjusted size
+                    width: 50, // Adjusted size
+                    height: 50, // Adjusted size
                   ),
                   Text(
                     labelText,
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 10, // Adjusted size
+                      fontSize: 14, // Adjusted size
                     ),
                   ),
                 ],

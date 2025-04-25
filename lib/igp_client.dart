@@ -348,7 +348,7 @@ final fullName = '$firstName $lastName';
 
 List<List<List<dynamic>>> extractStrategyData(Map<String, dynamic> jsonData) {
   List<List<List<dynamic>>> allStrategies = [];
-  
+
   // Process first strategy (d1) - always included
   allStrategies.add(_extractStrategySet(jsonData, 'd1'));
   
