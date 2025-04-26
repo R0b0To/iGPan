@@ -518,27 +518,41 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       children: [
         strategyDisplay, // Removed Expanded widget
         const SizedBox(width: 8), // Add some spacing between strategy and laps
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center, // Center the laps vertically
-          crossAxisAlignment: CrossAxisAlignment.center, // Center the text horizontally within the column
-          children: [
-            Text(
-              raceLaps, // Display raceLaps
-              style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
+        Container( // Wrap the column in a Container for the border
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
+              width: 0.8, // Border width
             ),
-            SizedBox(
-              width: 20, // Adjust width as needed for the separator line
-              child: Divider( // Add a Divider widget
-                color: Theme.of(context).colorScheme.onSurface, // Adjust color as needed
-                thickness: 1, // Adjust thickness as needed
-                height: 4, // Adjust height (space above and below) as needed
+            borderRadius: BorderRadius.zero, // Square corners
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Add padding inside the border
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center, // Center the laps vertically
+            crossAxisAlignment: CrossAxisAlignment.center, // Center the text horizontally within the column
+            mainAxisSize: MainAxisSize.min, // Make the column take minimum space
+            children: [
+              Container( // Wrap raceLaps in a Container for the bottom border
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
+                      width: 1, // Border width
+                    ),
+                  ),
+                ),
+                child: Text(
+                  raceLaps, // Display raceLaps
+                  style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
+                  textAlign: TextAlign.center, // Center the text horizontally
+                ),
               ),
-            ),
-            Text(
-              totalLaps.toString(), // Display totalLaps
-              style: Theme.of(context).textTheme.bodySmall, // Adjust style as needed
-            ),
-          ],
+              Text(
+                totalLaps.toString(), // Display totalLaps
+                style: Theme.of(context).textTheme.bodySmall, // Adjust style as needed
+              ),
+            ],
+          ),
         ),
       ],
     );
