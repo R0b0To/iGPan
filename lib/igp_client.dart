@@ -372,7 +372,6 @@ List<List<List<dynamic>>> extractStrategyData(Map<String, dynamic> jsonData) {
   
   return allStrategies;
 }
-
 // Helper function to extract a strategy set
 List<List<dynamic>> _extractStrategySet(Map<String, dynamic> jsonData, String prefix) {
   var document = html_parser.parse(jsonData['${prefix}FuelOrLaps']);
@@ -467,4 +466,50 @@ Map<dynamic, dynamic> getSponsors(Map<String, dynamic> jsonSponsorResponse) {
   }
   
   return sponsors;
+}
+
+Future<List<dynamic>> pickSponsor(Account account,int number) async {
+  Dio? dio = dioClients[account.email];
+  if (dio == null) {
+    debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch pickSponsor data.');
+    throw Exception('Dio client not initialized for account');
+  }
+  
+  final url = Uri.parse('https://igpmanager.com/index.php?action=fetch&d=sponsor&location=$number&csrfName=&csrfToken=');
+
+  try {
+    final response = await dio.get(url.toString());
+    final jsonData = jsonDecode(response.data);
+  // Define parser based on number parameter
+  final String parser = number == 1 ? 'span' : 'td';
+  
+  // Use a HTML parser library like html to parse the HTML content
+  final incomeFragment = jsonData['vars']['row2'];
+  final wrappedincomeHtml = html_parser.parse('<table><tr>$incomeFragment</tr></table>');
+  final incomeSoup = wrappedincomeHtml.querySelectorAll(parser);
+  final bonusFragment = jsonData['vars']['row3'];
+  final wrappedBonusHtml = html_parser.parse('<table><tr>$bonusFragment</tr></table>');
+  final bonusSoup = wrappedBonusHtml.querySelectorAll('td');
+  final idFragment = jsonData['vars']['row1'];
+  final wrappedIdHtml = html_parser.parse('<table><tr>$idFragment</tr></table>');
+  final idSoup = wrappedIdHtml.querySelectorAll('img');
+  
+  // Extract the text content from the elements
+  final incomeList = incomeSoup.map((element) => element.text).toList();
+  final bonusList = bonusSoup.map((element) => element.text).toList();
+  
+  // Process the IDs similar to the Python version
+  final idList = idSoup.map((element) {
+    final src = element.attributes['src'] ?? '';
+    final parts = src.split('/');
+    final filename = parts.isNotEmpty ? parts.last : '';
+    return filename;
+  }).toList();
+  
+  // Return the three lists as a single list of dynamic elements
+  return [incomeList, bonusList, idList];
+  } catch (e) {
+    debugPrint('Error fetching race data for ${account.email}: $e');
+    rethrow;
+  }
 }

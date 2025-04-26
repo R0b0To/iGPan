@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
+import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
 
 class Window1Content extends StatefulWidget {
   final double minWindowHeight;
@@ -81,7 +82,14 @@ class _Window1ContentState extends State<Window1Content> {
              children: [
                SizedBox(
                  child: ElevatedButton(
-                   onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () { /* TODO: Implement Sponsor 1 action */ },
+                   onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () {
+                     Navigator.push(
+                       context,
+                       MaterialPageRoute(
+                         builder: (context) => SponsorListScreen(account: widget.account, sponsorNumber: 1), // Pass sponsorNumber 1
+                       ),
+                     );
+                   },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
@@ -95,7 +103,14 @@ class _Window1ContentState extends State<Window1Content> {
 
                SizedBox(
                  child: ElevatedButton(
-                   onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () { /* TODO: Implement Sponsor 2 action */ },
+                   onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () {
+                      Navigator.push(
+                       context,
+                       MaterialPageRoute(
+                         builder: (context) => SponsorListScreen(account: widget.account, sponsorNumber: 2), // Pass sponsorNumber 2
+                       ),
+                     );
+                   },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
@@ -137,5 +152,5 @@ class _Window1ContentState extends State<Window1Content> {
        ),
      ],
    );
-  }
+ }
 }
