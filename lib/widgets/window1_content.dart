@@ -24,7 +24,7 @@ class _Window1ContentState extends State<Window1Content> {
         widget.account.fireUpData!['notify']!['page'] != null &&
         widget.account.fireUpData!['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData!['notify']['page']['nDailyReward'] == '0'; // Assuming '0' means available
-    debugPrint(widget.account.fireUpData?['sponsor']?['s2']?['status'].toString());
+
     return Column(
      mainAxisAlignment: MainAxisAlignment.start, // Align children to the top
      children: [

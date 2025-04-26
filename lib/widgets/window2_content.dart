@@ -393,6 +393,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   Widget build(BuildContext context) {
     super.build(context); // Important for AutomaticKeepAliveClientMixin
 
+    int totalLaps = 0; // Initialize total laps at the beginning of the build method
+
     // Calculate pitKey and number of segments
     String pitKey = 'd${widget.carIndex + 1}Pits'; // Use widget.carIndex
     int numberOfPits = 0;
@@ -416,7 +418,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
       List<Widget> strategyItems = [];
       List<dynamic> carStrategy = widget.account.raceData!['parsedStrategy'][widget.carIndex]; // Use widget.account and widget.carIndex
-
       // Iterate up to numberOfSegments, ensuring we don't go out of bounds of carStrategy
       for (int i = 0; i < numberOfSegments && i < carStrategy.length; i++) {
         // Add checks for the format of each segment data
@@ -426,6 +427,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           String tyreAsset = carStrategy[i][0];
           // Use the second element (laps) as the label text
           String labelText = carStrategy[i][1];
+          totalLaps += int.tryParse(labelText) ?? 0; // Safely parse laps
           // Optional: Use third element (fuel) if needed later
           // String fuelValue = (carStrategy[i].length >= 3 && carStrategy[i][2] is String) ? carStrategy[i][2] : '';
 
@@ -507,7 +509,39 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       ));
     }
 
-    return strategyDisplay;
+    // Get raceLaps safely
+    final raceLaps = widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0';
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center, // Center the row content
+      crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically in the center
+      children: [
+        strategyDisplay, // Removed Expanded widget
+        const SizedBox(width: 8), // Add some spacing between strategy and laps
+        Column(
+          mainAxisAlignment: MainAxisAlignment.center, // Center the laps vertically
+          crossAxisAlignment: CrossAxisAlignment.center, // Center the text horizontally within the column
+          children: [
+            Text(
+              raceLaps, // Display raceLaps
+              style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
+            ),
+            SizedBox(
+              width: 20, // Adjust width as needed for the separator line
+              child: Divider( // Add a Divider widget
+                color: Theme.of(context).colorScheme.onSurface, // Adjust color as needed
+                thickness: 1, // Adjust thickness as needed
+                height: 4, // Adjust height (space above and below) as needed
+              ),
+            ),
+            Text(
+              totalLaps.toString(), // Display totalLaps
+              style: Theme.of(context).textTheme.bodySmall, // Adjust style as needed
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   // Helper for invalid/missing segments

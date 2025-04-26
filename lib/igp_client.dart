@@ -376,7 +376,7 @@ List<List<List<dynamic>>> extractStrategyData(Map<String, dynamic> jsonData) {
 List<List<dynamic>> _extractStrategySet(Map<String, dynamic> jsonData, String prefix) {
   var document = html_parser.parse(jsonData['${prefix}FuelOrLaps']);
   List<List<dynamic>> strategyData = [];
-  
+
   for (int i = 1; i <= 5; i++) {
     var lapsInput = document.querySelector('input[name="laps$i"]');
     var fuelInput = document.querySelector('input[name="fuel$i"]');
