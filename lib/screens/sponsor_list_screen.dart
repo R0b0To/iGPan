@@ -52,66 +52,72 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
               ? Center(child: Text(_errorMessage!))
-              : _sponsors == null || _sponsors!.isEmpty
-                  ? const Center(child: Text('No sponsors available.'))
-                  : ListView.builder(
-                      itemCount: _sponsors!.length,
-                      itemBuilder: (context, index) {
-                        final sponsor = _sponsors![index];
-                        // Assuming sponsor is a List or Map with structure [id, name, image_id, income, bonus, ...]
-                        // Based on user description "sponsorlist[2] is the id/name of the png image"
-                        // Let's assume sponsor is a List and index 2 is the image ID, index 3 is income, index 4 is bonus
-                        // This might need adjustment based on the actual pickSponsor response structure.
-                        final String imageId = sponsor.length > 2 ? sponsor[2].toString() : 'placeholder'; // Use a default if index 2 is missing
-                        final String income = sponsor.length > 3 ? sponsor[3].toString() : 'N/A';
-                        final String bonus = sponsor.length > 4 ? sponsor[4].toString() : 'N/A';
-                        final String sponsorName = sponsor.length > 1 ? sponsor[1].toString() : 'Unnamed Sponsor';
+             : _sponsors == null || _sponsors!.length < 3 || (_sponsors![0] as List).isEmpty
+                 ? const Center(child: Text('No sponsors available or data format incorrect.'))
+                 : ListView.builder(
+                     // Use the length of the first inner list (incomeList) as itemCount
+                     itemCount: (_sponsors![0] as List).length,
+                     itemBuilder: (context, index) {
+                       // Extract data from the corresponding lists using the index
+                       final List<dynamic> incomeList = _sponsors![0];
+                       final List<dynamic> bonusList = _sponsors![1];
+                       final List<dynamic> imageIdList = _sponsors![2];
+
+                       // Basic validation to prevent index out of bounds
+                       if (index >= incomeList.length || index >= bonusList.length || index >= imageIdList.length) {
+                         return const SizedBox.shrink(); // Return empty widget if index is invalid
+                       }
+
+                       final String income = incomeList[index]?.toString() ?? 'N/A';
+                       final String bonus = bonusList[index]?.toString() ?? 'N/A';
+                       final String imageId = imageIdList[index]?.toString() ?? 'placeholder';
+                       // Sponsor name is not directly available in this structure, using image ID as a placeholder name
 
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Row(
-                              children: [
-                                // Sponsor Image
-                                Image.asset(
-                                  'assets/sponsors/$imageId',
-                                  width: 50,
-                                  height: 50,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Handle image loading errors
-                                    return const Icon(Icons.business, size: 50); // Placeholder icon
-                                  },
-                                ),
-                                const SizedBox(width: 16.0),
-                                // Sponsor Details (Income, Bonus)
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(sponsorName, style: Theme.of(context).textTheme.titleMedium),
-                                      Text('Income: $income'),
-                                      Text('Bonus: $bonus'),
-                                    ],
-                                  ),
-                                ),
-                                // Sign Button
-                                ElevatedButton(
-                                  onPressed: () {
-                                    // TODO: Implement sign sponsor action
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('Sign button pressed for $sponsorName')),
-                                    );
-                                  },
-                                  child: const Text('Sign'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-    );
-  }
+
+                       return Card(
+                         margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                         child: Padding(
+                           padding: const EdgeInsets.all(8.0),
+                           child: Row(
+                             children: [
+                               // Sponsor Image
+                               Image.asset(
+                                 'assets/sponsors/$imageId',
+                                 width: 50,
+                                 height: 50,
+                                 errorBuilder: (context, error, stackTrace) {
+                                   // Handle image loading errors
+                                   return const Icon(Icons.business, size: 50); // Placeholder icon
+                                 },
+                               ),
+                               const SizedBox(width: 16.0),
+                               // Sponsor Details (Income, Bonus)
+                               Expanded(
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text('Income: $income'),
+                                     Text('Bonus: $bonus'),
+                                   ],
+                                 ),
+                               ),
+                               // Sign Button
+                               ElevatedButton(
+                                 onPressed: () {
+                                   // TODO: Implement sign sponsor action using the imageId or index
+                                   ScaffoldMessenger.of(context).showSnackBar(
+                                     SnackBar(content: Text('Sign button pressed (ID: $imageId)')),
+                                   );
+                                 },
+                                 child: const Text('Sign'),
+                               ),
+                             ],
+                           ),
+                         ),
+                       );
+                     },
+                   ),
+   );
+ }
 }
