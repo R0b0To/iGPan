@@ -399,10 +399,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     String pitKey = 'd${widget.carIndex + 1}Pits'; // Use widget.carIndex
     int numberOfPits = 0;
     // Safely parse the number of pits
-    if (widget.account.raceData != null && // Use widget.account
-        widget.account.raceData!['vars'] != null &&
-        widget.account.raceData!['vars'][pitKey] is String) {
-      numberOfPits = int.tryParse(widget.account.raceData!['vars'][pitKey]) ?? 0; // Use widget.account
+    if (widget.account.raceData != null ) {
+      var pitValue = widget.account.raceData!['vars']?[pitKey];
+      numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
     }
     final numberOfSegments = numberOfPits + 1; // Segments = Pits + 1
 
