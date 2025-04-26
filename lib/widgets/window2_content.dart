@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import for input formatters
 import 'package:carousel_slider/carousel_slider.dart';
 import '../igp_client.dart'; // Import Account and other necessary definitions
 
@@ -229,8 +230,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     initialSuspension = suspensionMap[widget.account.raceData?['vars']?[skey]] ?? 'neutral'; // Default to neutral
     _rideController = TextEditingController(text: widget.account.raceData?['vars']?[rkey]?.toString() ?? '0');
     _aeroController = TextEditingController(text: widget.account.raceData?['vars']?[akey]?.toString() ?? '0');
-    _rideOffsetController = TextEditingController(text: '0'); // Initialize offset controllers
-    _aeroOffsetController = TextEditingController(text: '0');
+    _rideOffsetController = TextEditingController(text: ''); // Initialize offset controllers
+    _aeroOffsetController = TextEditingController(text: '');
 
     // TODO: Add listeners to controllers if needed to save changes
   }
@@ -298,15 +299,38 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               },
               isDense: true,
             ),
-            // Optional second control/button if needed
+            control2: ElevatedButton( // Added button next to dropdown
+              onPressed: () {
+                // TODO: Implement button action for Suspension
+              },
+              style: ElevatedButton.styleFrom(
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Adjust padding
+                 textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
+                 minimumSize: Size(60, 30), // Ensure minimum size
+               ),
+              child: const Text('Adj'), // Button text, adjust as needed
+            ),
           ),
 
           // Ride Height Row
           _buildSetupRow(
             context,
             label: 'Ride',
-            control: _buildTextField(_rideController, TextInputType.number),
-            control2: _buildTextField(_rideOffsetController, TextInputType.number), // Offset field
+            control: _buildTextField(
+              _rideController,
+              TextInputType.number,
+              inputFormatters: [ // Limit to numbers up to 100
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3), // Max 3 digits for 100
+                NumericalRangeFormatter(min: 0, max: 100),
+              ],
+            ),
+            control2: _buildTextField(
+              _rideOffsetController,
+              TextInputType.numberWithOptions(signed: true), // Allow negative numbers
+              hintText: 'offset', // Placeholder text
+            ), // Offset field
           ),
 
           // Wing Row
@@ -314,7 +338,11 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
             context,
             label: 'Wing',
             control: _buildTextField(_aeroController, TextInputType.number),
-            control2: _buildTextField(_aeroOffsetController, TextInputType.number), // Offset field
+            control2: _buildTextField(
+              _aeroOffsetController,
+              TextInputType.numberWithOptions(signed: true), // Allow negative numbers
+              hintText: 'offset', // Placeholder text
+            ), // Offset field
           ),
         ],
       ),
@@ -353,22 +381,66 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
 
 
   // Helper to build text fields consistently
-  Widget _buildTextField(TextEditingController controller, TextInputType keyboardType) {
+  Widget _buildTextField(TextEditingController controller, TextInputType keyboardType, {String? hintText, List<TextInputFormatter>? inputFormatters}) {
     return SizedBox(
       height: 35, // Constrain height
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         textAlign: TextAlign.center,
+        inputFormatters: inputFormatters, // Added input formatters
         decoration: InputDecoration(
           border: OutlineInputBorder(),
           isDense: true,
           contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          hintText: hintText, // Added hint text
         ),
         style: Theme.of(context).textTheme.bodyMedium, // Adjust style
         // TODO: Add onChanged or onSubmitted to save value
       ),
     );
+  }
+}
+
+// Custom InputFormatter to limit numerical range
+class NumericalRangeFormatter extends TextInputFormatter {
+  final double min;
+  final double max;
+
+  NumericalRangeFormatter({required this.min, required this.max});
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+
+    final double? value = double.tryParse(newValue.text);
+
+    if (value == null) {
+      // If not a valid number, keep the old value
+      return oldValue;
+    }
+
+    if (value < min) {
+      // If the value is less than the minimum, set it to the minimum
+      return TextEditingValue(
+        text: min.toString(),
+        selection: TextSelection.collapsed(offset: min.toString().length),
+      );
+    } else if (value > max) {
+      // If the value is greater than the maximum, set it to the maximum
+      return TextEditingValue(
+        text: max.toString(),
+        selection: TextSelection.collapsed(offset: max.toString().length),
+      );
+    }
+
+    // If the value is within the range, return the new value
+    return newValue;
   }
 }
 
@@ -499,7 +571,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           ),
         ),
       );
-
     } else {
       // Handle cases where there's no strategy data or it's invalid
       strategyDisplay = Center(child: Padding(
