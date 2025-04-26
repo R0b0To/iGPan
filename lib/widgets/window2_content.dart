@@ -337,7 +337,13 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
           _buildSetupRow(
             context,
             label: 'Wing',
-            control: _buildTextField(_aeroController, TextInputType.number),
+            control: _buildTextField(_aeroController, 
+            TextInputType.number,
+              inputFormatters: [ // Limit to numbers up to 100
+                FilteringTextInputFormatter.digitsOnly, 
+                LengthLimitingTextInputFormatter(3), // Max 3 digits for 100
+                NumericalRangeFormatter(min: 1, max: 100),
+              ],),
             control2: _buildTextField(
               _aeroOffsetController,
               TextInputType.numberWithOptions(signed: true), // Allow negative numbers
