@@ -330,6 +330,9 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               _rideOffsetController,
               TextInputType.numberWithOptions(signed: true), // Allow negative numbers
               hintText: 'offset', // Placeholder text
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')), // Allow optional minus and digits
+              ],
             ), // Offset field
           ),
 
@@ -348,6 +351,9 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               _aeroOffsetController,
               TextInputType.numberWithOptions(signed: true), // Allow negative numbers
               hintText: 'offset', // Placeholder text
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^-?\d*')), // Allow optional minus and digits
+              ],
             ), // Offset field
           ),
         ],
