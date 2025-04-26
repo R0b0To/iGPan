@@ -1,3 +1,4 @@
+import '../utils/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for input formatters
 import 'package:carousel_slider/carousel_slider.dart';
@@ -293,15 +294,44 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                     String skey = 'd${widget.carIndex + 1}Suspension';
                     widget.account.raceData?['vars']?[skey] = suspensionMapRev[newValue];
                   });
-                  // TODO: Save suspension change
                   debugPrint('Suspension changed to: $newValue');
                 }
               },
               isDense: true,
             ),
-            control2: ElevatedButton( // Added button next to dropdown
+            control2: ElevatedButton(
               onPressed: () {
-                // TODO: Implement button action for Suspension
+                debugPrint('Ideal button pressed for car index: ${widget.carIndex}');
+                final fireUpData = widget.account.fireUpData;
+                if (fireUpData != null) {
+                  final drivers = fireUpData['drivers'];
+                  final team = fireUpData['team'];
+                  final raceData = widget.account.raceData;
+
+                  if (drivers != null && widget.carIndex < drivers.length && team != null && raceData != null) {
+                    final driverAttributes = drivers[widget.carIndex]?.attributes;
+                    final tier = team['_tier'];
+                    final raceNameHtml = raceData['vars']['raceName'];
+
+                    if (driverAttributes != null && driverAttributes.length > 13 && tier != null && raceNameHtml != null) {
+                      final double height = driverAttributes[13];
+                      final int tierValue = int.tryParse(tier) ?? 1;
+                      final RegExp regExp = RegExp(r'f-([a-z]+)');
+                      final Match? match = regExp.firstMatch(raceNameHtml);
+                      String raceCode = '';
+                      if (match != null && match.groupCount > 0) {
+                        raceCode = match.group(1)!;
+                      }
+
+                      final CarSetup carSetup = CarSetup(raceCode, height, tierValue);
+                      final int suggestedRide = carSetup.ride;
+                      final int suggestedWing = carSetup.wing;
+                      final int suggestedSuspension = carSetup.suspension;
+                      debugPrint('Suggested Ride: $suggestedRide, Wing: $suggestedWing, Suspension: $suggestedSuspension');
+                      // TODO: Use suggestedRide, suggestedWing, and suggestedSuspension for dropdown, aero, and ride
+                    }
+                  }
+                }
               },
               style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
@@ -309,7 +339,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                  textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
                  minimumSize: Size(60, 30), // Ensure minimum size
                ),
-              child: const Text('Adj'), // Button text, adjust as needed
+              child: const Text('ideal'),
             ),
           ),
 

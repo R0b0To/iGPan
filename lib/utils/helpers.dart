@@ -16,23 +16,18 @@ String abbreviateNumber(String input) {
 
 class CarSetup {
   final String trackCode;
-  final int driverHeight;
+  final double driverHeight;
   final int tier;
   late final Map<String, dynamic> suggestedSetup;
   late final int suspension;
   late final int ride;
   late final int wing;
 
-  CarSetup(this.trackCode, int height, int tier) : 
-    driverHeight = (height ~/ 5) * 5,
-    tier = _mapTier(tier) {
+  CarSetup(this.trackCode, double height, this.tier) : 
+    driverHeight = (height ~/ 5) * 5{
     suggestedSetup = _calculateSetup();
   }
 
-  static int _mapTier(int tier) {
-    final Map<int, int> tierMapping = {20: 1, 50: 2, 100: 3};
-    return tierMapping[tier] ?? 1;
-  }
 
   Map<String, dynamic> _calculateSetup() {
     final Map<int, Map<int, int>> scale = {
