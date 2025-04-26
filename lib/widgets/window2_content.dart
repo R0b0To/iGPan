@@ -325,6 +325,10 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 LengthLimitingTextInputFormatter(3), // Max 3 digits for 100
                 NumericalRangeFormatter(min: 0, max: 100),
               ],
+              onChanged: (newValue) {
+                String rkey = 'd${widget.carIndex + 1}Ride';
+                widget.account.raceData?['vars']?[rkey] = int.tryParse(newValue) ?? 0;
+              },
             ),
             control2: _buildTextField(
               _rideOffsetController,
@@ -340,13 +344,18 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
           _buildSetupRow(
             context,
             label: 'Wing',
-            control: _buildTextField(_aeroController, 
+            control: _buildTextField(_aeroController,
             TextInputType.number,
               inputFormatters: [ // Limit to numbers up to 100
-                FilteringTextInputFormatter.digitsOnly, 
+                FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(3), // Max 3 digits for 100
                 NumericalRangeFormatter(min: 1, max: 100),
-              ],),
+              ],
+              onChanged: (newValue) {
+                String akey = 'd${widget.carIndex + 1}Aerodynamics';
+                widget.account.raceData?['vars']?[akey] = int.tryParse(newValue) ?? 0;
+              },
+            ),
             control2: _buildTextField(
               _aeroOffsetController,
               TextInputType.numberWithOptions(signed: true), // Allow negative numbers
@@ -393,7 +402,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
 
 
   // Helper to build text fields consistently
-  Widget _buildTextField(TextEditingController controller, TextInputType keyboardType, {String? hintText, List<TextInputFormatter>? inputFormatters}) {
+  Widget _buildTextField(TextEditingController controller, TextInputType keyboardType, {String? hintText, List<TextInputFormatter>? inputFormatters, ValueChanged<String>? onChanged}) {
     return SizedBox(
       height: 35, // Constrain height
       child: TextField(
@@ -401,6 +410,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
         keyboardType: keyboardType,
         textAlign: TextAlign.center,
         inputFormatters: inputFormatters, // Added input formatters
+        onChanged: onChanged, // Added onChanged callback
         decoration: InputDecoration(
           border: OutlineInputBorder(),
           isDense: true,
