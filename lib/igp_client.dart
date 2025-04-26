@@ -447,12 +447,12 @@ Map<dynamic, dynamic> getSponsors(Map<String, dynamic> jsonSponsorResponse) {
       sponsors['s1']?['income'] = sponsor['Income'];
       sponsors['s1']?['bonus'] = sponsor['Bonus'];
       sponsors['s1']?['expire'] = sponsor['Contract'];
-      sponsors['s1']?['status'] = true;
+      sponsors['s1']?['status'] = jsonData['s1Name'] != null && jsonData['s1Name'].toString().isNotEmpty;
     } else if (sponsor['number'] == 2) { // Secondary sponsor
       sponsors['s2']?['income'] = sponsor['Income'];
       sponsors['s2']?['bonus'] = sponsor['Bonus'];
       sponsors['s2']?['expire'] = sponsor['Contract'];
-      sponsors['s2']?['status'] = true;
+      sponsors['s2']?['status'] = jsonData['s2Name'] != null && jsonData['s2Name'].toString().isNotEmpty;
     }
   }
   

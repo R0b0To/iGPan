@@ -23,7 +23,7 @@ class _Window1ContentState extends State<Window1Content> {
         widget.account.fireUpData!['notify']!['page'] != null &&
         widget.account.fireUpData!['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData!['notify']['page']['nDailyReward'] == '0'; // Assuming '0' means available
-
+    debugPrint(widget.account.fireUpData?['sponsor']?['s2']?['status'].toString());
     return Column(
      mainAxisAlignment: MainAxisAlignment.start, // Align children to the top
      children: [
@@ -81,10 +81,13 @@ class _Window1ContentState extends State<Window1Content> {
              children: [
                SizedBox(
                  child: ElevatedButton(
-                   onPressed: () {}, // TODO: Implement Sponsor 1 action
+                   onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () { /* TODO: Implement Sponsor 1 action */ },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                     backgroundColor: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? const Color.fromARGB(255, 57, 117, 59) : const Color.fromARGB(255, 161, 48, 40),
+                     disabledBackgroundColor: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? const Color.fromARGB(255, 36, 85, 37) : null,
+                     
                    ),
                    child: const Text('S1', style: TextStyle(fontSize: 10)), // Shorter text
                  ),
@@ -92,10 +95,13 @@ class _Window1ContentState extends State<Window1Content> {
 
                SizedBox(
                  child: ElevatedButton(
-                   onPressed: () {}, // TODO: Implement Sponsor 2 action
+                   onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () { /* TODO: Implement Sponsor 2 action */ },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                     backgroundColor: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? const Color.fromARGB(255, 63, 104, 64) : const Color.fromARGB(255, 161, 48, 40),
+                     disabledBackgroundColor: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? const Color.fromARGB(255, 36, 85, 37) : null,
+                     
                    ),
                    child: const Text('S2', style: TextStyle(fontSize: 10)), // Shorter text
                  ),
@@ -131,5 +137,5 @@ class _Window1ContentState extends State<Window1Content> {
        ),
      ],
    );
- }
+  }
 }
