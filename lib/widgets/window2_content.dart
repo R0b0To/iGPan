@@ -326,9 +326,21 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                       final CarSetup carSetup = CarSetup(raceCode, height, tierValue);
                       final int suggestedRide = carSetup.ride;
                       final int suggestedWing = carSetup.wing;
-                      final int suggestedSuspension = carSetup.suspension;
-                      debugPrint('Suggested Ride: $suggestedRide, Wing: $suggestedWing, Suspension: $suggestedSuspension');
-                      // TODO: Use suggestedRide, suggestedWing, and suggestedSuspension for dropdown, aero, and ride
+                      final int suggestedSuspension = carSetup.suspension+1; // Adjusted to match the dropdown values
+
+                      // Use suggestedRide, suggestedWing, and suggestedSuspension for dropdown, aero, and ride
+                      setState(() {
+                        initialSuspension = suspensionMap[suggestedSuspension.toString()] ?? 'neutral';
+                        _rideController.text = suggestedRide.toString();
+                        _aeroController.text = suggestedWing.toString();
+                        // Update the underlying raceData as well
+                        String skey = 'd${widget.carIndex + 1}Suspension';
+                        String rkey = 'd${widget.carIndex + 1}Ride';
+                        String akey = 'd${widget.carIndex + 1}Aerodynamics';
+                        widget.account.raceData?['vars']?[skey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
+                        widget.account.raceData?['vars']?[rkey] = suggestedRide;
+                        widget.account.raceData?['vars']?[akey] = suggestedWing;
+                      });
                     }
                   }
                 }
