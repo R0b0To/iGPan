@@ -106,6 +106,18 @@ Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) 
           anyAccountUpdated = true;
           sessionValid = true;
 
+          final sponsorUrl = Uri.parse('https://igpmanager.com/index.php?action=fetch&p=finances&csrfName=&csrfToken=');
+          debugPrint('Attempting to fetch sponsor data for ${account.email}');
+           try { 
+                final sponsorResponse = await dio.get(sponsorUrl.toString());
+                debugPrint('sponsor data response status for ${account.email}: ${sponsorResponse.statusCode}');
+                final jsonSponsorResponse = jsonDecode(sponsorResponse.data);
+                fireUpJson['sponsor'] = getSponsors(jsonSponsorResponse);
+           }catch (e) {
+            debugPrint('Error fetching sponsors: $e');
+          }
+          
+          
           // Check if the account has a team and is in a league
           if (updatedAccounts[i].fireUpData != null &&
               updatedAccounts[i].fireUpData!['team'] != null &&
@@ -378,4 +390,81 @@ List<List<dynamic>> _extractStrategySet(Map<String, dynamic> jsonData, String pr
   }
   
   return strategyData;
+}
+
+Map<dynamic, dynamic> getSponsors(Map<String, dynamic> jsonSponsorResponse) {
+  List<dynamic> parseSponsors(String html) {
+    final document = html_parser.parse(html);
+    final sponsors = [];
+    
+    // Loop through each sponsor table
+    for (final sponsor in document.querySelectorAll("table.acp")) {
+      final sponsorName = sponsor.querySelector("th")?.text.trim() ?? "";
+      int sponsorNumber;
+      String income;
+      
+      // Extract income
+      final incomeSpan = sponsor.querySelector(".token-cost"); // Primary sponsor has token-cost class
+      if (incomeSpan != null) {
+        income = incomeSpan.text.trim();
+        sponsorNumber = 1;
+      } else {
+        sponsorNumber = 2;
+        final incomeTd = sponsor.querySelectorAll("tr")[1].querySelectorAll("td")[1];
+        income = incomeTd.text.trim();
+      }
+      
+      // Extract bonus
+      final bonusTd = sponsor.querySelectorAll("tr")[2].querySelectorAll("td")[1];
+      final bonus = bonusTd.text.trim();
+      
+      // Extract contract duration
+      final contractTd = sponsor.querySelectorAll("tr")[3].querySelectorAll("td")[1];
+      final contractDuration = contractTd.text.trim();
+      
+      sponsors.add({
+        "number": sponsorNumber,
+        "Sponsor": sponsorName,
+        "Income": income,
+        "Bonus": bonus,
+        "Contract": contractDuration
+      });
+    }
+    return sponsors;
+  }
+      
+  final jsonData = jsonSponsorResponse['vars'];
+  final emptySponsors = {'income': '0', 'bonus': '0', 'expire': '0', 'status': false};
+  final sponsors = {
+    's1': Map<String, dynamic>.from(emptySponsors),
+    's2': Map<String, dynamic>.from(emptySponsors)
+  };
+  
+  final sponsorsData = parseSponsors(jsonData['sponsors']);
+  
+  for (final sponsor in sponsorsData) {
+    if (sponsor['number'] == 1) { // Primary sponsor
+      sponsors['s1']?['income'] = sponsor['Income'];
+      sponsors['s1']?['bonus'] = sponsor['Bonus'];
+      sponsors['s1']?['expire'] = sponsor['Contract'];
+      sponsors['s1']?['status'] = true;
+    } else if (sponsor['number'] == 2) { // Secondary sponsor
+      sponsors['s2']?['income'] = sponsor['Income'];
+      sponsors['s2']?['bonus'] = sponsor['Bonus'];
+      sponsors['s2']?['expire'] = sponsor['Contract'];
+      sponsors['s2']?['status'] = true;
+    }
+  }
+  
+  // Check if primary sponsor is missing
+  if (sponsors['s1']?['status'] == false) {
+    debugPrint('Primary sponsor expired');
+  }
+  
+  // Check if secondary sponsor is missing
+  if (sponsors['s2']?['status'] == false) {
+    debugPrint('Secondary sponsor expired');
+  }
+  
+  return sponsors;
 }
