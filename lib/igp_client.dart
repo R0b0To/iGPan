@@ -497,19 +497,41 @@ Future<List<dynamic>> pickSponsor(Account account,int number) async {
   // Extract the text content from the elements
   final incomeList = incomeSoup.map((element) => element.text).toList();
   final bonusList = bonusSoup.map((element) => element.text).toList();
-  
-  // Process the IDs similar to the Python version
-  final idList = idSoup.map((element) {
-    final src = element.attributes['src'] ?? '';
-    final parts = src.split('/');
-    final filename = parts.isNotEmpty ? parts.last : '';
-    return filename;
-  }).toList();
+
+  final idList = idSoup.map((e) {
+  final src = e.attributes['src'] ?? '';
+  final filename = src.split('/').last;
+  final nameOnly = filename.split('.').first;
+  return nameOnly;
+}).toList();
   
   // Return the three lists as a single list of dynamic elements
   return [incomeList, bonusList, idList];
   } catch (e) {
     debugPrint('Error fetching race data for ${account.email}: $e');
+    rethrow;
+  }
+}
+
+Future<dynamic> saveSponsor(Account account, int number, String id, String income, String bonus) async {
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch saveSponsor data.');
+      throw Exception('Dio client not initialized for account');
+    }
+  try {
+  final signSponsor = Uri.parse("https://igpmanager.com/index.php?action=send&type=contract&enact=sign&eType=5&eId=$id&location=$number&jsReply=contract&csrfName=&csrfToken=");
+  final response = await dio.get(signSponsor.toString());
+  final jsonData = jsonDecode(response.data);
+  debugPrint('Sponsor response for ${account.email}: ${response.statusCode}');
+  final sponsorNumber = 's$number';
+  account.fireUpData?['sponsor'][sponsorNumber]['income'] = income;
+  account.fireUpData?['sponsor'][sponsorNumber]['bonus'] = bonus;
+  account.fireUpData?['sponsor'][sponsorNumber]['expire'] = '10 race(s)';
+  account.fireUpData?['sponsor'][sponsorNumber]['status'] = true;
+  return jsonData;
+    } catch (e) {
+    debugPrint('Error saving sponsor ${account.email}: $e');
     rethrow;
   }
 }

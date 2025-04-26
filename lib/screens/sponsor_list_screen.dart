@@ -74,7 +74,6 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
                        // Sponsor name is not directly available in this structure, using image ID as a placeholder name
 
 
-
                        return Card(
                          margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                          child: Padding(
@@ -83,12 +82,12 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
                              children: [
                                // Sponsor Image
                                Image.asset(
-                                 'assets/sponsors/$imageId',
-                                 width: 50,
-                                 height: 50,
+                                 'assets/sponsors/$imageId.png',
+                                 width: 40,
+                                 height: 40,
                                  errorBuilder: (context, error, stackTrace) {
                                    // Handle image loading errors
-                                   return const Icon(Icons.business, size: 50); // Placeholder icon
+                                   return const Icon(Icons.monetization_on, size: 40); // Placeholder icon
                                  },
                                ),
                                const SizedBox(width: 16.0),
@@ -104,11 +103,32 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
                                ),
                                // Sign Button
                                ElevatedButton(
-                                 onPressed: () {
-                                   // TODO: Implement sign sponsor action using the imageId or index
-                                   ScaffoldMessenger.of(context).showSnackBar(
-                                     SnackBar(content: Text('Sign button pressed (ID: $imageId)')),
-                                   );
+                                 onPressed: () async { // Make async
+                                   try {
+                                     // Await the saveSponsor call
+                                     var result = await saveSponsor(widget.account, widget.sponsorNumber, imageId, income, bonus); // Pass the imageId
+                                     
+                                     if (result != null && context.mounted) { // Check result and if widget is still mounted
+                                       // Update the notifier to refresh UI elsewhere
+                                       accountsNotifier.value = List<Account>.from(accountsNotifier.value);
+                                       
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(content: Text('Sponsor signed successfully (ID: $imageId)')), // Updated message
+                                       );
+                                       Navigator.pop(context); // Close the screen on success
+                                     } else if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(content: Text('Failed to sign sponsor (ID: $imageId). API returned null.')),
+                                       );
+                                     }
+                                   } catch (e, stackTrace) {
+                                     debugPrint('Error signing sponsor: $e\n$stackTrace');
+                                     if (context.mounted) {
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         SnackBar(content: Text('Error signing sponsor: $e')),
+                                       );
+                                     }
+                                   }
                                  },
                                  child: const Text('Sign'),
                                ),
