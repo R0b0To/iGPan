@@ -74,7 +74,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
           SizedBox(
             // Use Flexible/Expanded instead of fixed height if possible,
             // but for now, keep the calculation based on minWindowHeight.
-            height: widget.minWindowHeight * 0.8,
+            height: widget.minWindowHeight * 0.85, // Adjust height as needed
             child: TabBarView(
               controller: _tabController, // Use the shared controller
               children: [
@@ -135,7 +135,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
         // CarouselSlider for the tab bars and their content (one item per car)
         SizedBox(
           // Calculate height: TabBar height (approx 48-50) + TabBarView height
-          height: widget.minWindowHeight * 0.8 + 50, // Adjust 50 if needed (for TabBar)
+          height: widget.minWindowHeight * 0.85 + 50, // Adjust 50 if needed (for TabBar)
           child: CarouselSlider.builder(
             carouselController: _carouselController,
             itemCount: carouselItems.length, // Number of items is number of cars

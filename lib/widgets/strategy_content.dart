@@ -34,152 +34,194 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     }
     final numberOfSegments = numberOfPits + 1; // Segments = Pits + 1
 
-    // Build the strategy display
-    Widget strategyDisplay;
-    // Check if parsedStrategy exists and has data for the current carIndex
-    if (numberOfSegments > 0 &&
-        widget.account.raceData != null && // Use widget.account
+    // Row 1: Spinbox/Text for pit stops
+    Widget pitStopRow = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Placeholder for Spinbox - using Text for now
+        Text('$numberOfPits pit stop(s)'),
+      ],
+    );
+
+    // Headers (Start, Pit 1, ...) - Let's assume up to 5 segments for headers as requested
+    List<String> headers = ['Start', 'Pit 1', 'Pit 2', 'Pit 3', 'Pit 4'];
+
+    // Strategy items, wear labels, and dropdowns arranged in columns per segment
+    List<Widget> segmentWidgets = []; // Renamed to segmentWidgets
+    List<dynamic> carStrategy = (numberOfSegments > 0 &&
+        widget.account.raceData != null &&
         widget.account.raceData!['parsedStrategy'] != null &&
         widget.account.raceData!['parsedStrategy'] is List &&
-        widget.carIndex < widget.account.raceData!['parsedStrategy'].length && // Use widget.carIndex and widget.account
-        widget.account.raceData!['parsedStrategy'][widget.carIndex] is List) { // Use widget.account and widget.carIndex
+        widget.carIndex < widget.account.raceData!['parsedStrategy'].length &&
+        widget.account.raceData!['parsedStrategy'][widget.carIndex] is List)
+        ? widget.account.raceData!['parsedStrategy'][widget.carIndex]
+        : [];
 
-      List<Widget> strategyItems = [];
-      List<dynamic> carStrategy = widget.account.raceData!['parsedStrategy'][widget.carIndex]; // Use widget.account and widget.carIndex
-      // Iterate up to numberOfSegments, ensuring we don't go out of bounds of carStrategy
-      for (int i = 0; i < numberOfSegments && i < carStrategy.length; i++) {
-        // Add checks for the format of each segment data
-        if (carStrategy[i] is List && carStrategy[i].length >= 2 &&
-            carStrategy[i][0] is String && carStrategy[i][1] is String) {
+    // Ensure we have enough segments to match headers, adding placeholders if needed
+    int displaySegments = headers.length; // Display up to the number of headers
+    for (int i = 0; i < displaySegments; i++) {
+      Widget headerWidget;
+      Widget strategyItemWidget;
+      Widget wearLabelWidget;
+      Widget dropdownWidget;
 
-          String tyreAsset = carStrategy[i][0];
-          // Use the second element (laps) as the label text
-          String labelText = carStrategy[i][1];
-          totalLaps += int.tryParse(labelText) ?? 0; // Safely parse laps
-          // Optional: Use third element (fuel) if needed later
-          // String fuelValue = (carStrategy[i].length >= 3 && carStrategy[i][2] is String) ? carStrategy[i][2] : '';
+      // Header for this segment
+      headerWidget = Center(child: Text(headers[i]));
 
-          // Basic validation for tyre asset name (alphanumeric, underscore, hyphen)
-          final validTyreAsset = RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(tyreAsset);
+      // Check if data exists for this segment
+      if (i < numberOfSegments && i < carStrategy.length &&
+          carStrategy[i] is List && carStrategy[i].length >= 2 &&
+          carStrategy[i][0] is String && carStrategy[i][1] is String) {
 
-          if (validTyreAsset && tyreAsset.isNotEmpty) {
-             strategyItems.add(
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2.0), // Reduced padding
-                child: Tooltip( // Add tooltip for tyre name
-                  message: tyreAsset, // Show the asset name on hover
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Image.asset(
-                        'assets/tyres/$tyreAsset.png',
-                        width: 40, // Adjusted size
-                        height: 40, // Adjusted size
-                        errorBuilder: (context, error, stackTrace) {
-                          // Display placeholder if image fails to load
-                          return Container(
-                            width: 40, height: 40,
-                            color: Colors.grey[300],
-                            child: Icon(Icons.tire_repair, size: 20, color: Colors.grey[600]),
-                          );
-                        },
-                      ),
-                      Text(
-                        labelText, // Display laps
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12, // Adjusted size
-                          shadows: [ // Add shadow for better readability
-                            Shadow(blurRadius: 1.0, color: Colors.black.withOpacity(0.7)),
-                          ],
-                        ),
-                      ),
-                    ],
+        String tyreAsset = carStrategy[i][0];
+        String labelText = carStrategy[i][1];
+        totalLaps += int.tryParse(labelText) ?? 0; // Safely parse laps
+
+        final validTyreAsset = RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(tyreAsset);
+
+        if (validTyreAsset && tyreAsset.isNotEmpty) {
+          strategyItemWidget = Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.0),
+            child: Tooltip(
+              message: '',
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.asset(
+                    'assets/tyres/$tyreAsset.png',
+                    width: 40,
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 40, height: 40,
+                        color: Colors.grey[300],
+                        child: Icon(Icons.tire_repair, size: 20, color: Colors.grey[600]),
+                      );
+                    },
                   ),
-                ),
+                  Text(
+                    labelText,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      shadows: [
+                        Shadow(blurRadius: 1.0, color: Colors.black.withOpacity(0.7)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            );
-          } else {
-             // Handle invalid tyre asset name
-             strategyItems.add(_buildInvalidSegment(i, 'Invalid tyre'));
-          }
+            ),
+          );
         } else {
-          // Handle unexpected data format for a segment
-          strategyItems.add(_buildInvalidSegment(i, 'Invalid data'));
+          strategyItemWidget = _buildInvalidSegment(i, 'Invalid tyre');
         }
+
+        // Wear label (Placeholder)
+        wearLabelWidget = Text('Wear ${i+1}'); // Placeholder text
+
+        // Dropdown (Placeholder)
+        dropdownWidget = DropdownButton<String>(
+          value: 'neutral', // Default value
+          items: <String>['very low', 'low', 'neutral', 'high', 'very high'].map((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(value),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            // TODO: Implement dropdown logic
+          },
+        );
+
+      } else {
+        // Invisible element for missing segments
+        strategyItemWidget = SizedBox(width: 40, height: 40); // Match size of image
+        wearLabelWidget = SizedBox.shrink(); // Invisible wear label
+        dropdownWidget = SizedBox.shrink(); // Invisible dropdown
       }
 
-      // Add placeholders if numberOfSegments is greater than the available parsed data
-      if (numberOfSegments > carStrategy.length) {
-        for (int i = carStrategy.length; i < numberOfSegments; i++) {
-           strategyItems.add(_buildInvalidSegment(i, 'Missing data'));
-        }
-      }
-
-
-      strategyDisplay = Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0), // Add padding
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: strategyItems,
-          ),
+      segmentWidgets.add( // Added to segmentWidgets
+        Column( // Column for each segment - Removed Expanded
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            headerWidget, // Header at the top of the column
+            SizedBox(height: 4), // Spacing
+            strategyItemWidget,
+            SizedBox(height: 4), // Spacing
+            wearLabelWidget,
+            SizedBox(height: 4), // Spacing
+            dropdownWidget,
+          ],
         ),
       );
-    } else {
-      // Handle cases where there's no strategy data or it's invalid
-      strategyDisplay = Center(child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text('No strategy data available.', style: Theme.of(context).textTheme.bodySmall),
-      ));
     }
+
 
     // Get raceLaps safely
     final raceLaps = widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0';
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center, // Center the row content
-      crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically in the center
+    // Combine everything in a Column
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        strategyDisplay, // Removed Expanded widget
-        const SizedBox(width: 8), // Add some spacing between strategy and laps
-        Container( // Wrap the column in a Container for the border
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
-              width: 0.8, // Border width
-            ),
-            borderRadius: BorderRadius.zero, // Square corners
+        pitStopRow,
+        SizedBox(height: 8), // Spacing
+        SingleChildScrollView( // Allow horizontal scrolling for segments
+          scrollDirection: Axis.horizontal,
+          child: Row( // Row of segment columns
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start, // Align items at the top
+            children: segmentWidgets, // Use segmentWidgets
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Add padding inside the border
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center, // Center the laps vertically
-            crossAxisAlignment: CrossAxisAlignment.center, // Center the text horizontally within the column
-            mainAxisSize: MainAxisSize.min, // Make the column take minimum space
-            children: [
-              Container( // Wrap raceLaps in a Container for the bottom border
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
-                      width: 1, // Border width
+        ),
+        SizedBox(height: 8), // Spacing
+        // The existing laps display needs to be integrated.
+        // It was previously next to the strategyDisplay.
+        // Now it should probably be below the main segment display.
+        // Let's put it in a separate row below the segment display.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+             Container( // Wrap the column in a Container for the border
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
+                  width: 0.8, // Border width
+                ),
+                borderRadius: BorderRadius.zero, // Square corners
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0), // Add padding inside the border
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center, // Center the laps vertically
+                crossAxisAlignment: CrossAxisAlignment.center, // Center the text horizontally within the column
+                mainAxisSize: MainAxisSize.min, // Make the column take minimum space
+                children: [
+                  Container( // Wrap raceLaps in a Container for the bottom border
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
+                          width: 1, // Border width
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      raceLaps, // Display raceLaps
+                      style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
+                      textAlign: TextAlign.center, // Center the text horizontally
                     ),
                   ),
-                ),
-                child: Text(
-                  raceLaps, // Display raceLaps
-                  style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
-                  textAlign: TextAlign.center, // Center the text horizontally
-                ),
+                  Text(
+                    totalLaps.toString(), // Display totalLaps
+                    style: Theme.of(context).textTheme.bodySmall, // Adjust style as needed
+                  ),
+                ],
               ),
-              Text(
-                totalLaps.toString(), // Display totalLaps
-                style: Theme.of(context).textTheme.bodySmall, // Adjust style as needed
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
