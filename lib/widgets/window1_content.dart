@@ -178,7 +178,7 @@ String? extractDataValueFromHtml(String htmlString, String elementId) {
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
 //widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']
-                                child: Text('Total Parts: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? '','totalParts' )?? 'N/A'}'),
+                                child: Text('Parts: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? '','totalParts' )?? 'N/A'}'),
                               ),
                             ),
                            SizedBox(width: 8), // Spacer
@@ -188,11 +188,11 @@ String? extractDataValueFromHtml(String htmlString, String elementId) {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-                                child: Text('Total Engines: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? '', 'totalEngines') ?? 'N/A'}'),
+                                child: Text('Engines: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? '', 'totalEngines') ?? 'N/A'}'),
                               ),
                             ),
                             SizedBox(width: 8), // Spacer
-                            Text('Restock Races: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
+                            Text('Restock: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
                           ],
                         ),
                         SizedBox(height: 8), // Spacer
@@ -244,16 +244,17 @@ String? extractDataValueFromHtml(String htmlString, String elementId) {
                                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                  children: [
                                    Text('Car $i:'),
+                                     CircularProgressButton(
+                                     label: 'Parts',
+                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition']) ?? '') ?? 0.0,
+                                     onPressed: () {}, // Add functionality later
+                                   ),
                                    CircularProgressButton(
                                      label: 'Engine',
                                      progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine']) ?? '20') ?? 0.0,
                                      onPressed: () {}, // Add functionality later
                                    ),
-                                   CircularProgressButton(
-                                     label: 'Condition',
-                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition']) ?? '') ?? 0.0,
-                                     onPressed: () {}, // Add functionality later
-                                   ),
+
                                  ],
                                ),
                              ),

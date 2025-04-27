@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 
 String abbreviateNumber(String input) {
@@ -190,24 +191,16 @@ class CircularProgressButton extends StatelessWidget {
               ),
             ),
             
-            // Center content
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${normalizedProgress.toInt()}%',
-                  style: TextStyle(
-                    fontSize: size / 6,
-                    fontWeight: FontWeight.bold,
-                  ),
+            Positioned(
+              left: size / 2 + (size / 2 + size / 20) * sin((normalizedProgress / 100) * 2 * pi) - (size / 4) / 2,
+              top: size / 2 - (size / 2 + size / 20) * cos((normalizedProgress / 100) * 2 * pi) - (size / 6) / 2,
+              child: Text(
+                '${normalizedProgress.toInt()}%',
+                style: TextStyle(
+                  fontSize: size / 6,
+                  fontWeight: FontWeight.bold,
                 ),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: size / 6,
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
