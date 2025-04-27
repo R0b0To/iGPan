@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math';
+import '../utils/helpers.dart'; 
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:cookie_jar/cookie_jar.dart';
@@ -14,7 +16,7 @@ class Account {
   final String email;
   final String password;
   final String? nickname;
-  
+
   Map<String, dynamic>? fireUpData; // To store fireUp response data
   Map<String, dynamic>? raceData; // To store race data
 
@@ -97,7 +99,7 @@ Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) 
         });
         final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
         final fireUpResponse = await dio.get(fireUpUrl.toString());
-        final fireUpJson = jsonDecode(fireUpResponse.data);
+        final fireUpJson = parseFireUpData(jsonDecode(fireUpResponse.data));
         
         if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
           debugPrint('Session is valid for ${account.email} using saved cookies.');
@@ -524,13 +526,71 @@ Future<dynamic> saveSponsor(Account account, int number, String id, String incom
   final signSponsor = Uri.parse("https://igpmanager.com/index.php?action=send&type=contract&enact=sign&eType=5&eId=$id&location=$number&jsReply=contract&csrfName=&csrfToken=");
   final response = await dio.get(signSponsor.toString());
   final jsonData = jsonDecode(response.data);
-  debugPrint('Sponsor response for ${account.email}: ${response.statusCode}');
   final sponsorNumber = 's$number';
   account.fireUpData?['sponsor'][sponsorNumber]['income'] = income;
   account.fireUpData?['sponsor'][sponsorNumber]['bonus'] = bonus;
   account.fireUpData?['sponsor'][sponsorNumber]['expire'] = '10 race(s)';
   account.fireUpData?['sponsor'][sponsorNumber]['status'] = true;
   return jsonData;
+    } catch (e) {
+    debugPrint('Error saving sponsor ${account.email}: $e');
+    rethrow;
+  }
+}
+
+Future<dynamic> repairCar(Account account, int number, String repairType, ValueNotifier<List<Account>> accountsNotifier) async {
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch saveSponsor data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  try {
+    final numberKey = 'c${number}Id';
+    final id = account.fireUpData?['preCache']['p=cars']['vars'][numberKey];
+
+  if (repairType == 'parts') {
+    final totalParts = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']) ?? 0;
+    final repairCost = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}CarBtn']) ?? 0;
+    if(repairCost <= totalParts)
+    {
+      final repairRequest = Uri.parse("https://igpmanager.com/index.php?action=send&type=fix&car=$id&btn=c${number}PartSwap&jsReply=fix&csrfName=&csrfToken=");
+      final response = await dio.get(repairRequest.toString());
+      final jsonData = jsonDecode(response.data);
+      account.fireUpData?['preCache']['p=cars']['vars']['totalParts'] = totalParts - repairCost;
+      account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Condition'] = "100";
+    }else {
+      debugPrint('Repairing car is not possible: ${account.email}');
+      return false;
+    }
+    
+  } else if (repairType == 'engine') {
+    final totalEngines = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']) ?? 0;
+    final numberKey = 'c${number}Engine';
+    final currentEngineStatus = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?[numberKey]) ?? 100;
+    if (totalEngines > 0 && currentEngineStatus < 100)
+    {
+      final repairRequest = Uri.parse("https://igpmanager.com/index.php?action=send&type=engine&car=$id&btn=c${number}EngSwap&jsReply=fix&csrfName=&csrfToken=");
+      final response = await dio.get(repairRequest.toString());
+      final jsonData = jsonDecode(response.data);
+      account.fireUpData?['preCache']['p=cars']['vars']['totalEngines'] = totalEngines - 1;
+      account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Engine'] = "100";
+    }else {
+      debugPrint('Replacing engine is not possible: ${account.email}');
+      return false;
+    }
+
+  }
+          // Find the account in the notifier's list and update it
+    final updatedAccounts = List<Account>.from(accountsNotifier.value);
+    final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
+    if (index != -1) {
+      updatedAccounts[index] = account;
+      accountsNotifier.value = updatedAccounts; // Notify listeners
+      debugPrint('Accounts notifier updated after repairing car for${account.email}');
+    }
+    return true;
+ 
     } catch (e) {
     debugPrint('Error saving sponsor ${account.email}: $e');
     rethrow;

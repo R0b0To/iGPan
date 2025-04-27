@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:html/parser.dart' show parse; 
 
 String abbreviateNumber(String input) {
   final n = double.tryParse(input);
@@ -287,3 +288,44 @@ class CircularProgressPainter extends CustomPainter {
            oldDelegate.backgroundColor != backgroundColor;
   }
 }
+/// Parses and sanitizes the fireUpData.
+Map<String, dynamic> parseFireUpData(dynamic fireUpData) {
+  // Placeholder implementation
+  if (fireUpData is Map) {
+    
+    fireUpData['preCache']?['p=cars']?['vars']?['totalParts'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['totalParts'],'totalParts');
+    fireUpData['preCache']?['p=cars']?['vars']?['totalEngines'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['totalEngines'],'totalEngines');
+    fireUpData['preCache']?['p=cars']?['vars']?['c1CarBtn'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['c1CarBtn'].split(' ').last,'');
+    fireUpData['preCache']?['p=cars']?['vars']?['c2CarBtn'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['c2CarBtn'].split(' ').last,'');
+    fireUpData['preCache']?['p=cars']?['vars']?['c1Condition'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c1Condition']);
+    fireUpData['preCache']?['p=cars']?['vars']?['c2Condition'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c2Condition']);
+    fireUpData['preCache']?['p=cars']?['vars']?['c2Engine'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c2Engine']);
+    fireUpData['preCache']?['p=cars']?['vars']?['c1Engine'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c1Engine']);
+    return Map<String, dynamic>.from(fireUpData);
+  } else {
+    // Handle other data types or return an empty map if data is not as expected.
+    print('Warning: fireUpData is not a Map. Cannot parse/sanitize.');
+    return {};
+  }
+}
+
+String extractDataValueFromHtml(String htmlString, String elementId) {
+    if (htmlString.isEmpty) {
+      return '';
+    }
+    final document = parse(htmlString);
+    final element = document.getElementById(elementId);
+    return element?.text ?? ''; // Return empty string if element not found
+  }
+  String? extractDataValueAttribute(String htmlString ) {
+    if (htmlString.isEmpty) {
+      return null;
+    }
+    final wrapFragment ='<html><body>$htmlString</body></html>'; // Wrap the HTML string in a body tag
+    final document = parse(wrapFragment);
+
+    final element = document.querySelector('.ratingCircle');
+    final attribute = element?.attributes['data-value'];
+    debugPrint(attribute); // Debug print to check if the element is found
+    return attribute;
+  }

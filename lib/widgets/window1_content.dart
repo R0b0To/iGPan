@@ -15,26 +15,8 @@ class Window1Content extends StatefulWidget {
 }
 
 class _Window1ContentState extends State<Window1Content> {
-String extractDataValueFromHtml(String htmlString, String elementId) {
-    if (htmlString.isEmpty) {
-      return '';
-    }
-    final document = parse(htmlString);
-    final element = document.getElementById(elementId);
-    return element?.text ?? ''; // Return empty string if element not found
-  }
-  String? extractDataValueAttribute(String htmlString ) {
-    if (htmlString.isEmpty) {
-      return null;
-    }
-    final wrapFragment ='<html><body>$htmlString</body></html>'; // Wrap the HTML string in a body tag
-    final document = parse(wrapFragment);
 
-    final element = document.querySelector('.ratingCircle');
-    final attribute = element?.attributes['data-value'];
-    debugPrint(attribute); // Debug print to check if the element is found
-    return attribute;
-  }
+
   @override
   Widget build(BuildContext context) {
     final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
@@ -177,8 +159,7 @@ String extractDataValueFromHtml(String htmlString, String elementId) {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-//widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']
-                                child: Text('Parts: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? '','totalParts' )?? 'N/A'}'),
+                                child: Text('Parts: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?? 'N/A'}'),
                               ),
                             ),
                            SizedBox(width: 8), // Spacer
@@ -188,7 +169,7 @@ String extractDataValueFromHtml(String htmlString, String elementId) {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-                                child: Text('Engines: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? '', 'totalEngines') ?? 'N/A'}'),
+                                child: Text('Engines: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']  ?? 'N/A'}'),
                               ),
                             ),
                             SizedBox(width: 8), // Spacer
@@ -245,14 +226,18 @@ String extractDataValueFromHtml(String htmlString, String elementId) {
                                  children: [
                                    Text('Car $i:'),
                                      CircularProgressButton(
-                                     label: (extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}CarBtn'].split(' ').last ?? '','')),
-                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition']) ?? '') ?? 0.0,
-                                     onPressed: () {}, // Add functionality later
+                                     label: widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}CarBtn'] ?? '',
+                                     progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition'] ?? '0') ?? 0.0,
+                                     onPressed: () {
+                                      repairCar(widget.account, i,'parts',accountsNotifier); 
+                                     }, // Add functionality later
                                    ),
                                    CircularProgressButton(
                                      label: 'Engine',
-                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine']) ?? '0') ?? 0.0,
-                                     onPressed: () {}, // Add functionality later
+                                     progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine'] ?? '0') ?? 0.0,
+                                     onPressed: () {
+                                      repairCar(widget.account, i,'engine',accountsNotifier); 
+                                     }, // Add functionality later
                                    ),
 
                                  ],
