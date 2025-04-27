@@ -124,10 +124,43 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         // Dropdown (Placeholder)
         dropdownWidget = DropdownButton<String>(
           value: 'neutral', // Default value
-          items: <String>['very low', 'low', 'neutral', 'high', 'very high'].map((String value) {
+          icon: SizedBox.shrink(), // Remove the default arrow icon
+          items: <String>['very high', 'high', 'neutral', 'low', 'very low'].map((String value) {
+            IconData iconData;
+            Color iconColor;
+            double iconOpacity = 1.0;
+
+            switch (value) {
+              case 'very low':
+                iconData = Icons.keyboard_double_arrow_down; // Double down arrow
+                iconColor = Colors.green; // Green for low wear
+                break;
+              case 'low':
+                iconData = Icons.keyboard_arrow_down; // Single down arrow
+                iconColor = Colors.lightGreen; // Light green for slightly more wear
+                break;
+              case 'neutral':
+                iconData = Icons.horizontal_rule; // White line icon
+                iconColor = Colors.white; // White color
+                break;
+              case 'high':
+                iconData = Icons.keyboard_arrow_up; // Single up arrow
+                iconColor = Colors.orange; // Orange for higher wear
+                break;
+              case 'very high':
+                iconData = Icons.keyboard_double_arrow_up; // Double up arrow
+                iconColor = Colors.red; // Red for very high wear
+                break;
+              default:
+                iconData = Icons.help_outline;
+                iconColor = Colors.grey;
+            }
+
             return DropdownMenuItem<String>(
               value: value,
-              child: Text(value),
+              child: Center( // Center the icon
+                child: Icon(iconData, color: iconColor, size: 20), // Adjusted size, removed Opacity
+              ),
             );
           }).toList(),
           onChanged: (String? newValue) {
