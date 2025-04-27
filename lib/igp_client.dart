@@ -14,6 +14,7 @@ class Account {
   final String email;
   final String password;
   final String? nickname;
+  
   Map<String, dynamic>? fireUpData; // To store fireUp response data
   Map<String, dynamic>? raceData; // To store race data
 

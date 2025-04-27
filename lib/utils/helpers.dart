@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 String abbreviateNumber(String input) {
   final n = double.tryParse(input);
   if (n == null || n == 0) return '0';
@@ -143,5 +145,123 @@ class CarSetup {
     wing = setup['wing'];
     
     return setup;
+  }
+}
+
+class CircularProgressButton extends StatelessWidget {
+  final double progress; // Progress value from 0 to 100
+  final String label; // Label to display in the center
+  final VoidCallback onPressed; // Button callback
+  final double size; // Size of the circular progress indicator
+  final Color progressColor; // Color of the progress arc
+  final Color backgroundColor; // Color of the background arc
+
+  const CircularProgressButton({
+    Key? key,
+    required this.progress,
+    required this.label,
+    required this.onPressed,
+    this.size = 50.0,
+    this.progressColor = Colors.blue,
+    this.backgroundColor = Colors.grey,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Ensure progress is between 0 and 100
+    final normalizedProgress = progress.clamp(0.0, 100.0);
+    
+    return InkWell(
+      onTap: onPressed,
+      customBorder: const CircleBorder(),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background circle
+            CustomPaint(
+              size: Size(size, size),
+              painter: CircularProgressPainter(
+                progress: normalizedProgress / 100,
+                progressColor: progressColor,
+                backgroundColor: backgroundColor,
+              ),
+            ),
+            
+            // Center content
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '${normalizedProgress.toInt()}%',
+                  style: TextStyle(
+                    fontSize: size / 6,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: size / 6,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CircularProgressPainter extends CustomPainter {
+  final double progress; // Value between 0.0 and 1.0
+  final Color progressColor;
+  final Color backgroundColor;
+  
+  CircularProgressPainter({
+    required this.progress,
+    required this.progressColor,
+    required this.backgroundColor,
+  });
+  
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+    const startAngle = -1.5708; // -90 degrees in radians (start from top)
+    final sweepAngle = 2 * 3.14159 * progress; // Full circle is 2*PI
+    
+    // Draw background circle
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width / 15;
+      
+    canvas.drawCircle(center, radius - backgroundPaint.strokeWidth / 2, backgroundPaint);
+    
+    // Draw progress arc
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width / 15
+      ..strokeCap = StrokeCap.round;
+      
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius - progressPaint.strokeWidth / 2),
+      startAngle,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+  
+  @override
+  bool shouldRepaint(CircularProgressPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+           oldDelegate.progressColor != progressColor ||
+           oldDelegate.backgroundColor != backgroundColor;
   }
 }

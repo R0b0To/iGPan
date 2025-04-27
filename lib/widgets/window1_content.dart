@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:html/parser.dart' show parse; // Import the parse function
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
@@ -14,8 +15,18 @@ class Window1Content extends StatefulWidget {
 }
 
 class _Window1ContentState extends State<Window1Content> {
+String? extractTextFromHtml(String htmlString, String elementId) {
+    if (htmlString.isEmpty) {
+      return null;
+    }
+    final document = parse(htmlString);
+    final element = document.getElementById(elementId);
+    return element?.text;
+  }
   @override
   Widget build(BuildContext context) {
+    final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
+    final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
     // Determine reward status directly from account data
     bool rewardStatus = widget.account.fireUpData != null &&
         widget.account.fireUpData!.containsKey('notify') && // Added null check
@@ -24,7 +35,7 @@ class _Window1ContentState extends State<Window1Content> {
         widget.account.fireUpData!['notify']!['page'] != null &&
         widget.account.fireUpData!['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData!['notify']['page']['nDailyReward'] == '0'; // Assuming '0' means available
-
+    
     return Column(
      mainAxisAlignment: MainAxisAlignment.start, // Align children to the top
      children: [
@@ -138,10 +149,106 @@ class _Window1ContentState extends State<Window1Content> {
              ),
              SizedBox(
                height: widget.minWindowHeight * 0.8, // 80% of minWindowHeight
-               child: const TabBarView(
+               child: TabBarView(
                  children: [
                    // TODO: Implement Car tab content
-                   Center(child: Text('Car Content Placeholder')),
+                   Column(
+                     crossAxisAlignment: CrossAxisAlignment.stretch,
+                     children: [
+                       // First row: totalparts, totalengine buttons and restock races label
+                       Row(
+                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                         children: [
+                           Expanded(
+                             child: ElevatedButton(
+                               onPressed: () {}, // Add functionality later
+                               style: ElevatedButton.styleFrom(
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                               ),
+//widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']
+                               child: Text('Total Parts: ${extractTextFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? '','totalParts' )?? 'N/A'}'),
+                             ),
+                           ),
+                           SizedBox(width: 8), // Spacer
+                           Expanded(
+                             child: ElevatedButton(
+                               onPressed: () {}, // Add functionality later
+                               style: ElevatedButton.styleFrom(
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                               ),
+                                child: Text('Total Engines: ${extractTextFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? '', 'totalEngines') ?? 'N/A'}'),
+                              ),
+                            ),
+                            SizedBox(width: 8), // Spacer
+                            Text('Restock Races: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
+                          ],
+                        ),
+                        SizedBox(height: 8), // Spacer
+                        // Second row: engine, fuel, tyres buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                               onPressed: () {}, // Add functionality later
+                               style: ElevatedButton.styleFrom(
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                               ),
+                               child: Text('Engine'),
+                             ),
+                           ),
+                           SizedBox(width: 8), // Spacer
+                           Expanded(
+                             child: ElevatedButton(
+                               onPressed: () {}, // Add functionality later
+                               style: ElevatedButton.styleFrom(
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                               ),
+                               child: Text('Fuel'),
+                             ),
+                           ),
+                           SizedBox(width: 8), // Spacer
+                           Expanded(
+                             child: ElevatedButton(
+                               onPressed: () {}, // Add functionality later
+                               style: ElevatedButton.styleFrom(
+                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                               ),
+                               child: Text('Tyres'),
+                             ),
+                           ),
+                         ],
+                       ),
+                       SizedBox(height: 8), // Spacer
+                       // Third row(s): CircularProgressButton for each car
+                       // Assuming a fixed number of cars for now (e.g., 3)
+                       Column(
+                         children: [
+                          
+                           for (int i = 1; i <= numCars; i++) // Loop for each car based on account.carIndex
+                             Padding(
+                               padding: const EdgeInsets.symmetric(vertical: 4.0),
+                               child: Row(
+                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                 children: [
+                                   Text('Car $i:'),
+                                   CircularProgressButton(
+                                     label: 'Engine',
+                                     progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i-1}Engine'] ?? '0') ?? 0.0,
+                                     onPressed: () {}, // Add functionality later
+                                   ),
+                                   CircularProgressButton(
+                                     label: 'Condition',
+                                     progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i-1}Condition'] ?? '0') ?? 0.0,
+                                     onPressed: () {}, // Add functionality later
+                                   ),
+                                 ],
+                               ),
+                             ),
+                         ],
+                       ),
+                     ],
+                   ),
                    // TODO: Implement Reports tab content
                    Center(child: Text('Reports Content Placeholder')),
                  ],
