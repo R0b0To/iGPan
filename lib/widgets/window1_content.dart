@@ -15,13 +15,25 @@ class Window1Content extends StatefulWidget {
 }
 
 class _Window1ContentState extends State<Window1Content> {
-String? extractTextFromHtml(String htmlString, String elementId) {
+String? extractDataValueFromHtml(String htmlString, String elementId) {
     if (htmlString.isEmpty) {
       return null;
     }
     final document = parse(htmlString);
     final element = document.getElementById(elementId);
     return element?.text;
+  }
+  String? extractDataValueAttribute(String htmlString ) {
+    if (htmlString.isEmpty) {
+      return null;
+    }
+    final wrapFragment ='<html><body>$htmlString</body></html>'; // Wrap the HTML string in a body tag
+    final document = parse(wrapFragment);
+
+    final element = document.querySelector('.ratingCircle');
+    final attribute = element?.attributes['data-value'];
+    debugPrint(attribute); // Debug print to check if the element is found
+    return attribute;
   }
   @override
   Widget build(BuildContext context) {
@@ -166,9 +178,9 @@ String? extractTextFromHtml(String htmlString, String elementId) {
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
 //widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']
-                               child: Text('Total Parts: ${extractTextFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? '','totalParts' )?? 'N/A'}'),
-                             ),
-                           ),
+                                child: Text('Total Parts: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? '','totalParts' )?? 'N/A'}'),
+                              ),
+                            ),
                            SizedBox(width: 8), // Spacer
                            Expanded(
                              child: ElevatedButton(
@@ -176,7 +188,7 @@ String? extractTextFromHtml(String htmlString, String elementId) {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-                                child: Text('Total Engines: ${extractTextFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? '', 'totalEngines') ?? 'N/A'}'),
+                                child: Text('Total Engines: ${extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? '', 'totalEngines') ?? 'N/A'}'),
                               ),
                             ),
                             SizedBox(width: 8), // Spacer
@@ -234,12 +246,12 @@ String? extractTextFromHtml(String htmlString, String elementId) {
                                    Text('Car $i:'),
                                    CircularProgressButton(
                                      label: 'Engine',
-                                     progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i-1}Engine'] ?? '0') ?? 0.0,
+                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine']) ?? '20') ?? 0.0,
                                      onPressed: () {}, // Add functionality later
                                    ),
                                    CircularProgressButton(
                                      label: 'Condition',
-                                     progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i-1}Condition'] ?? '0') ?? 0.0,
+                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition']) ?? '') ?? 0.0,
                                      onPressed: () {}, // Add functionality later
                                    ),
                                  ],
