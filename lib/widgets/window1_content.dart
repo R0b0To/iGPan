@@ -15,13 +15,13 @@ class Window1Content extends StatefulWidget {
 }
 
 class _Window1ContentState extends State<Window1Content> {
-String? extractDataValueFromHtml(String htmlString, String elementId) {
+String extractDataValueFromHtml(String htmlString, String elementId) {
     if (htmlString.isEmpty) {
-      return null;
+      return '';
     }
     final document = parse(htmlString);
     final element = document.getElementById(elementId);
-    return element?.text;
+    return element?.text ?? ''; // Return empty string if element not found
   }
   String? extractDataValueAttribute(String htmlString ) {
     if (htmlString.isEmpty) {
@@ -245,13 +245,13 @@ String? extractDataValueFromHtml(String htmlString, String elementId) {
                                  children: [
                                    Text('Car $i:'),
                                      CircularProgressButton(
-                                     label: 'Parts',
+                                     label: (extractDataValueFromHtml(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}CarBtn'].split(' ').last ?? '','')),
                                      progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition']) ?? '') ?? 0.0,
                                      onPressed: () {}, // Add functionality later
                                    ),
                                    CircularProgressButton(
                                      label: 'Engine',
-                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine']) ?? '20') ?? 0.0,
+                                     progress: double.tryParse(extractDataValueAttribute(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine']) ?? '0') ?? 0.0,
                                      onPressed: () {}, // Add functionality later
                                    ),
 

@@ -154,7 +154,6 @@ class CircularProgressButton extends StatelessWidget {
   final String label; // Label to display in the center
   final VoidCallback onPressed; // Button callback
   final double size; // Size of the circular progress indicator
-  final Color progressColor; // Color of the progress arc
   final Color backgroundColor; // Color of the background arc
 
   const CircularProgressButton({
@@ -163,15 +162,46 @@ class CircularProgressButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.size = 50.0,
-    this.progressColor = Colors.blue,
-    this.backgroundColor = Colors.grey,
+    this.backgroundColor = const Color.fromARGB(0, 255, 255, 255),
   }) : super(key: key);
+  
+  Color _getProgressColor() {
+    // Otherwise, determine color based on progress
+      final List<MapEntry<double, Color>> colorStops = [
+    MapEntry(60.0, Colors.red),          // 50% progress - Red
+    MapEntry(100.0, Colors.green),       // 100% progress - Green
+  ];
+      for (int i = 0; i < colorStops.length - 1; i++) {
+    final currentStop = colorStops[i];
+    final nextStop = colorStops[i + 1];
+    
+    if (progress >= currentStop.key && progress <= nextStop.key) {
+      // Calculate how far we are between the two stops (0.0 to 1.0)
+      final t = (progress - currentStop.key) / (nextStop.key - currentStop.key);
+      
+      // Interpolate between the two colors
+      return Color.lerp(currentStop.value, nextStop.value, t)!;
+    }
+  }
+   return Colors.blue;
+  }
+  String _getDisplayLabel() {
+    // If label is 'Engine' and progress is 100, return '1'
+    if (label == 'Engine' && progress < 100) {
+      return 'Replace';
+    }
+     if (label != 'Engine' && progress == 100) {
+      return 'Parts';
+    }
 
+    return label;
+  }
   @override
   Widget build(BuildContext context) {
     // Ensure progress is between 0 and 100
     final normalizedProgress = progress.clamp(0.0, 100.0);
     
+    final displayLabel = _getDisplayLabel();
     return InkWell(
       onTap: onPressed,
       customBorder: const CircleBorder(),
@@ -186,22 +216,21 @@ class CircularProgressButton extends StatelessWidget {
               size: Size(size, size),
               painter: CircularProgressPainter(
                 progress: normalizedProgress / 100,
-                progressColor: progressColor,
+                progressColor: _getProgressColor(),
                 backgroundColor: backgroundColor,
               ),
             ),
-            
-            Positioned(
-              left: size / 2 + (size / 2 + size / 20) * sin((normalizedProgress / 100) * 2 * pi) - (size / 4) / 2,
-              top: size / 2 - (size / 2 + size / 20) * cos((normalizedProgress / 100) * 2 * pi) - (size / 6) / 2,
-              child: Text(
-                '${normalizedProgress.toInt()}%',
-                style: TextStyle(
-                  fontSize: size / 6,
-                  fontWeight: FontWeight.bold,
+            // Center content
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  displayLabel,
+                  style: TextStyle(
+                    fontSize: size / 4,
+                  ),
                 ),
-              ),
-            ),
+              ],)
           ],
         ),
       ),
