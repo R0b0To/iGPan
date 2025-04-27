@@ -552,12 +552,13 @@ Future<dynamic> repairCar(Account account, int number, String repairType, ValueN
   if (repairType == 'parts') {
     final totalParts = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']) ?? 0;
     final repairCost = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}CarBtn']) ?? 0;
-    if(repairCost <= totalParts)
+    final carCondition = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Condition']) ?? 100;
+    if(repairCost <= totalParts && carCondition < 100)
     {
       final repairRequest = Uri.parse("https://igpmanager.com/index.php?action=send&type=fix&car=$id&btn=c${number}PartSwap&jsReply=fix&csrfName=&csrfToken=");
       final response = await dio.get(repairRequest.toString());
       final jsonData = jsonDecode(response.data);
-      account.fireUpData?['preCache']['p=cars']['vars']['totalParts'] = totalParts - repairCost;
+      account.fireUpData?['preCache']['p=cars']['vars']['totalParts'] = (totalParts - repairCost).toString();
       account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Condition'] = "100";
     }else {
       debugPrint('Repairing car is not possible: ${account.email}');
@@ -592,7 +593,7 @@ Future<dynamic> repairCar(Account account, int number, String repairType, ValueN
     return true;
  
     } catch (e) {
-    debugPrint('Error saving sponsor ${account.email}: $e');
+    debugPrint('Error repairing car ${account.email}: $e');
     rethrow;
   }
 }
