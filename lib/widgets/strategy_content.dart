@@ -71,7 +71,24 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     Widget pitStopRow = Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align items to the ends
       children: [
-        // Placeholder for Spinbox - using Text for now
+        // Button to the left of the Spinbox
+        Padding(
+          padding: const EdgeInsets.only(right: 8.0), // Add some spacing to the right
+          child: SizedBox(
+            height: 30, // Match the height of the SpinBox
+            child: ElevatedButton(
+              onPressed: () {
+                // TODO: Implement button action (e.g., add a pit stop)
+              },
+              child: Text('S/L'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
+                textStyle: TextStyle(fontSize: 12), // Adjust text size
+              ),
+            ),
+          ),
+        ),
+        // Spinbox for pits
         SizedBox(
           width: 100.0, // Provide a fixed width
           height: 30,
@@ -86,7 +103,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
               contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // Adjust padding
               border: OutlineInputBorder(),
               
-
+ 
             ),
             textStyle: TextStyle(fontSize: 12), // Adjust text size
             onChanged: (value) {

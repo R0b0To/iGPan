@@ -194,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                                 if (canStackWindowsHorizontally) {
                                   // Wide screen: Paginated Vertical Stack (Horizontal PageView)
-                                  const double estimatedItemHeight = minWindowHeight + 160; // Estimate height + padding
+                                  const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
                                   final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, accounts.length); // Ensure at least 1
                                   final pageCount = (accounts.length / itemsPerPage).ceil();
 
