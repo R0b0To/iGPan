@@ -82,7 +82,7 @@ class AccountMainContainer extends StatelessWidget {
     // Check if the account is in a league before creating Window2Content
     final bool isInLeague = account.fireUpData?['team']?['_league'] != null &&
                            account.fireUpData!['team']['_league'] != '0'; // Added null check for safety
-    final window2Content = isInLeague ? Window2Content(minWindowHeight: minWindowHeight-80, account: account) : null;
+    final window2Content = isInLeague ? Window2Content(minWindowHeight: minWindowHeight-50, account: account) : null;
 
 
      if (canStackWindowsHorizontally) {

@@ -303,7 +303,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         pitStopRow,
-        SizedBox(height: 8), // Spacing
+
+        SizedBox(height: 8), // Spacing between button and scroll view
         SingleChildScrollView( // Allow horizontal scrolling for segments
           scrollDirection: Axis.horizontal,
           child: Row( // Row of segment columns
@@ -312,7 +313,16 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             children: segmentWidgets, // Use segmentWidgets
           ),
         ),
-        
+                Align( // Align the button to the left
+          alignment: Alignment.centerLeft,
+          child: ElevatedButton( // TODO: Replace with actual button logic and text
+            onPressed: () {
+              // TODO: Implement button action
+              print('Button Pressed!'); // Placeholder action
+            },
+            child: Text('Adv'), // Placeholder text
+          ),
+        ),
       ],
     );
   }
