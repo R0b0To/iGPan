@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'window1_content.dart'; // Will create this file next
 import 'window2_content.dart'; // Will create this file later
 import '../igp_client.dart'; // Import Account definition
+import 'package:auto_size_text/auto_size_text.dart';
 
 class AccountMainContainer extends StatelessWidget {
   final Account account; // Use the specific Account type
@@ -50,7 +51,7 @@ class AccountMainContainer extends StatelessWidget {
     //     ? minWindowHeight + 50 // Approx height when windows are horizontal
     //     : (minWindowHeight * 2) + 60; // Approx height when windows are vertical
         // Let the content determine the height using MainAxisSize.min
-
+    double fontSize = minWindowWidth > 100 ? 24 : 18; // <<< Change font size based on width
     return Card(
       margin: const EdgeInsets.all(2),
       child: Container( // Use Container to constrain height if needed, though Card might handle it
@@ -59,10 +60,13 @@ class AccountMainContainer extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min, // Important for Column height in ListView/PageView
           children: [
-            Text(
-              account.nickname ?? account.email ?? 'Unnamed Account',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
+            AutoSizeText(
+        account.nickname ?? account.email ?? 'Unnamed Account',
+        style: Theme.of(context).textTheme.titleLarge,
+        maxLines: 1,        // Only 1 line, shrink font if needed
+        minFontSize: 12,    // Don't go smaller than 12
+        overflow: TextOverflow.ellipsis, // "..." if really needed
+      ),
             // Use Flexible or Expanded if windows need to fill space,
             // but for fixed min size, direct Container might be okay.
             _buildInternalWindows(context),
@@ -78,7 +82,7 @@ class AccountMainContainer extends StatelessWidget {
     // Check if the account is in a league before creating Window2Content
     final bool isInLeague = account.fireUpData?['team']?['_league'] != null &&
                            account.fireUpData!['team']['_league'] != '0'; // Added null check for safety
-    final window2Content = isInLeague ? Window2Content(minWindowHeight: minWindowHeight-50, account: account) : null;
+    final window2Content = isInLeague ? Window2Content(minWindowHeight: minWindowHeight-80, account: account) : null;
 
 
      if (canStackWindowsHorizontally) {

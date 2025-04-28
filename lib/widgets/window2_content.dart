@@ -74,7 +74,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             tabs: tabs,
           ),
           // TabBarView for the current car's content, using the shared _tabController
-          Expanded(
+          Flexible(
             // Use Flexible/Expanded instead of fixed height if possible,
             // but for now, keep the calculation based on minWindowHeight.
            
@@ -265,7 +265,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     }
 
     return Padding( // Add padding around the content
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute space
         children: [
@@ -285,6 +285,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
             label: 'Suspension',
             control: DropdownButton<String>(
               value: initialSuspension,
+              icon: SizedBox.shrink(),
               items: suspensionMap.values.map((String value) {
                 return DropdownMenuItem<String>(
                   value: value,

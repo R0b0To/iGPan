@@ -231,7 +231,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         dropdownWidget = DropdownButton<String>(
           value: 'neutral', // Default value
           icon: SizedBox.shrink(), // Remove the default arrow icon
-           underline: SizedBox.shrink(),
+          underline: SizedBox.shrink(),
           items: <String>['very high', 'high', 'neutral', 'low', 'very low'].map((String value) {
             IconData iconData;
             Color iconColor;
@@ -291,7 +291,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             wearLabelWidget,
             SizedBox(
               height:20,
-          
             child:dropdownWidget,)
           ],
         ),

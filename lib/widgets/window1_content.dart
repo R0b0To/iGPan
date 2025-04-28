@@ -164,12 +164,13 @@ class _Window1ContentState extends State<Window1Content> {
                                onPressed: () {}, // Add functionality later
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                 padding: EdgeInsets.zero,
                                ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(MdiIcons.carWrench, size: 18), // Engine icon
-                                    SizedBox(width: 4), // Space between icon and text
+                                    Icon(MdiIcons.carWrench, size: 16), // Engine icon
+                                    SizedBox(width: 2), // Space between icon and text
                                     Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?? 'N/A'}'),
                                   ],
                                 ),
@@ -181,12 +182,13 @@ class _Window1ContentState extends State<Window1Content> {
                                onPressed: () {}, // Add functionality later
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                                 padding: EdgeInsets.zero
                                ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(MdiIcons.engine, size: 18), // Engine icon
-                                    SizedBox(width: 4), // Space between icon and text
+                                    Icon(MdiIcons.engine, size: 16), // Engine icon
+                                    SizedBox(width: 2), // Space between icon and text
                                     Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? 'N/A'}'),
                                   ],
                                 ),
@@ -198,7 +200,7 @@ class _Window1ContentState extends State<Window1Content> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(Icons.refresh, size: 16.0), // Icon for restocking
-                                  SizedBox(width: 4.0), // Add some spacing between icon and text
+                                  SizedBox(width: 2), // Add some spacing between icon and text
                                   Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
                                 ],
                               ),
@@ -216,7 +218,7 @@ class _Window1ContentState extends State<Window1Content> {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-                               child: Text('Engine'),
+                               child: Text('Eng'),
                              ),
                            ),
                            Expanded(
