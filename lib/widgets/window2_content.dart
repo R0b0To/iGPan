@@ -414,7 +414,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        padding: EdgeInsets.symmetric(horizontal: 1, vertical: 4), // Adjust padding
+        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 4), // Adjust padding
         textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
         minimumSize: Size(60, 20), // Ensure minimum size
         maximumSize: Size(100, 20)

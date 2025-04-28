@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for input formatters
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/math_utils.dart'; // Import math_utils for wearCalc and Track
+import 'dart:developer' as developer; // For logging
 
 // --- StrategyContent Widget ---
 
@@ -21,6 +22,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   bool get wantKeepAlive => true;
 
   int _numberOfPits = 1; // State variable for number of pits
+  List<String> availableTyres = ['SS', 'S', 'M', 'H', 'I', 'W']; // Available tyre types
 
   @override
   void initState() {
@@ -174,11 +176,16 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         final validTyreAsset = RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(tyreAsset);
 
         if (validTyreAsset && tyreAsset.isNotEmpty) {
-          strategyItemWidget = Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.0),
-            child: Tooltip(
-              message: '',
-              child: Stack(
+          // Wrap the Padding with GestureDetector
+          strategyItemWidget = GestureDetector(
+            onTap: () {
+              _showEditStrategyDialog(i, tyreAsset, labelText);
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              child: Tooltip(
+                message: 'Tap to edit', // Updated tooltip
+                child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Image.asset(
@@ -205,6 +212,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                     ),
                   ),
                 ],
+                ),
               ),
             ),
           );
@@ -308,6 +316,137 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       ],
     );
   }
+
+  // --- Edit Strategy Dialog ---
+  Future<void> _showEditStrategyDialog(int segmentIndex, String currentTyre, String currentLaps) async {
+    String selectedTyre = currentTyre;
+    TextEditingController lapsController = TextEditingController(text: currentLaps);
+    final formKey = GlobalKey<FormState>(); // Key for validation
+
+    return showDialog<void>(
+      context: context,
+
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Pit ${segmentIndex}'),
+          content: StatefulBuilder( // Use StatefulBuilder for local state management
+            builder: (BuildContext context, StateSetter setDialogState) {
+              return Form( // Wrap content in a Form
+                key: formKey,
+                child: SingleChildScrollView(
+                  child: ListBody(
+                    children: <Widget>[
+                      // Tyre Selection Row
+                      Text('Tyre:', style: Theme.of(context).textTheme.titleSmall),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: availableTyres.map((tyre) {
+                          bool isSelected = tyre == selectedTyre;
+                          return GestureDetector(
+                            onTap: () {
+                              setDialogState(() {
+                                selectedTyre = tyre;
+                              });
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(isSelected ? 4 : 0), // Slightly smaller padding when selected to account for border
+                              decoration: BoxDecoration(
+                                border: isSelected
+                                    ? Border.all(color: Theme.of(context).colorScheme.primary, width:2)
+                                    : Border.all(color: const Color.fromARGB(0, 248, 8, 8), width: 1), // Keep size consistent
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Image.asset(
+                                'assets/tyres/_${tyre}.png',
+                                width: 32, height: 32,
+                                errorBuilder: (c, e, s) => Container(
+                                  width: 30, height: 30,
+                                  color: Colors.grey[300],
+                                  child: Icon(Icons.tire_repair, size: 15, color: Colors.grey[600]),
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      SizedBox(height: 20), // Increased spacing after tyre selection
+                      // Laps Input
+                      TextFormField(
+                        controller: lapsController,
+                        decoration: InputDecoration(labelText: 'Laps'),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: <TextInputFormatter>[
+                          FilteringTextInputFormatter.digitsOnly // Only allow digits
+                        ],
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter laps';
+                          }
+                          final laps = int.tryParse(value);
+                          if (laps == null || laps <= 0) {
+                            return 'Please enter a valid number of laps';
+                          }
+                          return null; // Valid
+                        },
+                      ),
+                      // TODO: Add Fuel input if needed later
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Save'),
+              onPressed: () {
+                if (formKey.currentState!.validate()) { // Validate the form
+                  final newLaps = lapsController.text;
+                  // Update the strategy data
+                  try {
+                     if (widget.account.raceData != null &&
+                        widget.account.raceData!['parsedStrategy'] != null &&
+                        widget.account.raceData!['parsedStrategy'] is List &&
+                        widget.carIndex < widget.account.raceData!['parsedStrategy'].length &&
+                        widget.account.raceData!['parsedStrategy'][widget.carIndex] is List &&
+                        segmentIndex < widget.account.raceData!['parsedStrategy'][widget.carIndex].length)
+                      {
+                        // Ensure the segment exists before updating
+                        setState(() {
+                          widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex] = [selectedTyre, newLaps];
+                          // Log the update
+                          developer.log('Updated strategy for car ${widget.carIndex}, segment $segmentIndex: [$selectedTyre, $newLaps]');
+                          developer.log('Current parsedStrategy: ${widget.account.raceData!['parsedStrategy']}');
+                        });
+                        Navigator.of(context).pop(); // Close the dialog
+                      } else {
+                         developer.log('Error: Could not update strategy - Invalid data structure or index out of bounds.');
+                         // Optionally show an error message to the user
+                         ScaffoldMessenger.of(context).showSnackBar(
+                           SnackBar(content: Text('Error updating strategy data.')),
+                         );
+                      }
+                  } catch (e, stacktrace) {
+                     developer.log('Error updating strategy: $e\n$stacktrace');
+                     ScaffoldMessenger.of(context).showSnackBar(
+                       SnackBar(content: Text('An error occurred while saving.')),
+                     );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   // Helper for invalid/missing segments
   Widget _buildInvalidSegment(int index, String reason) {
