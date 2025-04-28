@@ -44,17 +44,18 @@ class _Window1ContentState extends State<Window1Content> {
                ),
                child: Text(
                  abbreviateNumber(widget.account.fireUpData?['team']?['_balance'] ?? '0'), // Added null check and default
-                 style: TextStyle(fontSize: 10),
+                 style: TextStyle(fontSize: 12),
                ), // Shorter text
              ),
            ),
 
            Text(widget.account.fireUpData?['manager']?['tokens'] ?? '0'), // Added null check and default
-           const SizedBox(width: 4), // Small spacer
 
              Builder(
                  builder: (BuildContext context) {
-                   return ElevatedButton(
+                  return SizedBox(
+                    height: 30,
+                   child: ElevatedButton(
                      onPressed: rewardStatus
                          ? () async { // Make async
                              // Show loading indicator while claiming
@@ -79,13 +80,14 @@ class _Window1ContentState extends State<Window1Content> {
                        backgroundColor: rewardStatus ? Colors.green : null, // Indicate availability
                      ),
                      child: const Text('Daily', style: TextStyle(fontSize: 10)),
-                   );
+                   ));
                  },
                ),
 
            Column( // Keep sponsor buttons in a column, but make them square
              children: [
                SizedBox(
+                height: 15, 
                  child: ElevatedButton(
                    onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () {
                      Navigator.push(
@@ -102,11 +104,12 @@ class _Window1ContentState extends State<Window1Content> {
                      disabledBackgroundColor: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? const Color.fromARGB(255, 36, 85, 37) : null,
                      
                    ),
-                   child: const Text('S1', style: TextStyle(fontSize: 10)), // Shorter text
+                   child: const Text('S1', style: TextStyle(fontSize: 11)), // Shorter text
                  ),
                ),
 
                SizedBox(
+                 height: 15, 
                  child: ElevatedButton(
                    onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () {
                       Navigator.push(
@@ -123,23 +126,25 @@ class _Window1ContentState extends State<Window1Content> {
                      disabledBackgroundColor: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? const Color.fromARGB(255, 36, 85, 37) : null,
                      
                    ),
-                   child: const Text('S2', style: TextStyle(fontSize: 10)), // Shorter text
+                   child: const Text('S2', style: TextStyle(fontSize: 11)), // Shorter text
                  ),
                ),
              ],
            ),
          ],
        ),
-       SizedBox(height: 4), // Reduced spacer height
        DefaultTabController( // Second row with tab bar
          length: 2,
          child: Column(
            children: [
              const TabBar(
                tabs: [
-                 Tab(text: 'Car'),
-                 Tab(text: 'Reports'),
+                 Tab(      height: 30, // Smaller tab height
+      child: Text('Car', style: TextStyle(fontSize: 12)),),
+                 Tab(      height: 30,
+      child: Text('Reports', style: TextStyle(fontSize: 12))),
                ],
+
              ),
              SizedBox(
                height: widget.minWindowHeight * 0.8, // 80% of minWindowHeight
@@ -162,7 +167,6 @@ class _Window1ContentState extends State<Window1Content> {
                                 child: Text('Parts: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?? 'N/A'}'),
                               ),
                             ),
-                           SizedBox(width: 8), // Spacer
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
@@ -172,11 +176,11 @@ class _Window1ContentState extends State<Window1Content> {
                                 child: Text('Engines: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']  ?? 'N/A'}'),
                               ),
                             ),
-                            SizedBox(width: 8), // Spacer
+
                             Text('Restock: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
                           ],
                         ),
-                        SizedBox(height: 8), // Spacer
+
                         // Second row: engine, fuel, tyres buttons
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -190,7 +194,6 @@ class _Window1ContentState extends State<Window1Content> {
                                child: Text('Engine'),
                              ),
                            ),
-                           SizedBox(width: 8), // Spacer
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
@@ -200,7 +203,6 @@ class _Window1ContentState extends State<Window1Content> {
                                child: Text('Fuel'),
                              ),
                            ),
-                           SizedBox(width: 8), // Spacer
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
@@ -212,7 +214,6 @@ class _Window1ContentState extends State<Window1Content> {
                            ),
                          ],
                        ),
-                       SizedBox(height: 8), // Spacer
                        // Third row(s): CircularProgressButton for each car
                        // Assuming a fixed number of cars for now (e.g., 3)
                        Column(

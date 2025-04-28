@@ -22,9 +22,12 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
   // Define the tabs as a class member
   final List<Tab> tabs = const [
-    Tab(text: 'Setup'),
-    Tab(text: 'Practice'),
-    Tab(text: 'Strategy'),
+    Tab(      height: 30,
+      child: Text('Setup', style: TextStyle(fontSize: 12))),
+    Tab(      height: 30,
+      child: Text('Practice', style: TextStyle(fontSize: 12))),
+    Tab(      height: 30,
+      child: Text('Strategy', style: TextStyle(fontSize: 12))),
   ];
 
   @override
