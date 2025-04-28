@@ -135,7 +135,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             mainAxisSize: MainAxisSize.min, // Make the row take minimum space
             children: [
               Text(
-                '$raceLaps/$totalLaps', // Combined text
+                '$totalLaps/$raceLaps', // Combined text
                 style: Theme.of(context).textTheme.bodyMedium, // Use a suitable style
                 textAlign: TextAlign.center, // Center the text
               ),
@@ -284,13 +284,14 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
       segmentWidgets.add( // Added to segmentWidgets
         Column( // Column for each segment - Removed Expanded
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             headerWidget, // Header at the top of the column
             strategyItemWidget,
             wearLabelWidget,
             SizedBox(
               height:20,
+          
             child:dropdownWidget,)
           ],
         ),
@@ -320,8 +321,14 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   // --- Edit Strategy Dialog ---
   Future<void> _showEditStrategyDialog(int segmentIndex, String currentTyre, String currentLaps) async {
     String selectedTyre = currentTyre;
-    TextEditingController lapsController = TextEditingController(text: currentLaps);
-    final formKey = GlobalKey<FormState>(); // Key for validation
+    // TextEditingController lapsController = TextEditingController(text: currentLaps); // Removed
+    double currentLapsDouble = double.tryParse(currentLaps) ?? 1.0; // Initial laps for SpinBox
+    double selectedLaps = currentLapsDouble; // State variable for SpinBox value
+    final formKey = GlobalKey<FormState>(); // Key for validation (might not be needed for SpinBox alone, but keep if other fields are added)
+
+    // Get total race laps for SpinBox max value
+    final totalRaceLaps = int.tryParse(widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '100') ?? 100;
+
 
     return showDialog<void>(
       context: context,
@@ -329,6 +336,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Pit ${segmentIndex}'),
+          contentPadding: EdgeInsets.zero,
+          insetPadding: EdgeInsets.zero,
           content: StatefulBuilder( // Use StatefulBuilder for local state management
             builder: (BuildContext context, StateSetter setDialogState) {
               return Form( // Wrap content in a Form
@@ -358,7 +367,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                               ),
                               child: Image.asset(
                                 'assets/tyres/_${tyre}.png',
-                                width: 32, height: 32,
+                                width: 40, height: 40,
                                 errorBuilder: (c, e, s) => Container(
                                   width: 30, height: 30,
                                   color: Colors.grey[300],
@@ -370,24 +379,25 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                         }).toList(),
                       ),
                       SizedBox(height: 20), // Increased spacing after tyre selection
-                      // Laps Input
-                      TextFormField(
-                        controller: lapsController,
-                        decoration: InputDecoration(labelText: 'Laps'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: <TextInputFormatter>[
-                          FilteringTextInputFormatter.digitsOnly // Only allow digits
-                        ],
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter laps';
-                          }
-                          final laps = int.tryParse(value);
-                          if (laps == null || laps <= 0) {
-                            return 'Please enter a valid number of laps';
-                          }
-                          return null; // Valid
+                      // Laps Input (SpinBox)
+                      Text('Laps:', style: Theme.of(context).textTheme.titleSmall),
+                      SizedBox(height: 8),
+                      SpinBox(
+                        min: 1,
+                        max: totalRaceLaps.toDouble(), // Use total race laps as max
+                        value: selectedLaps, // Use state variable
+                        decimals: 0,
+                        step: 1,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        ),
+                        onChanged: (value) {
+                          // No need for setDialogState here if SpinBox updates itself visually
+                          // Just update the variable holding the value
+                          selectedLaps = value;
                         },
+                        // No validator needed as SpinBox handles range
                       ),
                       // TODO: Add Fuel input if needed later
                     ],
@@ -406,8 +416,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             TextButton(
               child: Text('Save'),
               onPressed: () {
-                if (formKey.currentState!.validate()) { // Validate the form
-                  final newLaps = lapsController.text;
+                // if (formKey.currentState!.validate()) { // Validation might not be needed if only SpinBox is used
+                  // final newLaps = lapsController.text; // Removed
+                  final newLapsString = selectedLaps.toInt().toString(); // Get laps from SpinBox state
                   // Update the strategy data
                   try {
                      if (widget.account.raceData != null &&
@@ -419,9 +430,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                       {
                         // Ensure the segment exists before updating
                         setState(() {
-                          widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex] = [selectedTyre, newLaps];
+                          widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex] = [selectedTyre, newLapsString];
                           // Log the update
-                          developer.log('Updated strategy for car ${widget.carIndex}, segment $segmentIndex: [$selectedTyre, $newLaps]');
+                          developer.log('Updated strategy for car ${widget.carIndex}, segment $segmentIndex: [$selectedTyre, $newLapsString]');
                           developer.log('Current parsedStrategy: ${widget.account.raceData!['parsedStrategy']}');
                         });
                         Navigator.of(context).pop(); // Close the dialog
@@ -438,9 +449,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                        SnackBar(content: Text('An error occurred while saving.')),
                      );
                   }
-                }
-              },
-            ),
+               // } // End validation check
+             },
+           ),
           ],
         );
       },
