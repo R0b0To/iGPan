@@ -3,6 +3,7 @@ import 'package:html/parser.dart' show parse; // Import the parse function
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class Window1Content extends StatefulWidget {
   final double minWindowHeight;
@@ -164,7 +165,15 @@ class _Window1ContentState extends State<Window1Content> {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-                                child: Text('Parts: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?? 'N/A'}'),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(MdiIcons.carWrench, size: 18), // Engine icon
+                                    SizedBox(width: 4), // Space between icon and text
+                                    Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?? 'N/A'}'),
+                                  ],
+                                ),
+                                
                               ),
                             ),
                            Expanded(
@@ -173,11 +182,27 @@ class _Window1ContentState extends State<Window1Content> {
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                ),
-                                child: Text('Engines: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']  ?? 'N/A'}'),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(MdiIcons.engine, size: 18), // Engine icon
+                                    SizedBox(width: 4), // Space between icon and text
+                                    Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? 'N/A'}'),
+                                  ],
+                                ),
                               ),
                             ),
 
-                            Text('Restock: ${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
+                            Expanded(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.refresh, size: 16.0), // Icon for restocking
+                                  SizedBox(width: 4.0), // Add some spacing between icon and text
+                                  Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['restockRaces'] ?? 'N/A'}'),
+                                ],
+                              ),
+                            ),
                           ],
                         ),
 

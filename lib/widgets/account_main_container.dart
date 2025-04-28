@@ -52,9 +52,9 @@ class AccountMainContainer extends StatelessWidget {
         // Let the content determine the height using MainAxisSize.min
 
     return Card(
-      margin: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.all(2),
       child: Container( // Use Container to constrain height if needed, though Card might handle it
-        padding: const EdgeInsets.all(8.0),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min, // Important for Column height in ListView/PageView
@@ -63,7 +63,6 @@ class AccountMainContainer extends StatelessWidget {
               account.nickname ?? account.email ?? 'Unnamed Account',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            const SizedBox(height: 8.0),
             // Use Flexible or Expanded if windows need to fill space,
             // but for fixed min size, direct Container might be okay.
             _buildInternalWindows(context),
@@ -129,7 +128,7 @@ class AccountMainContainer extends StatelessWidget {
             ),
             // Only add SizedBox and second window if it exists
             if (window2Content != null) ...[
-              const SizedBox(height: 8.0),
+
               Container(
                 constraints: BoxConstraints(
                    minWidth: double.infinity, // Take full width available
