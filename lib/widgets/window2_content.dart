@@ -272,11 +272,13 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     }
 
     return Padding( // Add padding around the content
-      padding: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute space
+
         children: [
           // Driver Info Row
+          SizedBox(height: 30,    
+          child:      
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -285,6 +287,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               _buildInfoButton(context, '${driver.contract ?? 'N/A'}', () { /* TODO: Contract action */ }), // Added null check
             ],
           ),
+          ),
+          SizedBox(height: 8),
 
           // Suspension Row
           _buildSetupRow(
@@ -359,7 +363,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               child: const Text('ideal'),
             ),
           ),
-
+SizedBox(height: 8),
           // Ride Height Row
           _buildSetupRow(
             context,
@@ -424,8 +428,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         padding: EdgeInsets.symmetric(horizontal: 0, vertical: 4), // Adjust padding
         textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
-        minimumSize: Size(60, 20), // Ensure minimum size
-        maximumSize: Size(100, 20)
+        minimumSize: Size(60, 30), // Ensure minimum size
+        maximumSize: Size(100, 30)
       ),
       onPressed: onPressed,
       child: Text(text, textAlign: TextAlign.center),
@@ -435,7 +439,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
   // Helper to build setup rows consistently
   Widget _buildSetupRow(BuildContext context, {required String label, required Widget control, Widget? control2}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space out elements
         children: [

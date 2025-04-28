@@ -316,9 +316,83 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                 Align( // Align the button to the left
           alignment: Alignment.bottomLeft,
           child: ElevatedButton( // TODO: Replace with actual button logic and text
+            style: ButtonStyle(
+              backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                (Set<MaterialState> states) {
+                  return widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] == true
+                      ? Colors.green
+                      : Colors.red;
+                },
+              ),
+            ),
             onPressed: () {
-              // TODO: Implement button action
-              print('Button Pressed!'); // Placeholder action
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  bool isAdvancedEnabled = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'];
+                  String selectedPushLevel = widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] ?? '60';
+                  Map<String, String> pushLevelMap = {
+                    '100': 'Very high',
+                    '80': 'High',
+                    '60': 'Neutral',
+                    '40': 'Low',
+                    '20': 'Very low',
+                  };
+
+                  return StatefulBuilder(
+                    builder: (context, setState) {
+                      return AlertDialog(
+                        title: Text('Advanced Settings'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Text('Advanced: '),
+                                Switch(
+                                  value: isAdvancedEnabled,
+                                  onChanged: (bool value) {
+                                    setState(() {
+                                      isAdvancedEnabled = value;
+                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value ? true : false;
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                            DropdownButton<String>(
+                              value: selectedPushLevel,
+                              items: pushLevelMap.entries.map((entry) {
+                                return DropdownMenuItem<String>(
+                                  value: entry.key,
+                                  child: Text(entry.value),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                if (newValue != null) {
+                                  setState(() {
+                                    selectedPushLevel = newValue;
+                                    widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] = newValue;
+                                  });
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              setState(() {Navigator.of(context).pop();});
+                              
+                            },
+                            child: Text('Close'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              );
             },
             child: Text('Adv'), // Placeholder text
           ),

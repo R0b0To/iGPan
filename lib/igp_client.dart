@@ -270,7 +270,14 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
     //debugPrint('Response data: ${response.data}');
 
     final raceDataJson = jsonDecode(response.data);
-
+    if(account.fireUpData?['team']?['_numCars']=='2'){
+       raceDataJson['vars']['d2IgnoreAdvanced'] = raceDataJson['vars']['d2IgnoreAdvanced']=='0' ? true:false;
+       final selectedPush = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d2PushLevel'])?.group(1) ?? '60';
+       raceDataJson['vars']['d2PushLevel'] = selectedPush;
+    }
+      raceDataJson['vars']['d1IgnoreAdvanced'] =  raceDataJson['vars']['d1IgnoreAdvanced']=='0' ? true:false;
+      final selectedPush = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d1PushLevel'])?.group(1) ?? '60';
+      raceDataJson['vars']['d1PushLevel'] = selectedPush;
     // Update the account's raceData with the fetched data
     raceDataJson['parsedStrategy'] = extractStrategyData(raceDataJson['vars']);
     account.raceData = raceDataJson;
