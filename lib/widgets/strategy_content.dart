@@ -19,6 +19,19 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   @override
   bool get wantKeepAlive => true;
 
+  int _numberOfPits = 0; // State variable for number of pits
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize _numberOfPits from account data
+    String pitKey = 'd${widget.carIndex + 1}Pits';
+    if (widget.account.raceData != null ) {
+      var pitValue = widget.account.raceData!['vars']?[pitKey];
+      _numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context); // Important for AutomaticKeepAliveClientMixin
@@ -26,15 +39,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     // Get raceLaps safely
     final raceLaps = widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0';
 
-    // Calculate pitKey and number of segments
-    String pitKey = 'd${widget.carIndex + 1}Pits'; // Use widget.carIndex
-    int numberOfPits = 0;
-    // Safely parse the number of pits
-    if (widget.account.raceData != null ) {
-      var pitValue = widget.account.raceData!['vars']?[pitKey];
-      numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
-    }
-    final numberOfSegments = numberOfPits + 1; // Segments = Pits + 1
+    // Calculate number of segments based on state variable
+    final numberOfSegments = _numberOfPits + 1; // Segments = Pits + 1
 
     // Calculate total laps before building the UI
     int calculatedTotalLaps = 0;
@@ -65,11 +71,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         SizedBox(
           width: 120.0, // Provide a fixed width
           child: SpinBox(
-            min: 1,
+            min: 1, // Minimum 0 pits
             max: 4, // Assuming a maximum of 4 pit stops based on headers
-            value: numberOfPits.toDouble(),
+            value: _numberOfPits.toDouble(), // Use state variable
             onChanged: (value) {
-              // TODO: Implement logic to update the number of pits
+              setState(() {
+                _numberOfPits = value.toInt(); // Update state variable
+              });
             },
           ),
         ),
@@ -106,18 +114,19 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     List<Widget> segmentWidgets = []; // Renamed to segmentWidgets
 
     // Ensure we have enough segments to match headers, adding placeholders if needed
-    int displaySegments = headers.length; // Display up to the number of headers
-    for (int i = 0; i < displaySegments; i++) {
+    // Iterate through segments based on the number of pits
+    for (int i = 0; i <= _numberOfPits; i++) { // Loop for _numberOfPits + 1 segments
       Widget headerWidget;
       Widget strategyItemWidget;
       Widget wearLabelWidget;
       Widget dropdownWidget;
 
       // Header for this segment
-      headerWidget = Center(child: Text(headers[i]));
+      String headerText = i == 0 ? 'Start' : 'Pit $i';
+      headerWidget = Center(child: Text(headerText));
 
-      // Check if data exists for this segment
-      if (i < numberOfSegments && i < carStrategy.length &&
+      // Check if data exists for this segment (and if it's within the actual strategy data length)
+      if (i < carStrategy.length &&
           carStrategy[i] is List && carStrategy[i].length >= 2 &&
           carStrategy[i][0] is String && carStrategy[i][1] is String) {
 
