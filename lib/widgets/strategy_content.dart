@@ -19,7 +19,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   @override
   bool get wantKeepAlive => true;
 
-  int _numberOfPits = 0; // State variable for number of pits
+  int _numberOfPits = 1; // State variable for number of pits
 
   @override
   void initState() {
@@ -77,6 +77,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             onChanged: (value) {
               setState(() {
                 _numberOfPits = value.toInt(); // Update state variable
+                String pitKey = 'd${widget.carIndex + 1}Pits';
+                if (widget.account.raceData != null && widget.account.raceData!['vars'] != null) {
+                  widget.account.raceData!['vars']?[pitKey] = _numberOfPits;
+                }
               });
             },
           ),

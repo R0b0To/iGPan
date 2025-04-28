@@ -319,14 +319,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                     if (driverAttributes != null && driverAttributes.length > 13 && tier != null && raceNameHtml != null) {
                       final double height = driverAttributes[13];
                       final int tierValue = int.tryParse(tier) ?? 1;
-                      final RegExp regExp = RegExp(r'f-([a-z]+)');
-                      final Match? match = regExp.firstMatch(raceNameHtml);
-                      String raceCode = '';
-                      if (match != null && match.groupCount > 0) {
-                        raceCode = match.group(1)!;
-                      }
 
-                      final CarSetup carSetup = CarSetup(raceCode, height, tierValue);
+                      final CarSetup carSetup = CarSetup(widget.account.raceData?['vars']['trackId'], height, tierValue);
                       final int suggestedRide = carSetup.ride;
                       final int suggestedWing = carSetup.wing;
                       final int suggestedSuspension = carSetup.suspension+1; // Adjusted to match the dropdown values

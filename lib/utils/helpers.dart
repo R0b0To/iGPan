@@ -45,87 +45,87 @@ class CarSetup {
     };
 
     final Map<int, Map<String, Map<String, int>>> circuits = {
-      // rookie
-      1: {
-        'ae': {'ride': 6, 'wing': 1, 'suspension': 1, 'pit': 23},
-        'at': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 27},
-        'au': {'ride': 9, 'wing': 4, 'suspension': 1, 'pit': 24},
-        'az': {'ride': 8, 'wing': 1, 'suspension': 1, 'pit': 17},
-        'be': {'ride': 6, 'wing': 3, 'suspension': 1, 'pit': 15},
-        'bh': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 23},
-        'br': {'ride': 4, 'wing': 2, 'suspension': 1, 'pit': 21},
-        'ca': {'ride': 4, 'wing': -1, 'suspension': 2, 'pit': 17},
-        'cn': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 26},
-        'de': {'ride': 4, 'wing': 2, 'suspension': 1, 'pit': 17},
-        'es': {'ride': 2, 'wing': 5, 'suspension': 0, 'pit': 25},
-        'eu': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 17},
-        'fr': {'ride': 8, 'wing': 2, 'suspension': 1, 'pit': 20},
-        'gb': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 23},
-        'hu': {'ride': 5, 'wing': 6, 'suspension': 0, 'pit': 17},
-        'it': {'ride': 6, 'wing': -2, 'suspension': 2, 'pit': 24},
-        'jp': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 20},
-        'mc': {'ride': 11, 'wing': 9, 'suspension': 0, 'pit': 16},
-        'mx': {'ride': 3, 'wing': 2, 'suspension': 1, 'pit': 19},
-        'my': {'ride': 6, 'wing': 1, 'suspension': 1, 'pit': 22},
-        'ru': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 21},
-        'sg': {'ride': 8, 'wing': 7, 'suspension': 0, 'pit': 20},
-        'tr': {'ride': 6, 'wing': 2, 'suspension': 1, 'pit': 18},
-        'us': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 16},
-      },
-      // pro
-      2: {
-        'ae': {'ride': 13, 'wing': 3, 'suspension': 1, 'pit': 23},
-        'at': {'ride': 9, 'wing': 0, 'suspension': 2, 'pit': 27},
-        'au': {'ride': 19, 'wing': 8, 'suspension': 1, 'pit': 24},
-        'az': {'ride': 17, 'wing': 3, 'suspension': 1, 'pit': 17},
-        'be': {'ride': 12, 'wing': 6, 'suspension': 1, 'pit': 15},
-        'bh': {'ride': 8, 'wing': 0, 'suspension': 2, 'pit': 23},
-        'br': {'ride': 8, 'wing': 5, 'suspension': 1, 'pit': 21},
-        'ca': {'ride': 9, 'wing': -3, 'suspension': 2, 'pit': 17},
-        'cn': {'ride': 5, 'wing': 5, 'suspension': 1, 'pit': 26},
-        'de': {'ride': 8, 'wing': 5, 'suspension': 1, 'pit': 17},
-        'es': {'ride': 5, 'wing': 10, 'suspension': 0, 'pit': 25},
-        'eu': {'ride': 12, 'wing': 10, 'suspension': 0, 'pit': 17},
-        'fr': {'ride': 17, 'wing': 5, 'suspension': 1, 'pit': 20},
-        'gb': {'ride': 9, 'wing': 0, 'suspension': 2, 'pit': 23},
-        'hu': {'ride': 10, 'wing': 13, 'suspension': 0, 'pit': 17},
-        'it': {'ride': 12, 'wing': -5, 'suspension': 2, 'pit': 24},
-        'jp': {'ride': 12, 'wing': 10, 'suspension': 0, 'pit': 20},
-        'mc': {'ride': 22, 'wing': 18, 'suspension': 0, 'pit': 16},
-        'mx': {'ride': 7, 'wing': 5, 'suspension': 1, 'pit': 19},
-        'my': {'ride': 12, 'wing': 3, 'suspension': 1, 'pit': 22},
-        'ru': {'ride': 4, 'wing': 5, 'suspension': 1, 'pit': 21},
-        'sg': {'ride': 17, 'wing': 14, 'suspension': 0, 'pit': 20},
-        'tr': {'ride': 13, 'wing': 5, 'suspension': 1, 'pit': 18},
-        'us': {'ride': 4, 'wing': 4, 'suspension': 1, 'pit': 16},
-      },
-      // elite
-      3: {
-        'ae': {'ride': 25, 'wing': 5, 'suspension': 1, 'pit': 23},
-        'at': {'ride': 18, 'wing': 0, 'suspension': 2, 'pit': 27},
-        'au': {'ride': 38, 'wing': 15, 'suspension': 1, 'pit': 24},
-        'az': {'ride': 33, 'wing': 5, 'suspension': 1, 'pit': 17},
-        'be': {'ride': 23, 'wing': 12, 'suspension': 1, 'pit': 15},
-        'bh': {'ride': 15, 'wing': 0, 'suspension': 2, 'pit': 23},
-        'br': {'ride': 15, 'wing': 10, 'suspension': 1, 'pit': 21},
-        'ca': {'ride': 18, 'wing': -5, 'suspension': 2, 'pit': 17},
-        'cn': {'ride': 10, 'wing': 10, 'suspension': 1, 'pit': 26},
-        'de': {'ride': 15, 'wing': 10, 'suspension': 1, 'pit': 17},
-        'es': {'ride': 10, 'wing': 20, 'suspension': 0, 'pit': 25},
-        'eu': {'ride': 23, 'wing': 20, 'suspension': 0, 'pit': 17},
-        'fr': {'ride': 33, 'wing': 10, 'suspension': 1, 'pit': 20},
-        'gb': {'ride': 18, 'wing': 0, 'suspension': 2, 'pit': 23},
-        'hu': {'ride': 20, 'wing': 25, 'suspension': 0, 'pit': 17},
-        'it': {'ride': 23, 'wing': -10, 'suspension': 2, 'pit': 24},
-        'jp': {'ride': 23, 'wing': 20, 'suspension': 0, 'pit': 20},
-        'mc': {'ride': 43, 'wing': 35, 'suspension': 0, 'pit': 16},
-        'mx': {'ride': 13, 'wing': 10, 'suspension': 1, 'pit': 19},
-        'my': {'ride': 23, 'wing': 5, 'suspension': 1, 'pit': 22},
-        'ru': {'ride': 8, 'wing': 10, 'suspension': 1, 'pit': 21},
-        'sg': {'ride': 33, 'wing': 27, 'suspension': 0, 'pit': 20},
-        'tr': {'ride': 25, 'wing': 10, 'suspension': 1, 'pit': 18},
-        'us': {'ride': 8, 'wing': 7, 'suspension': 1, 'pit': 16},
-      }
+  // rookie
+  1: {
+    '17': {'ride': 6, 'wing': 1, 'suspension': 1, 'pit': 23},   // Abu Dhabi (ae)
+    '20': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 27},   // Austria (at)
+    '1': {'ride': 9, 'wing': 4, 'suspension': 1, 'pit': 24},    // Australia (au)
+    '22': {'ride': 8, 'wing': 1, 'suspension': 1, 'pit': 17},   // Azerbaijan (az)
+    '12': {'ride': 6, 'wing': 3, 'suspension': 1, 'pit': 15},   // Belgium (be)
+    '4': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 23},    // Bahrain (bh)
+    '16': {'ride': 4, 'wing': 2, 'suspension': 1, 'pit': 21},   // Brazil (br)
+    '21': {'ride': 4, 'wing': -1, 'suspension': 2, 'pit': 17},  // Canada (ca)
+    '3': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 26},    // China (cn)
+    '9': {'ride': 4, 'wing': 2, 'suspension': 1, 'pit': 17},    // Germany (de)
+    '5': {'ride': 2, 'wing': 5, 'suspension': 0, 'pit': 25},    // Spain (es)
+    '11': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 17},   // Europe (eu)
+    '19': {'ride': 8, 'wing': 2, 'suspension': 1, 'pit': 20},   // France (fr)
+    '18': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 23},   // Great Britain (gb)
+    '10': {'ride': 5, 'wing': 6, 'suspension': 0, 'pit': 17},   // Hungary (hu)
+    '13': {'ride': 6, 'wing': -2, 'suspension': 2, 'pit': 24},  // Italy (it)
+    '15': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 20},   // Japan (jp)
+    '6': {'ride': 11, 'wing': 9, 'suspension': 0, 'pit': 16},   // Monaco (mc)
+    '23': {'ride': 3, 'wing': 2, 'suspension': 1, 'pit': 19},   // Mexico (mx)
+    '2': {'ride': 6, 'wing': 1, 'suspension': 1, 'pit': 22},    // Malaysia (my)
+    '24': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 21},   // Russia (ru)
+    '14': {'ride': 8, 'wing': 7, 'suspension': 0, 'pit': 20},   // Singapore (sg)
+    '7': {'ride': 6, 'wing': 2, 'suspension': 1, 'pit': 18},    // Turkey (tr)
+    '25': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 16},   // USA (us)
+  },
+  // pro
+  2: {
+    '17': {'ride': 13, 'wing': 3, 'suspension': 1, 'pit': 23},   // Abu Dhabi
+    '20': {'ride': 9, 'wing': 0, 'suspension': 2, 'pit': 27},    // Austria
+    '1': {'ride': 19, 'wing': 8, 'suspension': 1, 'pit': 24},    // Australia
+    '22': {'ride': 17, 'wing': 3, 'suspension': 1, 'pit': 17},   // Azerbaijan
+    '12': {'ride': 12, 'wing': 6, 'suspension': 1, 'pit': 15},   // Belgium
+    '4': {'ride': 8, 'wing': 0, 'suspension': 2, 'pit': 23},     // Bahrain
+    '16': {'ride': 8, 'wing': 5, 'suspension': 1, 'pit': 21},    // Brazil
+    '21': {'ride': 9, 'wing': -3, 'suspension': 2, 'pit': 17},   // Canada
+    '3': {'ride': 5, 'wing': 5, 'suspension': 1, 'pit': 26},     // China
+    '9': {'ride': 8, 'wing': 5, 'suspension': 1, 'pit': 17},     // Germany
+    '5': {'ride': 5, 'wing': 10, 'suspension': 0, 'pit': 25},    // Spain
+    '11': {'ride': 12, 'wing': 10, 'suspension': 0, 'pit': 17},  // Europe
+    '19': {'ride': 17, 'wing': 5, 'suspension': 1, 'pit': 20},   // France
+    '18': {'ride': 9, 'wing': 0, 'suspension': 2, 'pit': 23},    // Great Britain
+    '10': {'ride': 10, 'wing': 13, 'suspension': 0, 'pit': 17},  // Hungary
+    '13': {'ride': 12, 'wing': -5, 'suspension': 2, 'pit': 24},  // Italy
+    '15': {'ride': 12, 'wing': 10, 'suspension': 0, 'pit': 20},  // Japan
+    '6': {'ride': 22, 'wing': 18, 'suspension': 0, 'pit': 16},   // Monaco
+    '23': {'ride': 7, 'wing': 5, 'suspension': 1, 'pit': 19},    // Mexico
+    '2': {'ride': 12, 'wing': 3, 'suspension': 1, 'pit': 22},    // Malaysia
+    '24': {'ride': 4, 'wing': 5, 'suspension': 1, 'pit': 21},    // Russia
+    '14': {'ride': 17, 'wing': 14, 'suspension': 0, 'pit': 20},  // Singapore
+    '7': {'ride': 13, 'wing': 5, 'suspension': 1, 'pit': 18},    // Turkey
+    '25': {'ride': 4, 'wing': 4, 'suspension': 1, 'pit': 16},    // USA
+  },
+  // elite
+  3: {
+    '17': {'ride': 25, 'wing': 5, 'suspension': 1, 'pit': 23},   // Abu Dhabi
+    '20': {'ride': 18, 'wing': 0, 'suspension': 2, 'pit': 27},   // Austria
+    '1': {'ride': 38, 'wing': 15, 'suspension': 1, 'pit': 24},   // Australia
+    '22': {'ride': 33, 'wing': 5, 'suspension': 1, 'pit': 17},   // Azerbaijan
+    '12': {'ride': 23, 'wing': 12, 'suspension': 1, 'pit': 15},  // Belgium
+    '4': {'ride': 15, 'wing': 0, 'suspension': 2, 'pit': 23},    // Bahrain
+    '16': {'ride': 15, 'wing': 10, 'suspension': 1, 'pit': 21},  // Brazil
+    '21': {'ride': 18, 'wing': -5, 'suspension': 2, 'pit': 17},  // Canada
+    '3': {'ride': 10, 'wing': 10, 'suspension': 1, 'pit': 26},   // China
+    '9': {'ride': 15, 'wing': 10, 'suspension': 1, 'pit': 17},   // Germany
+    '5': {'ride': 10, 'wing': 20, 'suspension': 0, 'pit': 25},   // Spain
+    '11': {'ride': 23, 'wing': 20, 'suspension': 0, 'pit': 17},  // Europe
+    '19': {'ride': 33, 'wing': 10, 'suspension': 1, 'pit': 20},  // France
+    '18': {'ride': 18, 'wing': 0, 'suspension': 2, 'pit': 23},   // Great Britain
+    '10': {'ride': 20, 'wing': 25, 'suspension': 0, 'pit': 17},  // Hungary
+    '13': {'ride': 23, 'wing': -10, 'suspension': 2, 'pit': 24}, // Italy
+    '15': {'ride': 23, 'wing': 20, 'suspension': 0, 'pit': 20},  // Japan
+    '6': {'ride': 43, 'wing': 35, 'suspension': 0, 'pit': 16},   // Monaco
+    '23': {'ride': 13, 'wing': 10, 'suspension': 1, 'pit': 19},  // Mexico
+    '2': {'ride': 23, 'wing': 5, 'suspension': 1, 'pit': 22},    // Malaysia
+    '24': {'ride': 8, 'wing': 10, 'suspension': 1, 'pit': 21},   // Russia
+    '14': {'ride': 33, 'wing': 27, 'suspension': 0, 'pit': 20},  // Singapore
+    '7': {'ride': 25, 'wing': 10, 'suspension': 1, 'pit': 18},   // Turkey
+    '25': {'ride': 8, 'wing': 7, 'suspension': 1, 'pit': 16},    // USA
+  }
     };
 
     Map<String, dynamic> setup = Map<String, dynamic>.from(circuits[tier]![trackCode]!);
