@@ -135,10 +135,9 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
           ],
         ),
        
-        // CarouselSlider for the tab bars and their content (one item per car)
-        SizedBox(
+       Stack(
+        children:[ SizedBox(
           // Calculate height: TabBar height (approx 48-50) + TabBarView height
-          height: widget.minWindowHeight * 0.85 + 50, // Adjust 50 if needed (for TabBar)
           child: CarouselSlider.builder(
             carouselController: _carouselController,
             itemCount: carouselItems.length, // Number of items is number of cars
@@ -157,31 +156,39 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               return carouselItems[index];
             },
           ),
-        ),
-        // Indicator dots (only show if numCars is 2 or more, adjusted logic)
-        if (numCars > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(numCars, (index) { // Generate labels based on number of cars
-              return GestureDetector( // Make the label clickable
-                onTap: () {
-                  _carouselController.animateToPage(index); // Animate to the tapped page
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4.0), // Add some padding
-                  child: Text(
-                    'Car ${index + 1}', // Generate label text
-                    style: TextStyle(
-                      fontWeight: _currentCarouselIndex == index ? FontWeight.bold : FontWeight.normal, // Bold if selected
-                      color: _currentCarouselIndex == index
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.secondary.withOpacity(0.6), // Adjust opacity/color as needed
+        ),    if (numCars > 1)
+          Align(
+            alignment: Alignment.bottomCenter,
+            heightFactor: 9.7,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(numCars, (index) { // Generate labels based on number of cars
+                return GestureDetector( // Make the label clickable
+                  onTap: () {
+                    _carouselController.animateToPage(index); // Animate to the tapped page
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4.0), // Add some padding
+                    child: Text(
+                      'Car ${index + 1}', // Generate label text
+                      style: TextStyle(
+                        fontWeight: _currentCarouselIndex == index ? FontWeight.bold : FontWeight.normal, // Bold if selected
+                        color: _currentCarouselIndex == index
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.secondary.withOpacity(0.6), // Adjust opacity/color as needed
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
-          ),
+                );
+              }),
+            ),
+          ),]
+
+       ),
+        // CarouselSlider for the tab bars and their content (one item per car)
+        
+        // Indicator dots (only show if numCars is 2 or more, adjusted logic)
+    
       ],
     );
   }

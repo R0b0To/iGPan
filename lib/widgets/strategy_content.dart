@@ -314,7 +314,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           ),
         ),
                 Align( // Align the button to the left
-          alignment: Alignment.centerLeft,
+          alignment: Alignment.bottomLeft,
           child: ElevatedButton( // TODO: Replace with actual button logic and text
             onPressed: () {
               // TODO: Implement button action
