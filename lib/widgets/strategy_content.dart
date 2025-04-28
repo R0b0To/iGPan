@@ -73,11 +73,22 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       children: [
         // Placeholder for Spinbox - using Text for now
         SizedBox(
-          width: 120.0, // Provide a fixed width
+          width: 100.0, // Provide a fixed width
+          height: 30,
+          
           child: SpinBox(
             min: 1, // Minimum 0 pits
             max: 4, // Assuming a maximum of 4 pit stops based on headers
             value: _numberOfPits.toDouble(), // Use state variable
+            iconSize: 20.0, // <<< Set your + and - icon size
+            spacing: 0,
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // Adjust padding
+              border: OutlineInputBorder(),
+              
+
+            ),
+            textStyle: TextStyle(fontSize: 12), // Adjust text size
             onChanged: (value) {
               setState(() {
                 _numberOfPits = value.toInt(); // Update state variable
@@ -195,10 +206,11 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         dropdownWidget = DropdownButton<String>(
           value: 'neutral', // Default value
           icon: SizedBox.shrink(), // Remove the default arrow icon
+           underline: SizedBox.shrink(),
           items: <String>['very high', 'high', 'neutral', 'low', 'very low'].map((String value) {
             IconData iconData;
             Color iconColor;
-            double iconOpacity = 1.0;
+           
 
             switch (value) {
               case 'very low':
@@ -250,12 +262,11 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             headerWidget, // Header at the top of the column
-            SizedBox(height: 4), // Spacing
             strategyItemWidget,
-            SizedBox(height: 4), // Spacing
             wearLabelWidget,
-            SizedBox(height: 4), // Spacing
-            dropdownWidget,
+            SizedBox(
+              height:20,
+            child:dropdownWidget,)
           ],
         ),
       );
@@ -276,8 +287,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             children: segmentWidgets, // Use segmentWidgets
           ),
         ),
-        SizedBox(height: 8), // Spacing
-        // Laps display removed from here
+        
       ],
     );
   }

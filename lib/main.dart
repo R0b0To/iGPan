@@ -180,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               builder: (context, constraints) {
                                 // Define minimum size for sub-windows
                                 const double minWindowWidth = 400;
-                                const double minWindowHeight = 250;
+                                const double minWindowHeight = 240;
 
                                 // Check if there's enough horizontal space for two windows side-by-side
                                 bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);

@@ -74,10 +74,10 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             tabs: tabs,
           ),
           // TabBarView for the current car's content, using the shared _tabController
-          SizedBox(
+          Expanded(
             // Use Flexible/Expanded instead of fixed height if possible,
             // but for now, keep the calculation based on minWindowHeight.
-            height: widget.minWindowHeight * 0.85, // Adjust height as needed
+           
             child: TabBarView(
               controller: _tabController, // Use the shared controller
               children: [
@@ -134,7 +134,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             ),
           ],
         ),
-        const SizedBox(height: 4),
+       
         // CarouselSlider for the tab bars and their content (one item per car)
         SizedBox(
           // Calculate height: TabBar height (approx 48-50) + TabBarView height
@@ -168,7 +168,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                   _carouselController.animateToPage(index); // Animate to the tapped page
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 4.0), // Add some padding
+                  padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4.0), // Add some padding
                   child: Text(
                     'Car ${index + 1}', // Generate label text
                     style: TextStyle(
@@ -274,8 +274,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildInfoButton(context, driver.name, () { /* TODO: Driver action */ }),
-              _buildInfoButton(context, 'St: ${driver.attributes?[12]?.toString() ?? 'N/A'}', () { /* TODO: Stamina action */ }), // Added null check
-              _buildInfoButton(context, 'C: ${driver.contract ?? 'N/A'}', () { /* TODO: Contract action */ }), // Added null check
+              _buildInfoButton(context, '${driver.attributes?[12]?.toStringAsFixed(0) ?? 'N/A'}', () { /* TODO: Stamina action */ }), // Added null check
+              _buildInfoButton(context, '${driver.contract ?? 'N/A'}', () { /* TODO: Contract action */ }), // Added null check
             ],
           ),
 
