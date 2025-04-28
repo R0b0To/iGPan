@@ -301,6 +301,7 @@ Map<String, dynamic> parseFireUpData(dynamic fireUpData) {
     fireUpData['preCache']?['p=cars']?['vars']?['c2Condition'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c2Condition']);
     fireUpData['preCache']?['p=cars']?['vars']?['c2Engine'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c2Engine']);
     fireUpData['preCache']?['p=cars']?['vars']?['c1Engine'] = extractDataValueAttribute(fireUpData['preCache']?['p=cars']?['vars']?['c1Engine']);
+    fireUpData['preCache']?['p=cars']?['vars']?['carAttributes'] = parseCarAttributes(fireUpData['preCache']?['p=cars']?['vars']?['carAttributes']);
     return Map<String, dynamic>.from(fireUpData);
   } else {
     // Handle other data types or return an empty map if data is not as expected.
@@ -329,3 +330,33 @@ String extractDataValueFromHtml(String htmlString, String elementId) {
     debugPrint(attribute); // Debug print to check if the element is found
     return attribute;
   }
+
+Map<String, int> parseCarAttributes(String htmlString) {
+  final Map<String, int> attributes = {};
+  
+  // Parse the HTML
+  final document = parse(htmlString);
+  
+  // Find all attribute rows
+  final attributeRows = document.querySelectorAll('.attribute-row');
+  
+  for (var row in attributeRows) {
+    // Extract the attribute name (converting to lowercase for consistency)
+    final nameElement = row.querySelector('.attribute-rating-header span');
+    if (nameElement == null) continue;
+    
+    String name = nameElement.text.toLowerCase().replaceAll(' ', '_');
+    
+    // Extract the attribute value
+    final valueElement = row.querySelector('.ratingVal');
+    if (valueElement == null) continue;
+    
+    // Parse the value as an integer
+    int value = int.tryParse(valueElement.text) ?? 0;
+    
+    // Add to the map
+    attributes[name] = value;
+  }
+  
+  return attributes;
+}

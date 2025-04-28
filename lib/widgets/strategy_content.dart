@@ -2,6 +2,7 @@ import 'package:flutter_spinbox/flutter_spinbox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for input formatters
 import '../igp_client.dart'; // Import Account and other necessary definitions
+import '../utils/math_utils.dart'; // Import math_utils for wearCalc and Track
 
 // --- StrategyContent Widget ---
 
@@ -37,7 +38,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     super.build(context); // Important for AutomaticKeepAliveClientMixin
 
     // Get raceLaps safely
-    final raceLaps = widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0';
+    final raceLaps = int.tryParse(widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0') ?? 0;
+    final trackId = widget.account.raceData?['vars']?['trackId']?.toString() ?? '1'; // Assuming '1' as a default if trackId is null
+    final track = Track(trackId, raceLaps); // Create Track instance
+    final calculatedWear = wearCalc(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['tyre_economy']?.toDouble() ?? 0.0, track);
 
     // Calculate number of segments based on state variable
     final numberOfSegments = _numberOfPits + 1; // Segments = Pits + 1
@@ -117,6 +121,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     // Strategy items, wear labels, and dropdowns arranged in columns per segment
     List<Widget> segmentWidgets = []; // Renamed to segmentWidgets
 
+    
     // Ensure we have enough segments to match headers, adding placeholders if needed
     // Iterate through segments based on the number of pits
     for (int i = 0; i <= _numberOfPits; i++) { // Loop for _numberOfPits + 1 segments
@@ -178,9 +183,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         } else {
           strategyItemWidget = _buildInvalidSegment(i, 'Invalid tyre');
         }
-
+      
         // Wear label (Placeholder)
-        wearLabelWidget = Text('Wear ${i+1}'); // Placeholder text
+        
+        final tyreWear = double.tryParse(calculatedWear['${tyreAsset}'] ?? '0.0') ?? 0.0;
+        final segmentLaps = int.tryParse(labelText) ?? 0;
+        final stintWear = stintWearCalc(tyreWear, segmentLaps, track);
+        wearLabelWidget = Text(stintWear);
 
         // Dropdown (Placeholder)
         dropdownWidget = DropdownButton<String>(

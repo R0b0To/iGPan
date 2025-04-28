@@ -59,13 +59,7 @@ Map<String, String> wearCalc(double tyreEco, Track track) { // Updated track typ
   Map<String, double> tyreWearFactors = {'SS': 2.14, 'S': 1.4, 'M': 1.0, 'H': 0.78};
 
   // Assuming track.info is a Map and track has a getLeagueLengthMultiplier method
-  double calculation = (1.43 * pow(tyreEco, -0.0778)) *
-      (0.00364 * track.info['wear'] + 0.354) *
-      track.info['length'] *
-      1.384612 *
-      track.getLeagueLengthMultiplier();
-
-  // print(calculation); // Optional: Dart equivalent of Python print
+  double calculation = (1.43 * pow(tyreEco, -0.0778)) * (0.00364 * track.info['wear'] + 0.354) *   track.info['length'] * 1.384612 * track.getLeagueLengthMultiplier();
 
   return {
     "SS": (calculation * tyreWearFactors['SS']!).toStringAsFixed(1),
@@ -75,4 +69,20 @@ Map<String, String> wearCalc(double tyreEco, Track track) { // Updated track typ
     "I": (calculation * tyreWearFactors['M']!).toStringAsFixed(1), // Assuming 'I' uses 'M' factor
     "W": (calculation * tyreWearFactors['M']!).toStringAsFixed(1), // Assuming 'W' uses 'M' factor
   };
+}
+
+// t is wear, l is laps, track is an instance of Track
+String stintWearCalc(double t, int l, Track track) {
+  double stint = pow(e, (-t / 100 * 1.18) * l) * 100;
+  
+  double stint2 = (1 - (1 * ((t) + (0.0212 * l - 0.00926) * track.info['length']) / 100));
+  for (int j = 1; j < l; j++) {
+    stint2 *= (1 - (1 * ((t) + (0.0212 * j - 0.00926) * track.info['length']) / 100));
+  }
+  stint2 *= 100;
+
+  double average = (stint + stint2) / 2;
+  average = double.parse(average.toStringAsFixed(2));
+
+  return average.toString();
 }
