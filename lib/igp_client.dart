@@ -665,7 +665,7 @@ Future<dynamic> saveStrategy(Account account, ValueNotifier<List<Account>> accou
     };
    
     // Check if using 2 cars
-    if(account.raceData?['d2Pits'] != 0){
+    if(account.raceData?['vars']['d2Pits'] != 0){
       d2Strategy ={
       'd2setup': {
         'race': account.raceData?['vars']['raceId'],
@@ -741,7 +741,7 @@ Future<dynamic> saveStrategy(Account account, ValueNotifier<List<Account>> accou
    
    if(account.raceData?['vars']['rulesJson']['refuelling'] == '0')
    {
-    d1Strategy['d1strategyAdvanced']['advancedFuel'] = "${account.raceData?['vars']['d2AdvancedFuel']}";
+    d1Strategy['d1strategyAdvanced']['advancedFuel'] = "${account.raceData?['vars']['d1AdvancedFuel']}";
     d2Strategy['d2strategyAdvanced']['advancedFuel'] = "${account.raceData?['vars']['d2AdvancedFuel'] ?? '0'}";
    }
     

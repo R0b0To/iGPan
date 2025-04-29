@@ -60,7 +60,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                   };
     // Calculate number of segments based on state variable
     final numberOfSegments = _numberOfPits + 1; // Segments = Pits + 1
-
+    final fuelEconomy = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
+    final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
+    final kmPerLiter = fuelCalc(fuelEconomy);
     // Calculate total laps before building the UI
     int calculatedTotalLaps = 0;
     List<dynamic> carStrategy = (numberOfSegments > 0 &&
@@ -81,10 +83,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       }
     }
     int totalLaps = calculatedTotalLaps; // Assign calculated value to totalLaps
-
+    
     // Calculate total fuel
     double totalFuel = 0.0;
-    final fuelEconomy = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
+    
     final pushLevelFactorMap = {
       '100': 0.02,
       '80': 0.01,
@@ -92,7 +94,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       '40': -0.004,
       '20': -0.007,
     };
-
+        
+        
     for (int i = 0; i < numberOfSegments; i++) {
       if (i < carStrategy.length &&
           carStrategy[i] is List && carStrategy[i].length >= 4 && // Ensure push level exists
@@ -101,8 +104,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         final pushLevel = carStrategy[i][3];
         final pushFactor = pushLevelFactorMap[pushLevel] ?? 0.0;
         // Ensure track.info['length'] is treated as double
-        final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
-        final fuelPerLap = (fuelCalc(fuelEconomy) + pushFactor) * trackLength;
+        final fuelPerLap = ( kmPerLiter + pushFactor) * trackLength;
         final stintFuel = segmentLaps * fuelPerLap;
         totalFuel += stintFuel;
       }
@@ -208,6 +210,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       if (i < carStrategy.length &&
           carStrategy[i] is List && carStrategy[i].length >= 2 &&
           carStrategy[i][0] is String && carStrategy[i][1] is String) {
+        
 
         String tyreAsset = carStrategy[i][0];
         String labelText = carStrategy[i][1];
@@ -697,6 +700,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                 // TODO: Implement save logic
                 // Update the specific segment in the strategy list
                 if (segmentIndex >= 0 && segmentIndex < widget.account.raceData!['parsedStrategy'][widget.carIndex].length) {
+                 
                    widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][0] = selectedTyre;
                    widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = selectedLaps.toInt().toString(); // Save laps as String
                 }
