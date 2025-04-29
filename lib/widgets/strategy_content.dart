@@ -22,16 +22,19 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   bool get wantKeepAlive => true;
 
   int _numberOfPits = 1; // State variable for number of pits
+  bool _ignoreAdvanced = false; // State variable for advanced setting
   List<String> availableTyres = ['SS', 'S', 'M', 'H', 'I', 'W']; // Available tyre types
 
   @override
   void initState() {
     super.initState();
-    // Initialize _numberOfPits from account data
+    // Initialize state variables from account data
     String pitKey = 'd${widget.carIndex + 1}Pits';
+    String ignoreAdvancedKey = 'd${widget.carIndex + 1}IgnoreAdvanced';
     if (widget.account.raceData != null ) {
       var pitValue = widget.account.raceData!['vars']?[pitKey];
       _numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
+      _ignoreAdvanced = widget.account.raceData!['vars']?[ignoreAdvancedKey] ?? false; // Initialize _ignoreAdvanced
     }
   }
 
@@ -319,7 +322,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             style: ButtonStyle(
               backgroundColor: WidgetStateProperty.resolveWith<Color>(
                 (Set<WidgetState> states) {
-                  return widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] == true
+                  return _ignoreAdvanced == true // Use local state variable
                       ? Colors.green
                       : Colors.red;
                 },
@@ -357,6 +360,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                     setState(() {
                                       isAdvancedEnabled = value;
                                       widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
+                                      // No need to update parent state here, will be done on dialog close
                                     });
                                   },
                                 ),
@@ -384,9 +388,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                         actions: [
                           TextButton(
                             onPressed: () {
-
                                 Navigator.of(context).pop();
-                                setState(() {}); // Trigger rebuild of StrategyContent
+                                setState(() {
+                                  _ignoreAdvanced = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] ?? false; // Update local state
+                                });
                                 
                             },
                             child: Text('Close'),
@@ -503,68 +508,46 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             TextButton(
               child: Text('Save'),
               onPressed: () {
-                // if (formKey.currentState!.validate()) { // Validation might not be needed if only SpinBox is used
-                  // final newLaps = lapsController.text; // Removed
-                  final newLapsString = selectedLaps.toInt().toString(); // Get laps from SpinBox state
-                  // Update the strategy data
-                  try {
-                     if (widget.account.raceData != null &&
-                        widget.account.raceData!['parsedStrategy'] != null &&
-                        widget.account.raceData!['parsedStrategy'] is List &&
-                        widget.carIndex < widget.account.raceData!['parsedStrategy'].length &&
-                        widget.account.raceData!['parsedStrategy'][widget.carIndex] is List &&
-                        segmentIndex < widget.account.raceData!['parsedStrategy'][widget.carIndex].length)
-                      {
-                        // Ensure the segment exists before updating
-                        setState(() {
-                          final raceData = widget.account.raceData;
-                          if (raceData != null && raceData['parsedStrategy'] != null) {
-                            final parsedStrategy = raceData['parsedStrategy'];
-                            if (parsedStrategy is List && widget.carIndex < parsedStrategy.length) {
-                              final carStrategy = parsedStrategy[widget.carIndex];
-                              if (carStrategy is List && segmentIndex < carStrategy.length) {
-                                carStrategy[segmentIndex] = [selectedTyre, newLapsString];
-                                // Log the update
-                                developer.log('Updated strategy for car ${widget.carIndex}, segment $segmentIndex: [$selectedTyre, $newLapsString]');
-                                developer.log('Current parsedStrategy: ${widget.account.raceData?['parsedStrategy']}');
-                              }
-                            }
-                          }
-                        });
-                        Navigator.of(context).pop(); // Close the dialog
-                      } else {
-                         developer.log('Error: Could not update strategy - Invalid data structure or index out of bounds.');
-                         // Optionally show an error message to the user
-                         ScaffoldMessenger.of(context).showSnackBar(
-                           SnackBar(content: Text('Error updating strategy data.')),
-                         );
-                      }
-                  } catch (e, stacktrace) {
-                     developer.log('Error updating strategy: $e\n$stacktrace');
-                     ScaffoldMessenger.of(context).showSnackBar(
-                       SnackBar(content: Text('An error occurred while saving.')),
-                     );
-                  }
-               // } // End validation check
-             },
-           ),
+                // TODO: Implement save logic
+                // Update the specific segment in the strategy list
+                if (segmentIndex >= 0 && segmentIndex < widget.account.raceData!['parsedStrategy'][widget.carIndex].length) {
+                   widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][0] = selectedTyre;
+                   widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = selectedLaps.toInt().toString(); // Save laps as String
+                }
+                // Trigger a rebuild of the parent widget to reflect changes
+                setState(() {});
+                Navigator.of(context).pop();
+              },
+            ),
           ],
         );
       },
     );
   }
 
-
-  // Helper for invalid/missing segments
-  Widget _buildInvalidSegment(int index, String reason) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Tooltip(
-        message: 'Segment ${index + 1}: $reason',
-        child: Container(
-          width: 40, height: 40,
-          color: Colors.red[100],
-          child: Icon(Icons.warning_amber_rounded, size: 20, color: Colors.red[700]),
+  // --- Helper to build invalid segment placeholder ---
+  Widget _buildInvalidSegment(int segmentIndex, String message) {
+    return GestureDetector(
+      onTap: () {
+        // Optionally show a message or dialog for invalid segments
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Invalid segment data: $message'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2.0),
+        child: Tooltip(
+          message: 'Invalid data. Tap for info.',
+          child: Container(
+            width: 40, height: 40,
+            color: Colors.red[200], // Indicate invalid data
+            child: Center(
+              child: Icon(Icons.error_outline, size: 20, color: Colors.red[800]),
+            ),
+          ),
         ),
       ),
     );
