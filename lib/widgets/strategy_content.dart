@@ -1,3 +1,4 @@
+import '../utils/helpers.dart';
 import 'package:flutter_spinbox/flutter_spinbox.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for input formatters
@@ -235,44 +236,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           value: 'neutral', // Default value
           icon: SizedBox.shrink(), // Remove the default arrow icon
           underline: SizedBox.shrink(),
-          items: <String>['very high', 'high', 'neutral', 'low', 'very low'].map((String value) {
-            IconData iconData;
-            Color iconColor;
-           
-
-            switch (value) {
-              case 'very low':
-                iconData = Icons.keyboard_double_arrow_down; // Double down arrow
-                iconColor = Colors.green; // Green for low wear
-                break;
-              case 'low':
-                iconData = Icons.keyboard_arrow_down; // Single down arrow
-                iconColor = Colors.lightGreen; // Light green for slightly more wear
-                break;
-              case 'neutral':
-                iconData = Icons.horizontal_rule; // White line icon
-                iconColor = Colors.white; // White color
-                break;
-              case 'high':
-                iconData = Icons.keyboard_arrow_up; // Single up arrow
-                iconColor = Colors.orange; // Orange for higher wear
-                break;
-              case 'very high':
-                iconData = Icons.keyboard_double_arrow_up; // Double up arrow
-                iconColor = Colors.red; // Red for very high wear
-                break;
-              default:
-                iconData = Icons.help_outline;
-                iconColor = Colors.grey;
-            }
-
-            return DropdownMenuItem<String>(
-              value: value,
-              child: Center( // Center the icon
-                child: Icon(iconData, color: iconColor, size: 20), // Adjusted size, removed Opacity
-              ),
-            );
-          }).toList(),
+          items: buildStrategyDropdownItems(<String, String>{
+            'very high': 'Very high',
+            'high': 'High',
+            'neutral': 'Neutral',
+            'low': 'Low',
+            'very low': 'Very low',
+          }),
           onChanged: (String? newValue) {
             // TODO: Implement dropdown logic
           },
@@ -320,18 +290,11 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           alignment: Alignment.bottomLeft,
           child: ElevatedButton( // TODO: Replace with actual button logic and text
             style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                (Set<WidgetState> states) {
-                  return _ignoreAdvanced == true // Use local state variable
-                      ? Colors.green
-                      : Colors.red;
-                },
-              ),
+              backgroundColor: WidgetStateProperty.all(  _ignoreAdvanced ? Colors.green : Colors.red,),
             ),
-            onPressed: () {
-              showDialog(
+            onPressed: () async {
+              await showDialog(
                 context: context,
-                
                 builder: (BuildContext context ) {
                   bool isAdvancedEnabled = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'];
                   String selectedPushLevel = widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] ?? '60';
@@ -368,18 +331,12 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                             ),
                             DropdownButton<String>(
                               value: selectedPushLevel,
-                              items: pushLevelMap.entries.map((entry) {
-                                return DropdownMenuItem<String>(
-                                  value: entry.key,
-                                  child: Text(entry.value),
-                                );
-                              }).toList(),
+                              icon: SizedBox.shrink(),
+                              items: buildStrategyDropdownItems(pushLevelMap),
                               onChanged: (String? newValue) {
                                 if (newValue != null) {
-                                  setState(() {
                                     selectedPushLevel = newValue;
                                     widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] = newValue;
-                                  });
                                 }
                               },
                             ),
@@ -388,11 +345,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                         actions: [
                           TextButton(
                             onPressed: () {
-                                Navigator.of(context).pop();
-                                setState(() {
-                                  _ignoreAdvanced = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] ?? false; // Update local state
-                                });
-                                
+                              Navigator.of(context).pop();
                             },
                             child: Text('Close'),
                           ),
@@ -402,6 +355,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                   );
                 },
               );
+              // Update the parent widget's state after the dialog is closed
+              setState(() {
+                _ignoreAdvanced = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] ?? false;
+              });
             },
             child: Text('Adv'), // Placeholder text
           ),
@@ -485,8 +442,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                           contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                         ),
                         onChanged: (value) {
-                          // No need for setDialogState here if SpinBox updates itself visually
-                          // Just update the variable holding the value
                           selectedLaps = value;
                         },
                         // No validator needed as SpinBox handles range
