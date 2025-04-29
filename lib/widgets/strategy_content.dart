@@ -290,7 +290,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           alignment: Alignment.bottomLeft,
           child: ElevatedButton( // TODO: Replace with actual button logic and text
             style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.all(  _ignoreAdvanced ? Colors.green : Colors.red,),
+              backgroundColor: WidgetStateProperty.all(  _ignoreAdvanced ? const Color.fromARGB(255, 64, 150, 67) : const Color.fromARGB(255, 163, 44, 35),),
             ),
             onPressed: () async {
               await showDialog(
@@ -334,10 +334,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                               icon: SizedBox.shrink(),
                               items: buildStrategyDropdownItems(pushLevelMap),
                               onChanged: (String? newValue) {
-                                if (newValue != null) {
+                                setState(() {
+                                  if (newValue != null) {
                                     selectedPushLevel = newValue;
                                     widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] = newValue;
                                 }
+                                });
+                                
                               },
                             ),
                           ],

@@ -274,10 +274,14 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
        raceDataJson['vars']['d2IgnoreAdvanced'] = raceDataJson['vars']['d2IgnoreAdvanced']=='0' ? true:false;
        final selectedPush = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d2PushLevel'])?.group(1) ?? '60';
        raceDataJson['vars']['d2PushLevel'] = selectedPush;
+       raceDataJson['vars']['d2RainStartDepth'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2RainStartDepth'])?.group(1) ?? '0';
+       raceDataJson['vars']['d2RainStopLap'] =  RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2RainStopLap'])?.group(1) ?? '0';
     }
       raceDataJson['vars']['d1IgnoreAdvanced'] =  raceDataJson['vars']['d1IgnoreAdvanced']=='0' ? true:false;
       final selectedPush = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d1PushLevel'])?.group(1) ?? '60';
       raceDataJson['vars']['d1PushLevel'] = selectedPush;
+      raceDataJson['vars']['d1RainStartDepth'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStartDepth'])?.group(1) ?? '0';
+      raceDataJson['vars']['d1RainStopLap'] =  RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStopLap'])?.group(1) ?? '0';
     // Update the account's raceData with the fetched data
     raceDataJson['parsedStrategy'] = extractStrategyData(raceDataJson['vars']);
     account.raceData = raceDataJson;
