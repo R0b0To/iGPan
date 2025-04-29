@@ -11,12 +11,12 @@ class AccountMainContainer extends StatelessWidget {
   final bool canStackWindowsHorizontally;
 
   const AccountMainContainer({
-    Key? key,
+    super.key,
     required this.account,
     required this.minWindowWidth,
     required this.minWindowHeight,
     required this.canStackWindowsHorizontally,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

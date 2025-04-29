@@ -43,7 +43,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = true;
   int _currentPageIndex = 0; // State for horizontal page index (wide screen)
   int _currentNarrowCarouselIndex = 0; // State for narrow screen carousel
-  PageController _pageController = PageController();
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
@@ -84,7 +84,7 @@ class _MyHomePageState extends State<MyHomePage> {
               valueListenable: accountsNotifier, // Use the imported notifier
               builder: (context, accounts, child) {
                 // Ensure accounts list is not null before checking if empty
-                if (accounts == null || accounts.isEmpty) {
+                if (accounts.isEmpty) {
                   // Handle null or empty case (e.g., show loading or message)
                   return Center(
                         child: Column(

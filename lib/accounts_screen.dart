@@ -6,7 +6,7 @@ import 'main.dart'; // Import main.dart
 import 'igp_client.dart'; // Import igp_client.dart for the Account class
 
 class AccountsScreen extends StatefulWidget {
-  const AccountsScreen({Key? key}) : super(key: key);
+  const AccountsScreen({super.key});
 
   @override
   _AccountsScreenState createState() => _AccountsScreenState();

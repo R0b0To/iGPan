@@ -101,7 +101,7 @@ Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) 
         final fireUpResponse = await dio.get(fireUpUrl.toString());
         final fireUpJson = parseFireUpData(jsonDecode(fireUpResponse.data));
         
-        if (fireUpJson != null && fireUpJson['guestAccount'] == false) {
+        if (fireUpJson['guestAccount'] == false) {
           debugPrint('Session is valid for ${account.email} using saved cookies.');
           // Update the account in our copy
           fireUpJson['drivers'] = parseDriversFromHtml(fireUpJson['preCache']['p=staff']['vars']['drivers']);

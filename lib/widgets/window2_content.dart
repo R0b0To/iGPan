@@ -9,7 +9,7 @@ class Window2Content extends StatefulWidget {
   final double minWindowHeight;
   final Account account; // Use the specific Account type
 
-  const Window2Content({Key? key, required this.minWindowHeight, required this.account}) : super(key: key);
+  const Window2Content({super.key, required this.minWindowHeight, required this.account});
 
   @override
   _Window2ContentState createState() => _Window2ContentState();
@@ -201,7 +201,7 @@ class SetupContent extends StatefulWidget {
   final Account account; // Use specific Account type
   final int carIndex;
 
-  const SetupContent({Key? key, required this.account, required this.carIndex}) : super(key: key);
+  const SetupContent({super.key, required this.account, required this.carIndex});
 
   @override
   _SetupContentState createState() => _SetupContentState();
@@ -310,7 +310,6 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                     String skey = 'd${widget.carIndex + 1}Suspension';
                     widget.account.raceData?['vars']?[skey] = suspensionMapRev[newValue];
                   });
-                  debugPrint('Suspension changed to: $newValue');
                 }
               },
               isDense: true,

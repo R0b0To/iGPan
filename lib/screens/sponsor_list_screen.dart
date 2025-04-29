@@ -5,7 +5,7 @@ class SponsorListScreen extends StatefulWidget {
   final Account account;
   final int sponsorNumber; // Add sponsorNumber parameter
 
-  const SponsorListScreen({Key? key, required this.account, required this.sponsorNumber}) : super(key: key);
+  const SponsorListScreen({super.key, required this.account, required this.sponsorNumber});
 
   @override
   _SponsorListScreenState createState() => _SponsorListScreenState();

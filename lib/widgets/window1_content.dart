@@ -9,7 +9,7 @@ class Window1Content extends StatefulWidget {
   final double minWindowHeight;
   final Account account; // Use the specific Account type
 
-  const Window1Content({Key? key, required this.minWindowHeight, required this.account}) : super(key: key);
+  const Window1Content({super.key, required this.minWindowHeight, required this.account});
 
   @override
   State<Window1Content> createState() => _Window1ContentState();

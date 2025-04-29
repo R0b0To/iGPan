@@ -11,7 +11,7 @@ class StrategyContent extends StatefulWidget { // Changed to StatefulWidget
   final Account account; // Use specific Account type
   final int carIndex;
 
-  const StrategyContent({Key? key, required this.account, required this.carIndex}) : super(key: key);
+  const StrategyContent({super.key, required this.account, required this.carIndex});
 
   @override
   _StrategyContentState createState() => _StrategyContentState();
@@ -82,11 +82,11 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
               onPressed: () {
                 // TODO: Implement button action (e.g., add a pit stop)
               },
-              child: Text('S/L'),
               style: ElevatedButton.styleFrom(
                 padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
                 textStyle: TextStyle(fontSize: 12), // Adjust text size
               ),
+              child: Text('S/L'),
             ),
           ),
         ),
@@ -222,7 +222,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       
         // Wear label (Placeholder)
         
-        final tyreWear = double.tryParse(calculatedWear['${tyreAsset}'] ?? '0.0') ?? 0.0;
+        final tyreWear = double.tryParse(calculatedWear[tyreAsset] ?? '0.0') ?? 0.0;
         final segmentLaps = int.tryParse(labelText) ?? 0;
         final stintWear = stintWearCalc(tyreWear, segmentLaps, track);
         wearLabelWidget = Text(stintWear);
@@ -317,8 +317,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           alignment: Alignment.bottomLeft,
           child: ElevatedButton( // TODO: Replace with actual button logic and text
             style: ButtonStyle(
-              backgroundColor: MaterialStateProperty.resolveWith<Color>(
-                (Set<MaterialState> states) {
+              backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                (Set<WidgetState> states) {
                   return widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] == true
                       ? Colors.green
                       : Colors.red;
@@ -328,7 +328,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             onPressed: () {
               showDialog(
                 context: context,
-                builder: (BuildContext context) {
+                
+                builder: (BuildContext context ) {
                   bool isAdvancedEnabled = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'];
                   String selectedPushLevel = widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] ?? '60';
                   Map<String, String> pushLevelMap = {
@@ -340,8 +341,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                   };
 
                   return StatefulBuilder(
-                    builder: (context, setState) {
+                    builder: (context, StateSetter setState) {
                       return AlertDialog(
+                        insetPadding: EdgeInsets.zero,
                         title: Text('Advanced Settings'),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -354,7 +356,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                   onChanged: (bool value) {
                                     setState(() {
                                       isAdvancedEnabled = value;
-                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value ? true : false;
+                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
                                     });
                                   },
                                 ),
@@ -382,8 +384,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                         actions: [
                           TextButton(
                             onPressed: () {
-                              setState(() {Navigator.of(context).pop();});
-                              
+
+                                Navigator.of(context).pop();
+                                setState(() {}); // Trigger rebuild of StrategyContent
+                                
                             },
                             child: Text('Close'),
                           ),
@@ -418,7 +422,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Pit ${segmentIndex}'),
+          title: Text('Pit $segmentIndex'),
           contentPadding: EdgeInsets.zero,
           insetPadding: EdgeInsets.zero,
           content: StatefulBuilder( // Use StatefulBuilder for local state management
@@ -449,7 +453,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Image.asset(
-                                'assets/tyres/_${tyre}.png',
+                                'assets/tyres/_$tyre.png',
                                 width: 40, height: 40,
                                 errorBuilder: (c, e, s) => Container(
                                   width: 30, height: 30,
@@ -513,10 +517,19 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                       {
                         // Ensure the segment exists before updating
                         setState(() {
-                          widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex] = [selectedTyre, newLapsString];
-                          // Log the update
-                          developer.log('Updated strategy for car ${widget.carIndex}, segment $segmentIndex: [$selectedTyre, $newLapsString]');
-                          developer.log('Current parsedStrategy: ${widget.account.raceData!['parsedStrategy']}');
+                          final raceData = widget.account.raceData;
+                          if (raceData != null && raceData['parsedStrategy'] != null) {
+                            final parsedStrategy = raceData['parsedStrategy'];
+                            if (parsedStrategy is List && widget.carIndex < parsedStrategy.length) {
+                              final carStrategy = parsedStrategy[widget.carIndex];
+                              if (carStrategy is List && segmentIndex < carStrategy.length) {
+                                carStrategy[segmentIndex] = [selectedTyre, newLapsString];
+                                // Log the update
+                                developer.log('Updated strategy for car ${widget.carIndex}, segment $segmentIndex: [$selectedTyre, $newLapsString]');
+                                developer.log('Current parsedStrategy: ${widget.account.raceData?['parsedStrategy']}');
+                              }
+                            }
+                          }
                         });
                         Navigator.of(context).pop(); // Close the dialog
                       } else {

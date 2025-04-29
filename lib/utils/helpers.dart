@@ -158,13 +158,13 @@ class CircularProgressButton extends StatelessWidget {
   final Color backgroundColor; // Color of the background arc
 
   const CircularProgressButton({
-    Key? key,
+    super.key,
     required this.progress,
     required this.label,
     required this.onPressed,
     this.size = 50.0,
     this.backgroundColor = const Color.fromARGB(0, 255, 255, 255),
-  }) : super(key: key);
+  });
   
   Color _getProgressColor() {
     // Otherwise, determine color based on progress
