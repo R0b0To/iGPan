@@ -86,3 +86,25 @@ String stintWearCalc(double t, int l, Track track) {
 
   return average.toString();
 }
+
+double fuelCalc(double f) {
+  if (f >= 250) {
+    return (pow(0.6666 * f, -0.08434) * 0.669);
+  } else if (f >= 200) {
+    return (pow(0.6666 * f, -0.08434) * 0.669);
+  } else if (f >= 150) {
+    return (pow(0.6666 * f, -0.08473) * 0.669);
+  } else if (f >= 100) {
+    return (pow(0.6666 * f, -0.08505) * 0.669);
+  } else if (f >= 80) {
+    return (pow(0.6666 * f, -0.08505) * 0.669);
+  } else if (f >= 60) {
+    return (pow(0.6666 * f, -0.08505) * 0.669);
+  } else if (f >= 40) {
+    return (pow(0.6666 * f, -0.0842) * 0.669);
+  } else if (f >= 20) {
+    return (pow(0.6666 * f, -0.083) * 0.669);
+  } else {
+    return (pow(0.6666 * f, -0.11) * 0.725);
+  }
+}

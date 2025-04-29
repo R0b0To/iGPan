@@ -284,6 +284,7 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
       raceDataJson['vars']['d1RainStopLap'] =  RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStopLap'])?.group(1) ?? '0';
     // Update the account's raceData with the fetched data
     raceDataJson['parsedStrategy'] = extractStrategyData(raceDataJson['vars']);
+    raceDataJson['vars']['rulesJson'] = jsonDecode(raceDataJson['vars']['rulesJson']);
     account.raceData = raceDataJson;
     debugPrint('Updated raceData for ${account.email}');
 
@@ -398,7 +399,8 @@ List<List<dynamic>> _extractStrategySet(Map<String, dynamic> jsonData, String pr
     strategyData.add([
       jsonData['${prefix}s${i}Tyre'],
       lapsInput?.attributes['value'] ?? '',
-      fuelInput?.attributes['value'] ?? ''
+      fuelInput?.attributes['value'] ?? '',
+      jsonData['${prefix}PushLevel']
     ]);
   }
   

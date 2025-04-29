@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart' show parse; 
+import 'package:html/parser.dart' show parse;
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart'; 
 
 String abbreviateNumber(String input) {
   final n = double.tryParse(input);
@@ -377,7 +378,7 @@ List<DropdownMenuItem<String>> buildStrategyDropdownItems(Map<String, String> va
         iconColor = Colors.lightGreen; // Light green for slightly more wear
         break;
       case 'Neutral':
-        iconData = Icons.horizontal_rule; // White line icon
+        iconData = MdiIcons.circleDouble; // White line icon
         iconColor = Colors.white; // White color
         break;
       case 'High':

@@ -1,3 +1,5 @@
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
 import '../utils/helpers.dart';
 import 'package:flutter_spinbox/flutter_spinbox.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +50,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     final trackId = widget.account.raceData?['vars']?['trackId']?.toString() ?? '1'; // Assuming '1' as a default if trackId is null
     final track = Track(trackId, raceLaps); // Create Track instance
     final calculatedWear = wearCalc(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['tyre_economy']?.toDouble() ?? 0.0, track);
-
+                      Map<String, String> pushLevelMap = {
+                    '100': 'Very high',
+                    '80': 'High',
+                    '60': 'Neutral',
+                    '40': 'Low',
+                    '20': 'Very low',
+                  };
     // Calculate number of segments based on state variable
     final numberOfSegments = _numberOfPits + 1; // Segments = Pits + 1
 
@@ -175,10 +183,11 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
         String tyreAsset = carStrategy[i][0];
         String labelText = carStrategy[i][1];
+        String pushLevel = carStrategy[i][3] ?? '60'; // Default to '60' if not provided
         // totalLaps calculation moved above
 
         final validTyreAsset = RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(tyreAsset);
-
+      
         if (validTyreAsset && tyreAsset.isNotEmpty) {
           // Wrap the Padding with GestureDetector
           strategyItemWidget = GestureDetector(
@@ -188,7 +197,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 2.0),
               child: Tooltip(
-                message: 'Tap to edit', // Updated tooltip
+                message: '', // Updated tooltip
                 child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -233,18 +242,16 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
         // Dropdown (Placeholder)
         dropdownWidget = DropdownButton<String>(
-          value: 'neutral', // Default value
+          value: pushLevel, // Default value
           icon: SizedBox.shrink(), // Remove the default arrow icon
           underline: SizedBox.shrink(),
-          items: buildStrategyDropdownItems(<String, String>{
-            'very high': 'Very high',
-            'high': 'High',
-            'neutral': 'Neutral',
-            'low': 'Low',
-            'very low': 'Very low',
-          }),
+          items: buildStrategyDropdownItems(pushLevelMap),
           onChanged: (String? newValue) {
-            // TODO: Implement dropdown logic
+            setState(() {
+                carStrategy[i][3] = newValue ?? '60'; // Update the strategy data
+
+            });
+          
           },
         );
 
@@ -286,31 +293,40 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             children: segmentWidgets, // Use segmentWidgets
           ),
         ),
-                Align( // Align the button to the left
+        SizedBox(height: 6), // Spacing between scroll view and buttons
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          
+          children: [
+                            Align( // Align the button to the left
           alignment: Alignment.bottomLeft,
-          child: ElevatedButton( // TODO: Replace with actual button logic and text
-            style: ButtonStyle(
-              backgroundColor: WidgetStateProperty.all(  _ignoreAdvanced ? const Color.fromARGB(255, 64, 150, 67) : const Color.fromARGB(255, 163, 44, 35),),
-            ),
-            onPressed: () async {
-              await showDialog(
-                context: context,
-                builder: (BuildContext context ) {
+          child: SizedBox(
+            width: 60,
+            height: 25,
+            child:Transform.scale(
+               scale: 0.8, 
+              child: Switch(
+              
+              value: _ignoreAdvanced,
+              activeColor: const Color.fromARGB(255, 64, 150, 67), // Green when active
+              inactiveThumbColor: const Color.fromARGB(255, 163, 44, 35), // Red when inactive
+              //inactiveTrackColor: const Color.fromARGB(255, 163, 44, 35).withOpacity(0.5), // Lighter red track
+              activeTrackColor: const Color.fromARGB(255, 64, 150, 67).withOpacity(0.5), // Lighter green track
+              onChanged: (bool newValue) async {
+                // The switch value is automatically updated by Flutter
+                // We just need to trigger the action and potentially update state if needed elsewhere
+                // The dialog logic remains the same
+                await showDialog(
+                  context: context,
+                  builder: (BuildContext context ) {
                   bool isAdvancedEnabled = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'];
                   String selectedPushLevel = widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] ?? '60';
-                  Map<String, String> pushLevelMap = {
-                    '100': 'Very high',
-                    '80': 'High',
-                    '60': 'Neutral',
-                    '40': 'Low',
-                    '20': 'Very low',
-                  };
+
 
                   return StatefulBuilder(
                     builder: (context, StateSetter setState) {
                       return AlertDialog(
                         insetPadding: EdgeInsets.zero,
-                        title: Text('Advanced Settings'),
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -329,7 +345,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 ),
                               ],
                             ),
-                            DropdownButton<String>(
+                            Row(children: [
+                            Text('Default Push Level:'),SizedBox(width: 10,),                            
+                              DropdownButton<String>(
                               value: selectedPushLevel,
                               icon: SizedBox.shrink(),
                               items: buildStrategyDropdownItems(pushLevelMap),
@@ -343,8 +361,152 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 
                               },
                             ),
-                          ],
-                        ),
+                            ],),
+                            
+
+                          // Rain Start Settings
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Use:'),
+                              DropdownButton<String>(
+                                       icon: SizedBox.shrink(), // Remove the default arrow icon
+                                      underline: SizedBox.shrink(),
+                                value: widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStartTyre'] ?? availableTyres.first,
+                                items: availableTyres.map((String tyre) {
+                                  return DropdownMenuItem<String>(
+                                    
+                                    value: tyre,
+                                    child: Row(
+                                      children: [
+                                        Image.asset(
+                                          'assets/tyres/_$tyre.png',
+                                          width: 40, // Adjust size as needed
+                                          height: 40, // Adjust size as needed
+                                          errorBuilder: (c, e, s) => Container(
+                                            width: 40, height: 40,
+                                            color: Colors.grey[300],
+                                            child: Icon(MdiIcons.tire, size: 12, color: Colors.grey[600]),
+                                          ),
+                                        ),
+
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  if (newValue != null) {
+                                    setState(() {
+                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStartTyre'] = newValue;
+                                    });
+                                  }
+                                },
+                              ),
+                              Text('if above'),
+                              Row( // Wrap SpinBox and Text in a Row for suffix
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    height: 30,
+                                    width: 90, // Adjust width to accommodate suffix
+                                    child: SpinBox(
+                                      
+                                      min: 0,
+                                      max: 5,
+                                      iconSize: 20.0, // <<< Set your + and - icon size
+                                     spacing: 0,
+            
+            decoration: InputDecoration(
+              suffix: Text(
+                        'mm',
+                        style: TextStyle(fontSize: 8, color: Colors.grey),
+                          ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // Adjust padding
+              border: OutlineInputBorder(),
+              
+ 
+            ),
+                                      value: double.tryParse(widget.account.raceData?['vars']?['d${widget.carIndex + 1}RainStartDepth']?.toString() ?? '') ?? 0.0,
+
+                                      decimals: 0,
+                                      step: 1,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStartDepth'] = value.toInt();
+                                        });
+                                      },
+                                    ),
+                                  ),
+                        
+                                ],
+                              ),
+                            ],
+                          ),
+                          // Rain Stop Settings
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Use:'),
+                              DropdownButton<String>(
+                                       icon: SizedBox.shrink(), // Remove the default arrow icon
+                                underline: SizedBox.shrink(),
+                                value: widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStopTyre'] ?? availableTyres.first,
+                                items: availableTyres.map((String tyre) {
+                                  return DropdownMenuItem<String>(
+                                    value: tyre,
+                                    child: Row(
+                                      children: [
+                                        Image.asset(
+                                          'assets/tyres/_$tyre.png',
+                                          width: 40, // Adjust size as needed
+                                          height: 40, // Adjust size as needed
+                                          
+                                          errorBuilder: (c, e, s) => Container(
+                                            
+                                            width: 40, height: 40,
+                                            color: Colors.grey[300],
+                                            child: Icon(Icons.tire_repair, size: 12, color: Colors.grey[600]),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  if (newValue != null) {
+                                    setState(() {
+                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStopTyre'] = newValue;
+                                    });
+                                  }
+                                },
+                              ),
+                              Text('if stops for'),
+                              SizedBox(
+                                width: 80,
+                                 height: 30,
+                                child: SpinBox(
+                                  min: 0,
+                                  max: int.tryParse(widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '100')?.toDouble() ?? 100.0,
+                                  value: double.tryParse(widget.account.raceData?['vars']?['d${widget.carIndex + 1}RainStopLap']?.toString() ?? '') ?? 0.0,
+                                  decimals: 0,
+                                  step: 1,
+                                  iconSize: 20.0, // <<< Set your + and - icon size
+            spacing: 0,
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // Adjust padding
+              border: OutlineInputBorder(),
+            ),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStopLap'] = value.toInt();
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                          ], // Closing the children list for the Column
+                        ), // Closing the Column
                         actions: [
                           TextButton(
                             onPressed: () {
@@ -363,9 +525,22 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                 _ignoreAdvanced = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] ?? false;
               });
             },
-            child: Text('Adv'), // Placeholder text
-          ),
+            
+           ),),
+            ),
+          
         ),
+          SizedBox(width: 40), // Spacing between buttons
+          Align( // Align the button to the right
+
+          child: SizedBox(
+            width: 60,
+            child: Text('fuel'),
+          ),
+          
+          )],
+        ),
+
       ],
     );
   }
