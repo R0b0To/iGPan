@@ -1,3 +1,4 @@
+import 'package:flutter_spinbox/flutter_spinbox.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../utils/helpers.dart';
@@ -104,10 +105,12 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         ),
         // Spinbox for pits
         SizedBox(
+          
           width: 100.0, // Provide a fixed width
           height: 30,
           
           child: SpinBox(
+            
             min: 1, // Minimum 0 pits
             max: 4, // Assuming a maximum of 4 pit stops based on headers
             value: _numberOfPits.toDouble(), // Use state variable
@@ -157,9 +160,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       ],
     );
 
-    // Headers (Start, Pit 1, ...) - Let's assume up to 5 segments for headers as requested
-    List<String> headers = ['Start', 'Pit 1', 'Pit 2', 'Pit 3', 'Pit 4'];
-
     // Strategy items, wear labels, and dropdowns arranged in columns per segment
     List<Widget> segmentWidgets = []; // Renamed to segmentWidgets
 
@@ -171,7 +171,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       Widget strategyItemWidget;
       Widget wearLabelWidget;
       Widget dropdownWidget;
-
+    
       // Header for this segment
       String headerText = i == 0 ? 'Start' : 'Pit $i';
       headerWidget = Center(child: Text(headerText));
@@ -191,11 +191,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         if (validTyreAsset && tyreAsset.isNotEmpty) {
           // Wrap the Padding with GestureDetector
           strategyItemWidget = GestureDetector(
+            
             onTap: () {
               _showEditStrategyDialog(i, tyreAsset, labelText);
             },
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Tooltip(
                 message: '', // Updated tooltip
                 child: Stack(
@@ -285,17 +287,17 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         pitStopRow,
 
         SizedBox(height: 8), // Spacing between button and scroll view
-        SingleChildScrollView( // Allow horizontal scrolling for segments
-          scrollDirection: Axis.horizontal,
+        Expanded( // Allow horizontal scrolling for segments
+          
           child: Row( // Row of segment columns
-            mainAxisAlignment: MainAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             crossAxisAlignment: CrossAxisAlignment.start, // Align items at the top
             children: segmentWidgets, // Use segmentWidgets
           ),
         ),
         SizedBox(height: 6), // Spacing between scroll view and buttons
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           
           children: [
                             Align( // Align the button to the left
@@ -345,6 +347,26 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 ),
                               ],
                             ),
+                            if (widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0')
+                              Row(children: [
+                                Text('Fuel:'),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  child: SpinBox(
+                                    min: 0,
+                                    max: 250, // Assuming fuel is a percentage or similar, adjust max as needed
+                                    value: double.tryParse(widget.account.raceData?['vars']?['d${widget.carIndex+1}AdvancedFuel']?.toString() ?? '0') ?? 0,
+                                    onChanged: (value) {
+                                      // Update the value in widget.account.raceData
+                                      if (widget.account.raceData?['vars'] != null) {
+                                        widget.account.raceData?['vars']?['d${widget.carIndex+1}AdvancedFuel'] = value.toInt().toString();
+                                        // You might need to call setState or a similar method to update the UI
+                                        // depending on how widget.account is managed. Assuming this widget is stateful.
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],),
                             Row(children: [
                             Text('Default Push Level:'),SizedBox(width: 10,),                            
                               DropdownButton<String>(
@@ -530,15 +552,18 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             ),
           
         ),
-          SizedBox(width: 40), // Spacing between buttons
+          widget.carIndex > 0 ? SizedBox(width: 40) : SizedBox.shrink(), // Spacing between buttons
           Align( // Align the button to the right
 
           child: SizedBox(
             width: 60,
-            child: Text('fuel'),
+            child: widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0' ? const Text('fuel') : const SizedBox.shrink(),
           ),
           
-          )],
+          
+          ),
+          widget.carIndex == 0 ? SizedBox(width: 50) : SizedBox.shrink(), 
+          ],
         ),
 
       ],
