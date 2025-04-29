@@ -224,7 +224,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           strategyItemWidget = GestureDetector(
             
             onTap: () {
-              _showEditStrategyDialog(i, tyreAsset, labelText);
+              _showEditStrategyDialog(i, tyreAsset, labelText,kmPerLiter,trackLength);
             },
             child: Padding(
               
@@ -602,7 +602,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   }
 
   // --- Edit Strategy Dialog ---
-  Future<void> _showEditStrategyDialog(int segmentIndex, String currentTyre, String currentLaps) async {
+  Future<void> _showEditStrategyDialog(int segmentIndex, String currentTyre, String currentLaps,double kmPerLiter,double trackLength) async {
     String selectedTyre = currentTyre;
     // TextEditingController lapsController = TextEditingController(text: currentLaps); // Removed
     double currentLapsDouble = double.tryParse(currentLaps) ?? 1.0; // Initial laps for SpinBox
