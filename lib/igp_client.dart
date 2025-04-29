@@ -612,3 +612,159 @@ Future<dynamic> repairCar(Account account, int number, String repairType, ValueN
     rethrow;
   }
 }
+
+
+Future<dynamic> saveStrategy(Account account, ValueNotifier<List<Account>> accountsNotifier) async {
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot saveStrategy data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+    final url = Uri.parse('https://igpmanager.com/index.php?action=send&type=saveAll&addon=igp&ajax=1&jsReply=saveAll&csrfName=&csrfName=&csrfToken=&csrfToken=&pageId=race');
+    Map<String, dynamic> d2Strategy;
+
+    final Map<String, dynamic> d1Strategy ={
+      'd1setup': {
+        'race': account.raceData?['vars']['raceId'],
+        'suspension': account.raceData?['vars']['d1Suspension'],
+        'ride': account.raceData?['vars']['d1Ride'],
+        'aerodynamics': account.raceData?['vars']['d1Aerodynamics'],
+        'practiceTyre': 'SS'
+       },
+      'd1strategy': {
+        "race":account.raceData?['vars']['raceId'],
+         "dNum":"1",
+         "numPits": account.raceData?['vars']['d1Pits'],
+         "tyre1": account.raceData?['parsedStrategy'][0][0][0],
+         "tyre2":account.raceData?['parsedStrategy'][0][1][0],
+         "tyre3":account.raceData?['parsedStrategy'][0][2][0],
+         "tyre4":account.raceData?['parsedStrategy'][0][3][0],
+         "tyre5":account.raceData?['parsedStrategy'][0][4][0],
+         "fuel1":account.raceData?['parsedStrategy'][0][0][2],
+         "laps1":account.raceData?['parsedStrategy'][0][0][1],
+         "fuel2":account.raceData?['parsedStrategy'][0][1][2],
+         "laps2":account.raceData?['parsedStrategy'][0][1][1],
+         "fuel3":account.raceData?['parsedStrategy'][0][2][2],
+         "laps3":account.raceData?['parsedStrategy'][0][2][1],
+         "fuel4":account.raceData?['parsedStrategy'][0][3][2],
+         "laps4":account.raceData?['parsedStrategy'][0][3][1],
+         "fuel5":account.raceData?['parsedStrategy'][0][4][2],
+         "laps5":account.raceData?['parsedStrategy'][0][4][1],
+        },
+      "d1strategyAdvanced" : {
+         "pushLevel":"${account.raceData?['vars']['d1PushLevel']}",
+         "d1SavedStrategy":"1",
+         "ignoreAdvancedStrategy":"${account.raceData?['vars']['d1IgnoreAdvanced']? '0':'1'}",
+         "advancedFuel":"${account.raceData?['vars']['d1AdvancedFuel']}",
+         "rainStartTyre":"${account.raceData?['vars']['d1RainStartTyre']}",
+         "rainStartDepth":"${account.raceData?['vars']['d1RainStartDepth']}",
+         "rainStopTyre":"${account.raceData?['vars']['d1RainStopTyre']}",
+         "rainStopLap":"${account.raceData?['vars']['d1RainStopLap']}",
+        }
+    };
+   
+    // Check if using 2 cars
+    if(account.raceData?['d2Pits'] != 0){
+      d2Strategy ={
+      'd2setup': {
+        'race': account.raceData?['vars']['raceId'],
+        'suspension': account.raceData?['vars']['d2Suspension'],
+        'ride': account.raceData?['vars']['d2Ride'],
+        'aerodynamics': account.raceData?['vars']['d2Aerodynamics'],
+        'practiceTyre': 'SS'
+       },
+      'd2strategy': {
+        "race":account.raceData?['vars']['raceId'],
+         "dNum":"2",
+         "numPits": account.raceData?['vars']['d2Pits'],
+         "tyre1": account.raceData?['parsedStrategy'][1][0][0],
+         "tyre2":account.raceData?['parsedStrategy'][1][1][0],
+         "tyre3":account.raceData?['parsedStrategy'][1][2][0],
+         "tyre4":account.raceData?['parsedStrategy'][1][3][0],
+         "tyre5":account.raceData?['parsedStrategy'][1][4][0],
+         "fuel1":account.raceData?['parsedStrategy'][1][0][2],
+         "laps1":account.raceData?['parsedStrategy'][1][0][1],
+         "fuel2":account.raceData?['parsedStrategy'][1][1][2],
+         "laps2":account.raceData?['parsedStrategy'][1][1][1],
+         "fuel3":account.raceData?['parsedStrategy'][1][2][2],
+         "laps3":account.raceData?['parsedStrategy'][1][2][1],
+         "fuel4":account.raceData?['parsedStrategy'][1][3][2],
+         "laps4":account.raceData?['parsedStrategy'][1][3][1],
+         "fuel5":account.raceData?['parsedStrategy'][1][4][2],
+         "laps5":account.raceData?['parsedStrategy'][1][4][1],
+        },
+      "d2strategyAdvanced" : {
+         "pushLevel":"${account.raceData?['vars']['d2PushLevel']}",
+         "d2SavedStrategy":"1",
+         "ignoreAdvancedStrategy":"${account.raceData?['vars']['d2IgnoreAdvanced']? '0':'1'}",
+         "rainStartTyre":"${account.raceData?['vars']['d2RainStartTyre']}",
+         "rainStartDepth":"${account.raceData?['vars']['d2RainStartDepth']}",
+         "rainStopTyre":"${account.raceData?['vars']['d2RainStopTyre']}",
+         "rainStopLap":"${account.raceData?['vars']['d2RainStopLap']}",
+        }
+    };
+    }else
+    {
+        d2Strategy = {
+      'd2setup': {
+        'race': account.raceData?['vars']['raceId'],
+        'suspension': '1',
+        'ride': '0',
+        'aerodynamics': '0',
+        'practiceTyre': 'SS'
+       },
+      'd2strategy': {
+        "race":account.raceData?['vars']['raceId'],
+         "dNum":"2",
+         "numPits":"0",
+         "tyre1":"{{d2s1Tyre}}",
+         "tyre2":"{{d2s2Tyre}}",
+         "tyre3":"{{d2s3Tyre}}",
+         "tyre4":"{{d2s4Tyre}}",
+         "tyre5":"{{d2s5Tyre}}"
+        },
+      "d2strategyAdvanced" : {
+         "d2SavedStrategy":"{{d2Saved}}",
+         "ignoreAdvancedStrategy":"{{d2IgnoreAdvanced}}"
+        }
+    };
+    
+    final saveData = {
+      'loginUsername': account.email,
+      'loginPassword': account.password,
+      'loginRemember': 'on',
+      'csrfName': '',
+      'csrfToken': ''
+    };
+    }
+   
+   if(account.raceData?['vars']['rulesJson']['refuelling'] == '0')
+   {
+    d1Strategy['d1strategyAdvanced']['advancedFuel'] = "${account.raceData?['vars']['d2AdvancedFuel']}";
+    d2Strategy['d2strategyAdvanced']['advancedFuel'] = "${account.raceData?['vars']['d2AdvancedFuel'] ?? '0'}";
+   }
+    
+    Map<String, dynamic> saveData = {
+  ...d1Strategy,
+  ...d2Strategy,
+};
+Map<String, dynamic> deepStringify(Map<String, dynamic> input) {
+  return input.map((key, value) {
+    if (value is Map<String, dynamic>) {
+      return MapEntry(key, deepStringify(value));
+    } else {
+      return MapEntry(key, value.toString());
+    }
+  });
+}
+
+  try {
+     final response = await dio.post(url.toString(),data: jsonEncode(saveData), );
+      debugPrint('Response for ${account.email}: ${response.data}');
+ 
+    } catch (e) {
+    debugPrint('Error saving strategy ${account.email}: $e');
+    rethrow;
+  }
+}
