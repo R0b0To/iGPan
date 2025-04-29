@@ -402,3 +402,11 @@ List<DropdownMenuItem<String>> buildStrategyDropdownItems(Map<String, String> va
     );
   }).toList();
 }
+
+    final pushLevelFactorMap = {
+      '100': 0.02,
+      '80': 0.01,
+      '60': 0.0,
+      '40': -0.004,
+      '20': -0.007,
+    };

@@ -224,7 +224,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           strategyItemWidget = GestureDetector(
             
             onTap: () {
-              _showEditStrategyDialog(i, tyreAsset, labelText,kmPerLiter,trackLength);
+              _showEditStrategyDialog(i, tyreAsset, labelText, kmPerLiter, trackLength, pushLevelFactorMap);
             },
             child: Padding(
               
@@ -602,12 +602,14 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
   }
 
   // --- Edit Strategy Dialog ---
-  Future<void> _showEditStrategyDialog(int segmentIndex, String currentTyre, String currentLaps,double kmPerLiter,double trackLength) async {
+  Future<void> _showEditStrategyDialog(int segmentIndex, String currentTyre, String currentLaps, double kmPerLiter, double trackLength, Map<String, double> pushLevelFactorMap) async {
     String selectedTyre = currentTyre;
     // TextEditingController lapsController = TextEditingController(text: currentLaps); // Removed
     double currentLapsDouble = double.tryParse(currentLaps) ?? 1.0; // Initial laps for SpinBox
-    double selectedLaps = currentLapsDouble; // State variable for SpinBox value
+    double selectedLaps = currentLapsDouble; // State variable for SpinBox value (used for laps or fuel)
     final formKey = GlobalKey<FormState>(); // Key for validation (might not be needed for SpinBox alone, but keep if other fields are added)
+    double selectedFuel = double.tryParse(widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].length > 2 ? widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][2].toString() : '0') ?? 0.0; // State variable for fuel value
+
 
     // Get total race laps for SpinBox max value
     final totalRaceLaps = int.tryParse(widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '100') ?? 100;
@@ -663,23 +665,63 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                       ),
                       SizedBox(height: 20), // Increased spacing after tyre selection
                       // Laps Input (SpinBox)
-                      Text('Laps:', style: Theme.of(context).textTheme.titleSmall),
-                      SizedBox(height: 8),
-                      SpinBox(
-                        min: 1,
-                        max: totalRaceLaps.toDouble(), // Use total race laps as max
-                        value: selectedLaps, // Use state variable
-                        decimals: 0,
-                        step: 1,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      if (widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '1') ...[
+                        Text('Fuel:', style: Theme.of(context).textTheme.titleSmall),
+                        SizedBox(height: 8),
+                        SpinBox(
+                          min: 0,
+                          max: 250, // Assuming a max fuel of 250 liters
+                          value: selectedFuel, // Use state variable for fuel
+                          decimals: 0,
+                          step: 1,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          ),
+                          onChanged: (value) {
+                            setDialogState(() { // Use setDialogState to update the dialog's state
+                              selectedFuel = value;
+                            });
+                          },
                         ),
-                        onChanged: (value) {
-                          selectedLaps = value;
-                        },
-                        // No validator needed as SpinBox handles range
-                      ),
+                        SizedBox(height: 8),
+                        // Estimated laps row
+                        Row(
+                          children: [
+                            Text('Estimated laps:', style: Theme.of(context).textTheme.titleSmall),
+                            SizedBox(width: 8),
+                            Builder( // Use Builder to access the latest selectedFuel value
+                              builder: (context) {
+                                final pushLevel = widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].length > 3 ? widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][3].toString() : '60'; // Default to '60'
+                                final pushFactor = pushLevelFactorMap[pushLevel] ?? 0.0;
+                                final fuelPerLap = (kmPerLiter + pushFactor) * trackLength;
+                                final fuelEstimation = fuelPerLap > 0 ? ((selectedFuel / fuelPerLap)*1000).truncate()/1000 : 0; // Calculate and round down
+                                return Text('$fuelEstimation');
+                              },
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        Text('Laps:', style: Theme.of(context).textTheme.titleSmall),
+                        SizedBox(height: 8),
+                        SpinBox(
+                          min: 1,
+                          max: totalRaceLaps.toDouble(), // Use total race laps as max
+                          value: selectedLaps, // Use state variable for laps
+                          decimals: 0,
+                          step: 1,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                          ),
+                          onChanged: (value) {
+                            setDialogState(() { // Use setDialogState to update the dialog's state
+                              selectedLaps = value;
+                            });
+                          },
+                          // No validator needed as SpinBox handles range
+                        ),
+                      ],
                       // TODO: Add Fuel input if needed later
                     ],
                   ),
@@ -697,12 +739,25 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             TextButton(
               child: Text('Save'),
               onPressed: () {
-                // TODO: Implement save logic
-                // Update the specific segment in the strategy list
                 if (segmentIndex >= 0 && segmentIndex < widget.account.raceData!['parsedStrategy'][widget.carIndex].length) {
-                 
-                   widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][0] = selectedTyre;
-                   widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = selectedLaps.toInt().toString(); // Save laps as String
+                  widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][0] = selectedTyre;
+
+                  if (widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '1') {
+                    // Calculate fuel estimation for saving
+                    final pushLevel = widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].length > 3 ? widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][3].toString() : '60'; // Default to '60'
+                    final pushFactor = pushLevelFactorMap[pushLevel] ?? 0.0;
+                    final fuelPerLap = (kmPerLiter + pushFactor) * trackLength;
+                    final fuelEstimation = fuelPerLap > 0 ? (selectedFuel / fuelPerLap).floor() : 0; // Calculate and round down
+
+                    widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = fuelEstimation.toString(); // Save estimated laps as String
+                    // Ensure the list has enough elements for index 2
+                    while (widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].length <= 2) {
+                        widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].add(null); // Add null or a default value
+                    }
+                    widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][2] = selectedFuel.toInt().toString(); // Save fuel as String
+                  } else {
+                    widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = selectedLaps.toInt().toString(); // Save laps as String
+                  }
                 }
                 // Trigger a rebuild of the parent widget to reflect changes
                 setState(() {});
