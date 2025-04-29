@@ -82,6 +82,34 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     }
     int totalLaps = calculatedTotalLaps; // Assign calculated value to totalLaps
 
+    // Calculate total fuel
+    double totalFuel = 0.0;
+    final fuelEconomy = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
+    final pushLevelFactorMap = {
+      '100': 0.02,
+      '80': 0.01,
+      '60': 0.0,
+      '40': -0.004,
+      '20': -0.007,
+    };
+
+    for (int i = 0; i < numberOfSegments; i++) {
+      if (i < carStrategy.length &&
+          carStrategy[i] is List && carStrategy[i].length >= 4 && // Ensure push level exists
+          carStrategy[i][1] is String && carStrategy[i][3] is String) {
+        final segmentLaps = int.tryParse(carStrategy[i][1]) ?? 0;
+        final pushLevel = carStrategy[i][3];
+        final pushFactor = pushLevelFactorMap[pushLevel] ?? 0.0;
+        // Ensure track.info['length'] is treated as double
+        final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
+        final fuelPerLap = (fuelCalc(fuelEconomy) + pushFactor) * trackLength;
+        final stintFuel = segmentLaps * fuelPerLap;
+        totalFuel += stintFuel;
+      }
+    }
+    final formattedTotalFuel = totalFuel.toStringAsFixed(1); // Format to 1 decimal place
+
+
     // Row 1: Spinbox/Text for pit stops and Laps Display
     Widget pitStopRow = Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align items to the ends
@@ -90,49 +118,49 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         Padding(
           padding: const EdgeInsets.only(right: 8.0), // Add some spacing to the right
           child: SizedBox(
-            height: 30, // Match the height of the SpinBox
-            child: ElevatedButton(
-              onPressed: () {
-                // TODO: Implement button action (e.g., add a pit stop)
-              },
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
-                textStyle: TextStyle(fontSize: 12), // Adjust text size
-              ),
-              child: Text('S/L'),
+          height: 30, // Match the height of the SpinBox
+          child: ElevatedButton(
+            onPressed: () {
+              // TODO: Implement button action (e.g., add a pit stop)
+            },
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
+              textStyle: TextStyle(fontSize: 12), // Adjust text size
             ),
+            child: Text('S/L'),
+          ),
           ),
         ),
         // Spinbox for pits
         SizedBox(
           
-          width: 100.0, // Provide a fixed width
-          height: 30,
+        width: 100.0, // Provide a fixed width
+        height: 30,
+        
+        child: SpinBox(
           
-          child: SpinBox(
-            
-            min: 1, // Minimum 0 pits
-            max: 4, // Assuming a maximum of 4 pit stops based on headers
-            value: _numberOfPits.toDouble(), // Use state variable
-            iconSize: 20.0, // <<< Set your + and - icon size
-            spacing: 0,
-            decoration: InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // Adjust padding
-              border: OutlineInputBorder(),
-              
+        min: 1, // Minimum 0 pits
+        max: 4, // Assuming a maximum of 4 pit stops based on headers
+        value: _numberOfPits.toDouble(), // Use state variable
+        iconSize: 20.0, // <<< Set your + and - icon size
+        spacing: 0,
+        decoration: InputDecoration(
+          contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // Adjust padding
+          border: OutlineInputBorder(),
+          
  
-            ),
-            textStyle: TextStyle(fontSize: 12), // Adjust text size
-            onChanged: (value) {
-              setState(() {
-                _numberOfPits = value.toInt(); // Update state variable
-                String pitKey = 'd${widget.carIndex + 1}Pits';
-                if (widget.account.raceData != null && widget.account.raceData!['vars'] != null) {
-                  widget.account.raceData!['vars']?[pitKey] = _numberOfPits;
-                }
-              });
-            },
-          ),
+        ),
+        textStyle: TextStyle(fontSize: 12), // Adjust text size
+        onChanged: (value) {
+          setState(() {
+            _numberOfPits = value.toInt(); // Update state variable
+            String pitKey = 'd${widget.carIndex + 1}Pits';
+            if (widget.account.raceData != null && widget.account.raceData!['vars'] != null) {
+              widget.account.raceData!['vars']?[pitKey] = _numberOfPits;
+            }
+          });
+        },
+        ),
         ),
         // Laps display
         Container( // Wrap the column in a Container for the border
@@ -557,12 +585,12 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
           child: SizedBox(
             width: 60,
-            child: widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0' ? const Text('fuel') : const SizedBox.shrink(),
+            child: widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0' ? Text('$formattedTotalFuel L') : const SizedBox.shrink(),
           ),
-          
-          
+
+
           ),
-          widget.carIndex == 0 ? SizedBox(width: 50) : SizedBox.shrink(), 
+          widget.carIndex == 0 ? SizedBox(width: 50) : SizedBox.shrink(),
           ],
         ),
 
