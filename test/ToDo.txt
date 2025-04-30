@@ -1,0 +1,29 @@
+ToDo:
+    buttons:
+        weather with race name
+        race name opens reports of that race
+        research
+        save button indicator if strategy/setup was changed but not saved
+        driver contract
+        buy engine
+        buy money
+        change engine supplier or manage own engine
+        change fuel supplier
+        change tyre supplier
+        driver
+        restore stamina
+        
+    tabs:
+        reports
+            race reports
+        create team tab
+            staff
+    misc:
+        menu bar functions:
+            daily
+            repair
+            setup
+            strategy
+            save
+        menu bar style/location
+        
