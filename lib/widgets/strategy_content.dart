@@ -108,11 +108,13 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
 
     // Row 1: Spinbox/Text for pit stops and Laps Display
     Widget pitStopRow = Row(
+      
       mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Align items to the ends
       children: [
+        
         // Button to the left of the Spinbox
         Padding(
-          padding: const EdgeInsets.only(right: 8.0), // Add some spacing to the right
+          padding: const EdgeInsets.only(right:8.0), // Add some spacing to the right
           child: SizedBox(
           height: 30, // Match the height of the SpinBox
           child: ElevatedButton(
@@ -403,8 +405,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                       // Update the value in widget.account.raceData
                                       if (widget.account.raceData?['vars'] != null) {
                                         widget.account.raceData?['vars']?['d${widget.carIndex+1}AdvancedFuel'] = value.toInt().toString();
-                                        // You might need to call setState or a similar method to update the UI
-                                        // depending on how widget.account is managed. Assuming this widget is stateful.
                                       }
                                     },
                                   ),
@@ -426,6 +426,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 
                               },
                             ),
+                            
                             ],),
                             
 
@@ -595,6 +596,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             ),
           
         ),
+        
           widget.carIndex > 0 ? SizedBox(width: 40) : SizedBox.shrink(), // Spacing between buttons
           Align( // Align the button to the right
 
@@ -608,7 +610,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           widget.carIndex == 0 ? SizedBox(width: 50) : SizedBox.shrink(),
           ],
         ),
-
+        
       ],
     );
   }

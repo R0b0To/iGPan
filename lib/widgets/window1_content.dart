@@ -165,9 +165,9 @@ class _Window1ContentState extends State<Window1Content> {
               
 
                tabs: [
-                 Tab(      height: 30, // Smaller tab height
+                 Tab(     
                         child: Text('Car', style: TextStyle(fontSize: 12)),),
-                 Tab(      height: 30,
+                 Tab(  
                         child: Text('Reports', style: TextStyle(fontSize: 12))),
                ],
 

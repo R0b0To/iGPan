@@ -1,7 +1,6 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import secure storage
 import 'main.dart'; // Import main.dart
 import 'igp_client.dart'; // Import igp_client.dart for the Account class
 
@@ -14,6 +13,8 @@ class AccountsScreen extends StatefulWidget {
 
 class _AccountsScreenState extends State<AccountsScreen> {
   List<Account> _accounts = [];
+  final _storage = const FlutterSecureStorage(); // Create storage instance
+  final String _accountsKey = 'accounts'; // Key for storing accounts
 
   @override
   void initState() {
@@ -23,26 +24,24 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
   Future<void> _loadAccounts() async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/accounts.json');
-      final jsonString = await file.readAsString();
-      setState(() {
-        final List<dynamic> jsonList = jsonDecode(jsonString);
-        _accounts = jsonList.map((json) => Account.fromJson(json)).toList();
-      });
-      //accountsNotifier.value = _accounts; // Update the ValueNotifier
+      final jsonString = await _storage.read(key: _accountsKey);
+      if (jsonString != null) {
+        setState(() {
+          final List<dynamic> jsonList = jsonDecode(jsonString);
+          _accounts = jsonList.map((json) => Account.fromJson(json)).toList();
+        });
+        //accountsNotifier.value = _accounts; // Update the ValueNotifier
+      }
     } catch (e) {
-      // Handle file not found or other errors
+      // Handle errors
       debugPrint('Error loading accounts: $e');
     }
   }
 
   Future<void> _saveAccounts() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/accounts.json');
     final jsonList = _accounts.map((account) => account.toJson()).toList();
     final jsonString = jsonEncode(jsonList);
-    await file.writeAsString(jsonString);
+    await _storage.write(key: _accountsKey, value: jsonString);
     //accountsNotifier.value = _accounts; // Update the ValueNotifier
   }
 

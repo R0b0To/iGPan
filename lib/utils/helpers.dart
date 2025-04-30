@@ -170,7 +170,9 @@ class CircularProgressButton extends StatelessWidget {
   Color _getProgressColor() {
     // Otherwise, determine color based on progress
       final List<MapEntry<double, Color>> colorStops = [
-    MapEntry(90.0, Colors.red),          
+    MapEntry(0.0, Colors.red), 
+     
+    MapEntry(90.0, Colors.orange),          
     MapEntry(100.0, Colors.green),       // 100% progress - Green
   ];
       for (int i = 0; i < colorStops.length - 1; i++) {

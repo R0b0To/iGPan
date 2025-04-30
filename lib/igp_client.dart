@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'dart:convert';
-import 'dart:math';
-import '../utils/helpers.dart'; 
-import 'package:path_provider/path_provider.dart';
-import 'package:http/http.dart' as http;
+import '../utils/helpers.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import secure storage
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
@@ -11,6 +8,8 @@ import 'package:flutter/material.dart'; // Import for debugPrint and ValueNotifi
 import 'package:html/parser.dart' as html_parser;
 
 final ValueNotifier<List<Account>> accountsNotifier = ValueNotifier<List<Account>>([]);
+final _storage = const FlutterSecureStorage(); // Create storage instance
+final String _accountsKey = 'accounts'; // Key for storing accounts
 
 class Account {
   final String email;
@@ -50,30 +49,30 @@ final Map<String, Dio> dioClients = {};
 String? appDocumentPath;
 
 Future<void> initCookieManager() async {
-  Directory appDocDir = await getApplicationDocumentsDirectory();
-  appDocumentPath = appDocDir.path;
+  // Directory appDocDir = await getApplicationDocumentsDirectory(); // No longer needed for accounts
+  // appDocumentPath = appDocDir.path; // No longer needed for accounts
 }
 
 Future<void> loadAccounts(ValueNotifier<List<Account>> accountsNotifier) async {
   try {
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/accounts.json');
-    final jsonString = await file.readAsString();
-    final List<dynamic> jsonList = jsonDecode(jsonString);
-    accountsNotifier.value = jsonList.map((json) => Account.fromJson(json)).toList();
-    debugPrint('Accounts loaded: ${accountsNotifier.value.length}');
+    final jsonString = await _storage.read(key: _accountsKey);
+    if (jsonString != null) {
+      final List<dynamic> jsonList = jsonDecode(jsonString);
+      accountsNotifier.value = jsonList.map((json) => Account.fromJson(json)).toList();
+      debugPrint('Accounts loaded: ${accountsNotifier.value.length}');
 
-    // Initialize persistent cookie jars for each account
-    if (appDocumentPath != null) {
-      for (var account in accountsNotifier.value) {
-        cookieJars[account.email] = PersistCookieJar(
-          storage: FileStorage('$appDocumentPath/.cookies/${account.email}/'),
-        );
+      // Initialize persistent cookie jars for each account
+      if (appDocumentPath != null) { // appDocumentPath is still needed for cookie jars
+        for (var account in accountsNotifier.value) {
+          cookieJars[account.email] = PersistCookieJar(
+            storage: FileStorage('$appDocumentPath/.cookies/${account.email}/'),
+          );
+        }
       }
     }
 
   } catch (e) {
-    // Handle file not found or other errors
+    // Handle errors
     debugPrint('Error loading accounts: $e');
   }
 }

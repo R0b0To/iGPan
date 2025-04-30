@@ -24,11 +24,11 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
   // Define the tabs as a class member
   final List<Tab> tabs = const [
-    Tab(      height: 30,
+    Tab(    
       child: Text('Setup', style: TextStyle(fontSize: 12))),
-    Tab(      height: 30,
+    Tab(      
       child: Text('Practice', style: TextStyle(fontSize: 12))),
-    Tab(      height: 30,
+    Tab(      
       child: Text('Strategy', style: TextStyle(fontSize: 12))),
   ];
 
@@ -51,10 +51,6 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
     final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
     final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
 
-
-
-    // Create a list of widgets for the carousel, one for each car
-    // Each item is a DefaultTabController with its own TabBar and TabBarView
     final List<Widget> carouselItems = List.generate(numCars, (carIndex) {
       // Ensure raceData and necessary nested structures exist before building content
       if (widget.account.raceData == null || widget.account.raceData!['vars'] == null) {
@@ -69,31 +65,30 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
 
       return Column(
-        children: [
-          // TabBar for the current car, using the shared _tabController
+      
+          children: [
           TabBar(
             controller: _tabController, // Use the shared controller
             tabs: tabs,
           ),
           // TabBarView for the current car's content, using the shared _tabController
           Flexible(
-            // Use Flexible/Expanded instead of fixed height if possible,
-            // but for now, keep the calculation based on minWindowHeight.
            
             child: TabBarView(
+
               controller: _tabController, // Use the shared controller
               children: [
-                // Setup Content (Car-specific)
+              
                 SetupContent(account: widget.account, carIndex: carIndex),
-                // Practice Content (Placeholder)
-                // TODO: Implement Practice Content
                 Center(child: Text('Practice Content Placeholder')),
-                // Strategy Content (Car-specific)
                 StrategyContent(account: widget.account, carIndex: carIndex),
+
               ],
             ),
           ),
         ],
+        
+        
       );
     });
 
@@ -139,15 +134,13 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
           ],
         ),
        
-       Stack(
-        children:[ SizedBox(
-          // Calculate height: TabBar height (approx 48-50) + TabBarView height
-          child: CarouselSlider.builder(
+       
+        
+          CarouselSlider.builder(
             carouselController: _carouselController,
             itemCount: carouselItems.length, // Number of items is number of cars
             options: CarouselOptions(
-              height: widget.minWindowHeight * 0.8 + 50, // Match SizedBox height
-              viewportFraction: 1.0, // Show one full item at a time
+              viewportFraction: 1, // Show one full item at a time
               enableInfiniteScroll: false,
               onPageChanged: (index, reason) {
                 setState(() {
@@ -160,10 +153,16 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               return carouselItems[index];
             },
           ),
-        ),    if (numCars > 1)
-          Align(
+          
+            if (numCars > 1)
+          Column(
+            children: [
+              SizedBox(
+                
+              ),
+              Align(
             alignment: Alignment.bottomCenter,
-            heightFactor: 9.7,
+           
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(numCars, (index) { // Generate labels based on number of cars
@@ -186,12 +185,10 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                 );
               }),
             ),
-          ),]
+          ),
 
-       ),
-        // CarouselSlider for the tab bars and their content (one item per car)
-        
-        // Indicator dots (only show if numCars is 2 or more, adjusted logic)
+            ],
+          ),
     
       ],
     );
@@ -293,7 +290,6 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
           ),
           ),
           SizedBox(height: 8),
-
           // Suspension Row
           _buildSetupRow(
             context,
@@ -366,7 +362,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               child: const Text('ideal'),
             ),
           ),
-SizedBox(height: 8),
+          SizedBox(height: 8),
           // Ride Height Row
           _buildSetupRow(
             context,
@@ -422,6 +418,10 @@ SizedBox(height: 8),
         ],
       ),
     );
+    
+    
+    
+    
   }
 
   // Helper to build info buttons
@@ -444,7 +444,7 @@ SizedBox(height: 8),
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Space out elements
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Space out elements
         children: [
           Expanded(flex: 2, child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
           Expanded(flex: 1, child: control),
@@ -520,4 +520,5 @@ class NumericalRangeFormatter extends TextInputFormatter {
     return newValue;
   }
 }
+
 

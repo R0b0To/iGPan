@@ -188,13 +188,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                 // Check if there's enough horizontal space for two windows side-by-side
                                 bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
 
-                                // Re-interpreting the requirement based on the user's description:
-                                // - If horizontal space allows two windows side-by-side (>= 800px approx):
-                                //   - Stack main containers vertically. If more accounts than fit vertically, the list scrolls (ListView).
-                                // - If horizontal space does NOT allow two windows side-by-side (< 800px approx):
-                                //   - Stack windows vertically.
-                                //   - Use a horizontal carousel for the main containers (PageView).
-
                                 if (canStackWindowsHorizontally) {
                                   // Wide screen: Paginated Vertical Stack (Horizontal PageView)
                                   const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
@@ -264,7 +257,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                           itemCount: accounts.length,
                                           options: CarouselOptions(
                                             scrollDirection: Axis.horizontal, // Make it horizontal
-                                            viewportFraction: 1.0,
+                                            viewportFraction: 1,
                                             enableInfiniteScroll: false,
                                             onPageChanged: (index, reason) {
                                               setState(() {
