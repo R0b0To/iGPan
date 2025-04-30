@@ -43,20 +43,43 @@ class _Window1ContentState extends State<Window1Content> {
                style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
-               child: Text(
-                 abbreviateNumber(widget.account.fireUpData?['team']?['_balance'] ?? '0'), // Added null check and default
-                 style: TextStyle(fontSize: 12),
-               ), // Shorter text
+               child: Row(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   Image.asset(
+                     'assets/cash.webp',
+                     width: 20, // Adjust size as needed
+                     height: 20, // Adjust size as needed
+                   ),
+                   SizedBox(width: 4), // Add some spacing between image and text
+                   Text(
+                     abbreviateNumber(widget.account.fireUpData?['team']?['_balance'] ?? '0'), // Added null check and default
+                     style: TextStyle(fontSize: 16),
+              
+                   ), // Shorter text
+                 ],
+               ),
              ),
            ),
 
-           Text(widget.account.fireUpData?['manager']?['tokens'] ?? '0'), // Added null check and default
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  'assets/token.png',
+                  width: 18, // Adjust size as needed
+                  height: 18, // Adjust size as needed
+                ),
+                SizedBox(width: 4), // Add some spacing between image and text
+                Text(widget.account.fireUpData?['manager']?['tokens'] ?? '0',style: TextStyle(fontSize: 16),), // Added null check and default
+              ],
+            ),
 
              Builder(
                  builder: (BuildContext context) {
                   return SizedBox(
-                    height: 30,
-                   child: ElevatedButton(
+                 
+                   child: IconButton(
                      onPressed: rewardStatus
                          ? () async { // Make async
                              // Show loading indicator while claiming
@@ -76,11 +99,11 @@ class _Window1ContentState extends State<Window1Content> {
                              }
                            }
                          : null, // Disable button if reward not available
-                     style: ElevatedButton.styleFrom(
+                       style: ElevatedButton.styleFrom(
                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                       backgroundColor: rewardStatus ? Colors.green : null, // Indicate availability
+                     
                      ),
-                     child: const Text('Daily', style: TextStyle(fontSize: 10)),
+                     icon: rewardStatus ? Icon(MdiIcons.gift, size: 26,color: Colors.red,) : Icon(MdiIcons.giftOpen, size: 26,color: Colors.green,), // Gift icon
                    ));
                  },
                ),
@@ -139,11 +162,13 @@ class _Window1ContentState extends State<Window1Content> {
          child: Column(
            children: [
              const TabBar(
+              
+
                tabs: [
                  Tab(      height: 30, // Smaller tab height
-      child: Text('Car', style: TextStyle(fontSize: 12)),),
+                        child: Text('Car', style: TextStyle(fontSize: 12)),),
                  Tab(      height: 30,
-      child: Text('Reports', style: TextStyle(fontSize: 12))),
+                        child: Text('Reports', style: TextStyle(fontSize: 12))),
                ],
 
              ),

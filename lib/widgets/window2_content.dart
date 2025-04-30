@@ -1,3 +1,5 @@
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+
 import '../utils/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for input formatters
@@ -101,12 +103,12 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
         Row( // First row with buttons and label
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            ElevatedButton(
-              onPressed: () {}, // TODO: Implement Repair button action
+            IconButton(
+              onPressed: () {}, 
               style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
-              child: const Text('R'),
+              icon:  Icon(MdiIcons.flaskEmptyPlus,size: 26,), // Use icon instead of text for repair action
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -125,14 +127,14 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                 ),
               ],
             ),
-            ElevatedButton(
+            IconButton(
               onPressed: () {
                 saveStrategy( widget.account, accountsNotifier);
               }, // TODO: Implement Save Setup button action
               style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
-              child: const Text('S'),
+              icon: const Icon(Icons.save,size: 26,), // Use icon instead of text for save action
             ),
           ],
         ),
