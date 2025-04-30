@@ -1,13 +1,9 @@
 import 'package:flutter_spinbox/flutter_spinbox.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
 import '../utils/helpers.dart';
-import 'package:flutter_spinbox/flutter_spinbox.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Import for input formatters
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/math_utils.dart'; // Import math_utils for wearCalc and Track
-import 'dart:developer' as developer; // For logging
 import 'strategy_save_load_popup.dart'; // Import the new popup widget
 
 // --- StrategyContent Widget ---
@@ -54,13 +50,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     widget.account.raceData?['track'] = track;
     
     final calculatedWear = wearCalc(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['tyre_economy']?.toDouble() ?? 0.0, track);
-                      Map<String, String> pushLevelMap = {
-                    '100': 'Very high',
-                    '80': 'High',
-                    '60': 'Neutral',
-                    '40': 'Low',
-                    '20': 'Very low',
-                  };
+
     // Calculate number of segments based on state variable
     final numberOfSegments = _numberOfPits + 1; // Segments = Pits + 1
     final fuelEconomy = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
@@ -162,7 +152,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         height: 30,
         
         child: SpinBox(
-          
+        readOnly: true, 
         min: 1, // Minimum 0 pits
         max: 4, // Assuming a maximum of 4 pit stops based on headers
         value: _numberOfPits.toDouble(), // Use state variable
@@ -300,7 +290,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           value: pushLevel, // Default value
           icon: SizedBox.shrink(), // Remove the default arrow icon
           underline: SizedBox.shrink(),
-          items: buildStrategyDropdownItems(pushLevelMap),
+          items: buildStrategyDropdownItems(),
           onChanged: (String? newValue) {
             setState(() {
                 carStrategy[i][3] = newValue ?? '60'; // Update the strategy data
@@ -425,7 +415,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                               DropdownButton<String>(
                               value: selectedPushLevel,
                               icon: SizedBox.shrink(),
-                              items: buildStrategyDropdownItems(pushLevelMap),
+                              items: buildStrategyDropdownItems(),
                               onChanged: (String? newValue) {
                                 setState(() {
                                   if (newValue != null) {

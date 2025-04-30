@@ -361,46 +361,32 @@ Map<String, int> parseCarAttributes(String htmlString) {
   
   return attributes;
 }
-List<DropdownMenuItem<String>> buildStrategyDropdownItems(Map<String, String> valueMap) {
-  return valueMap.entries.map((entry) {
-    final String value = entry.key;
-    final String text = entry.value;
-    IconData iconData;
-    Color iconColor;
+final List<DropdownMenuItem<String>> _strategyDropdownItems = [
+  DropdownMenuItem<String>(
+    value: '100',
+    child: Center(child: Icon(Icons.keyboard_double_arrow_up, color: Colors.red, size: 20)),
+  ),
+  DropdownMenuItem<String>(
+    value: '80',
+    child: Center(child: Icon(Icons.keyboard_arrow_up, color: Colors.orange, size: 20)),
+  ),
+  DropdownMenuItem<String>(
+    value: '60',
+    child: Center(child: Icon(MdiIcons.circleDouble, color: Colors.white, size: 20)),
+  ),
+  DropdownMenuItem<String>(
+    value: '40',
+    child: Center(child: Icon(Icons.keyboard_arrow_down, color: Colors.lightGreen, size: 20)),
+  ),
+  DropdownMenuItem<String>(
+    value: '20',
+    child: Center(child: Icon(Icons.keyboard_double_arrow_down, color: Colors.green, size: 20)),
+  ),
+];
 
-    switch (text) {
-      case 'Very low':
-        iconData = Icons.keyboard_double_arrow_down; // Double down arrow
-        iconColor = Colors.green; // Green for low wear
-        break;
-      case 'Low':
-        iconData = Icons.keyboard_arrow_down; // Single down arrow
-        iconColor = Colors.lightGreen; // Light green for slightly more wear
-        break;
-      case 'Neutral':
-        iconData = MdiIcons.circleDouble; // White line icon
-        iconColor = Colors.white; // White color
-        break;
-      case 'High':
-        iconData = Icons.keyboard_arrow_up; // Single up arrow
-        iconColor = Colors.orange; // Orange for higher wear
-        break;
-      case 'Very high':
-        iconData = Icons.keyboard_double_arrow_up; // Double up arrow
-        iconColor = Colors.red; // Red for very high wear
-        break;
-      default:
-        iconData = Icons.help_outline;
-        iconColor = Colors.grey;
-    }
-
-    return DropdownMenuItem<String>(
-      value: value,
-      child: Center( // Center the icon
-        child: Icon(iconData, color: iconColor, size: 20), // Adjusted size, removed Opacity
-      ),
-    );
-  }).toList();
+// Return the pre-built items directly
+List<DropdownMenuItem<String>> buildStrategyDropdownItems() {
+  return _strategyDropdownItems;
 }
 
     final pushLevelFactorMap = {

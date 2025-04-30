@@ -36,24 +36,13 @@ Map<String, Map<String, dynamic>> trackInfoData = {
 
   Track(this.trackId, this.raceLaps) {
     info = trackInfoData[trackId]!;
-    // The Python code uses self.info[self.race_laps] to get the length,
-    // where race_laps is an integer (e.g., 14, 28, etc.) and the keys in the info map
-    // are strings ('14', '28', etc.). The values are integers (25, 50, 75, 100).
-    // These integer values are then used as keys in the multipliers map.
-    // So, length should be an int.
     length = info[raceLaps.toString()] as int; // Assuming raceLaps is used as a string key and the value is an int
   }
 
   double getLeagueLengthMultiplier() {
-    // The Python code uses self.multipliers[self.length].
-    // Since length is an int (25, 50, 75, 100), this should work.
     return multipliers[length]!;
   }
 
-  // The set_tyre_wear method is not used in wear_calc, so I won't include it for now.
-  // void setTyreWear(String tyre) {
-  //   // this.tyre = tyre; // Need to define tyre field if needed
-  // }
 }
 
 Map<String, String> wearCalc(double tyreEco, Track track) { // Updated track type

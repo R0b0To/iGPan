@@ -33,9 +33,15 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
   void initState() {
     super.initState();
     _trackCode = widget.account.raceData?['track'].info['trackCode'] ?? 'unknown';
+    _getSaveFilePath().then((path) {
+      _saveFilePath = path;
+      _loadSavedStrategies();
+    });
+  }
 
-    _saveFilePath = '../save.json'; // Relative path
-    _loadSavedStrategies();
+  Future<String> _getSaveFilePath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    return '${directory.path}/save.json';
   }
 
   Future<void> _loadSavedStrategies() async {
