@@ -47,6 +47,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    
     // Get the number of cars, default to 1 if not available or invalid
     final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
     final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
@@ -68,12 +69,13 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
       
           children: [
           TabBar(
+            
             controller: _tabController, // Use the shared controller
             tabs: tabs,
           ),
           // TabBarView for the current car's content, using the shared _tabController
-          Flexible(
-           
+          Expanded(
+
             child: TabBarView(
 
               controller: _tabController, // Use the shared controller
@@ -141,6 +143,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             itemCount: carouselItems.length, // Number of items is number of cars
             options: CarouselOptions(
               viewportFraction: 1, // Show one full item at a time
+              height: widget.minWindowHeight + 50, // Adjust height based on available space
               enableInfiniteScroll: false,
               onPageChanged: (index, reason) {
                 setState(() {
@@ -275,6 +278,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     return Padding( // Add padding around the content
       padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4.0),
       child: Column(
+        
 
         children: [
           // Driver Info Row

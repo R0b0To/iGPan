@@ -345,31 +345,25 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           
           children: [
-                            Align( // Align the button to the left
-          alignment: Alignment.bottomLeft,
+          Align( // Align the button to the left
+        
           child: SizedBox(
             width: 60,
             height: 25,
             child:Transform.scale(
                scale: 0.8, 
               child: Switch(
-              
               value: _ignoreAdvanced,
               activeColor: const Color.fromARGB(255, 64, 150, 67), // Green when active
               inactiveThumbColor: const Color.fromARGB(255, 163, 44, 35), // Red when inactive
               //inactiveTrackColor: const Color.fromARGB(255, 163, 44, 35).withOpacity(0.5), // Lighter red track
               activeTrackColor: const Color.fromARGB(255, 64, 150, 67).withOpacity(0.5), // Lighter green track
               onChanged: (bool newValue) async {
-                // The switch value is automatically updated by Flutter
-                // We just need to trigger the action and potentially update state if needed elsewhere
-                // The dialog logic remains the same
                 await showDialog(
                   context: context,
                   builder: (BuildContext context ) {
                   bool isAdvancedEnabled = widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'];
                   String selectedPushLevel = widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] ?? '60';
-
-
                   return StatefulBuilder(
                     builder: (context, StateSetter setState) {
                       return AlertDialog(
@@ -592,21 +586,22 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
               });
             },
             
-           ),),
-            ),
+           ),
+           ),
+          ),
           
         ),
         
-          widget.carIndex > 0 ? SizedBox(width: 40) : SizedBox.shrink(), // Spacing between buttons
-          Align( // Align the button to the right
-
-          child: SizedBox(
+          widget.carIndex > 0 ? SizedBox(width: 60) : SizedBox.shrink(), // Spacing between buttons
+           SizedBox(
             width: 60,
             child: widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0' ? Text('$formattedTotalFuel L') : const SizedBox.shrink(),
           ),
+         
 
 
-          ),
+
+          
           widget.carIndex == 0 ? SizedBox(width: 50) : SizedBox.shrink(),
           ],
         ),

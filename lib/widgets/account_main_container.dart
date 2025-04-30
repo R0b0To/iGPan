@@ -45,12 +45,7 @@ class AccountMainContainer extends StatelessWidget {
       );
     }
 
-    // Estimate height based on internal layout
-    // Add some padding/margin allowance
-    // final estimatedHeight = canStackWindowsHorizontally
-    //     ? minWindowHeight + 50 // Approx height when windows are horizontal
-    //     : (minWindowHeight * 2) + 60; // Approx height when windows are vertical
-        // Let the content determine the height using MainAxisSize.min
+
     double fontSize = minWindowWidth > 100 ? 24 : 18; // <<< Change font size based on width
     return Card(
       margin: const EdgeInsets.all(2),
