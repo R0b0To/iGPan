@@ -32,9 +32,8 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
   @override
   void initState() {
     super.initState();
-    _trackCode = widget.account.raceData?['vars']?['trackId']?.toString() ?? 'unknown';
-    // Define the path relative to the Flutter project root
-    // Assuming the Flutter project is in 'igp_app' and save.json is one level up in 'iGPeasy'
+    _trackCode = widget.account.raceData?['track'].info['trackCode'] ?? 'unknown';
+
     _saveFilePath = '../save.json'; // Relative path
     _loadSavedStrategies();
   }
@@ -82,6 +81,100 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     }
   }
 
+ Future<void> _deleteStrategy(String hash) async {
+   if (!mounted) return;
+
+   // Confirmation Dialog
+   final confirmed = await showDialog<bool>(
+     context: context,
+     builder: (BuildContext context) {
+       return AlertDialog(
+         title: Text('Confirm Deletion'),
+         content: Text('Are you sure you want to delete this saved strategy?'),
+         actions: <Widget>[
+           TextButton(
+             onPressed: () => Navigator.of(context).pop(false), // Not confirmed
+             child: Text('Cancel'),
+           ),
+           TextButton(
+             onPressed: () => Navigator.of(context).pop(true), // Confirmed
+             child: Text('Delete', style: TextStyle(color: Colors.red)),
+           ),
+         ],
+       );
+     },
+   );
+
+   if (confirmed != true) {
+     return; // User cancelled
+   }
+
+   setState(() { _isLoading = true; _error = null; });
+
+   try {
+     // 1. Read save.json
+     final file = File(_saveFilePath);
+     Map<String, dynamic> allSaves;
+     try {
+       if (await file.exists()) {
+         final content = await file.readAsString();
+         if (content.trim().isEmpty) {
+           allSaves = {'save': {}};
+         } else {
+           allSaves = jsonDecode(content) as Map<String, dynamic>? ?? {'save': {}};
+         }
+       } else {
+         // Should not happen if we are deleting something, but handle defensively
+         allSaves = {'save': {}};
+         throw Exception("Save file not found during delete operation.");
+       }
+     } catch (e) {
+       developer.log('Error reading or decoding save.json during delete: $e', name: 'StrategySaveLoadPopup');
+       throw Exception("Failed to read save file for deletion."); // Propagate error
+     }
+
+     // 2. Remove the strategy entry
+     bool deleted = false;
+     if (allSaves['save'] != null &&
+         allSaves['save'] is Map &&
+         allSaves['save'][_trackCode] != null &&
+         allSaves['save'][_trackCode] is Map)
+     {
+        // Ensure the inner map is mutable
+        Map<String, dynamic> trackSaves = Map<String, dynamic>.from(allSaves['save'][_trackCode]);
+        if (trackSaves.containsKey(hash)) {
+          trackSaves.remove(hash);
+          allSaves['save'][_trackCode] = trackSaves; // Put the modified map back
+          deleted = true;
+        }
+     }
+
+     if (!deleted) {
+       throw Exception("Strategy hash not found for deletion.");
+     }
+
+     // 3. Write the modified data back to save.json
+     final encoder = JsonEncoder.withIndent('    ');
+     await file.writeAsString(encoder.convert(allSaves));
+
+     developer.log('Strategy deleted with hash: $hash', name: 'StrategySaveLoadPopup');
+
+     // 4. Refresh the list
+     await _loadSavedStrategies(); // This handles setState and loading state
+
+   } catch (e, stackTrace) {
+     developer.log('Error deleting strategy: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
+     if (mounted) {
+       setState(() {
+         _error = 'Error deleting strategy: $e';
+         _isLoading = false; // Ensure loading indicator stops on error
+       });
+     }
+   }
+   // No finally block needed here as _loadSavedStrategies handles the final setState
+ }
+
+
   Future<void> _saveCurrentStrategy() async {
      if (!mounted) return; // Check if widget is still in the tree
     setState(() { _isLoading = true; _error = null; }); // Show loading indicator
@@ -89,11 +182,12 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     try {
       // 1. Get current strategy data
       List<dynamic> currentParsedStrategy = widget.account.raceData?['parsedStrategy']?[widget.carIndex] ?? [];
-      int numberOfPits = widget.account.raceData?['vars']?['d${widget.carIndex + 1}Pits'] ?? 0;
+      final pitValue = widget.account.raceData?['vars']?['d${widget.carIndex + 1}Pits'];
+      int numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
       int numberOfSegments = numberOfPits + 1;
       int raceLaps = int.tryParse(widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0') ?? 0;
-      String trackCode = widget.account.raceData?['vars']?['trackId']?.toString() ?? 'unknown';
-      String raceLength = "100"; // Defaulting to 100%
+      String trackCode = widget.account.raceData?['track'].info['trackCode'] ?? 'unknown';
+      String? raceLength = widget.account.raceData?['track']?.info[widget.account.raceData?['vars']?['raceLaps']?.toString()]?.toString();
 
       // 2. Construct JSON to save
       Map<String, dynamic> stintsToSave = {};
@@ -106,7 +200,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
           String push = currentParsedStrategy[i][3]?.toString() ?? '60';
 
           stintsToSave[i.toString()] = {
-            'tyre': tyre,
+            'tyre': 'ts-${tyre}',
             'laps': lapsStr,
             'push': push,
           };
@@ -227,25 +321,47 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       List<dynamic> newParsedStrategy = [];
       List<String> sortedKeys = loadedStints.keys.toList()
         ..sort((a, b) => int.parse(a).compareTo(int.parse(b)));
-
+          final pushLevelFactorMap = {
+      '100': 0.02,
+      '80': 0.01,
+      '60': 0.0,
+      '40': -0.004,
+      '20': -0.007,
+    };
       for (String key in sortedKeys) {
         Map<String, dynamic> stint = loadedStints[key];
-        String tyre = stint['tyre']?.toString() ?? 'ts-M';
+        String? tyre = stint['tyre']?.toString().replaceFirst('ts-', '');
         String laps = stint['laps']?.toString() ?? '0';
         String push = stint['push']?.toString() ?? '60';
 
-        // Reconstruct the list: [tyre, laps, placeholder1, push, placeholder2]
-        newParsedStrategy.add([tyre, laps, null, push, null]);
+
+        // Reconstruct the list: [tyre, laps, fuel, push, placeholder2]
+        final pushFactor = pushLevelFactorMap[push] ?? 0.0;
+        final fuelPerLap = (widget.account.raceData?['kmPerLiter'] + pushFactor) * widget.account.raceData?['track'].info['length'];
+        double fuelEstimation = (fuelPerLap * int.tryParse(laps)) ?? 1;
+         
+        
+        newParsedStrategy.add([tyre, laps, fuelEstimation, push]);
       }
-
-      // Ensure parsedStrategy list exists and has the correct index
-       widget.account.raceData!['parsedStrategy'] ??= [];
-       while (widget.account.raceData!['parsedStrategy'].length <= widget.carIndex) {
-         widget.account.raceData!['parsedStrategy'].add([]);
-       }
-
-      widget.account.raceData!['parsedStrategy'][widget.carIndex] = newParsedStrategy;
-
+     
+      //widget.account.raceData!['parsedStrategy'][widget.carIndex] = newParsedStrategy;
+      double totalFuel = 0.0;
+      for (int i = 0; i < newParsedStrategy.length; i++) {
+      totalFuel += newParsedStrategy[i][2];
+      
+      if(widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
+        newParsedStrategy[i][2] = 0;
+      }else{
+        newParsedStrategy[i][2] = newParsedStrategy[i][2].ceil(); // Round up fuel estimation
+      }
+      widget.account.raceData!['parsedStrategy'][widget.carIndex][i]  = newParsedStrategy[i];
+    }
+      // if no refuelling update the advanced fuel and set the first stint fuel to total fuel
+      if(widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
+        widget.account.raceData!['parsedStrategy'][widget.carIndex][0][2] = totalFuel.ceil();
+        widget.account.raceData?['vars']['d${widget.carIndex + 1}AdvancedFuel'] = totalFuel.ceil(); // Update fuel estimation
+      }
+      
       developer.log('Strategy loaded successfully for hash: $hash', name: 'StrategySaveLoadPopup');
 
       // 5. Close popup and indicate success
@@ -444,30 +560,43 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     // Use Expanded + ListView for scrollable content
     return Expanded(
       child: ListView.builder(
+        
         shrinkWrap: true, // Important within Column
         itemCount: _savedStrategies.length,
         itemBuilder: (context, index) {
           String hash = _savedStrategies.keys.elementAt(index);
           Map<String, dynamic> strategyData = _savedStrategies[hash];
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2.0),
+            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                   IconButton(
+                  icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                  tooltip: 'Delete Strategy',
+                  iconSize: 20, // Adjust size
+                  constraints: BoxConstraints(), // Remove extra padding
+                  padding: EdgeInsets.all(4), // Add minimal padding
+                  onPressed: _isLoading ? null : () => _deleteStrategy(hash), // Disable when loading/deleting
+                ),
+                SizedBox(width: 4), // Spacing between buttons
                 Expanded(
                    child: Container( // Container to constrain preview height
                       height: 35, // Match header preview height
-                      alignment: Alignment.centerLeft, // Align preview left
+                      alignment: Alignment.center, // Align preview left
                       child: _buildSavedStrategyPreview(strategyData),
                     ),
                 ),
-                 SizedBox(width: 8), // Add spacing
+
                 ElevatedButton(
-                  onPressed: () => _loadStrategy(hash),
+                  onPressed: _isLoading ? null : () => _loadStrategy(hash), // Disable when loading/deleting
                   child: Text('Load'),
-                   style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                  style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
                 ),
+                
+                // Delete Button
+             
               ],
             ),
           );

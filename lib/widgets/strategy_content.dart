@@ -51,6 +51,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     final raceLaps = int.tryParse(widget.account.raceData?['vars']?['raceLaps']?.toString() ?? '0') ?? 0;
     final trackId = widget.account.raceData?['vars']?['trackId']?.toString() ?? '1'; // Assuming '1' as a default if trackId is null
     final track = Track(trackId, raceLaps); // Create Track instance
+    widget.account.raceData?['track'] = track;
+    
     final calculatedWear = wearCalc(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['tyre_economy']?.toDouble() ?? 0.0, track);
                       Map<String, String> pushLevelMap = {
                     '100': 'Very high',
@@ -64,6 +66,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
     final fuelEconomy = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
     final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
     final kmPerLiter = fuelCalc(fuelEconomy);
+    widget.account.raceData?['kmPerLiter'] = kmPerLiter; // Update account data with trackId
     // Calculate total laps before building the UI
     int calculatedTotalLaps = 0;
     List<dynamic> carStrategy = (numberOfSegments > 0 &&
@@ -767,7 +770,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                     final pushLevel = widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].length > 3 ? widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][3].toString() : '60'; // Default to '60'
                     final pushFactor = pushLevelFactorMap[pushLevel] ?? 0.0;
                     final fuelPerLap = (kmPerLiter + pushFactor) * trackLength;
-                    final fuelEstimation = fuelPerLap > 0 ? (selectedFuel / fuelPerLap).floor() : 0; // Calculate and round down
+                    final fuelEstimation = fuelPerLap > 0 ? (selectedFuel / fuelPerLap).floor() : 1; // Calculate and round down
 
                     widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = fuelEstimation.toString(); // Save estimated laps as String
 
