@@ -410,3 +410,13 @@ List<DropdownMenuItem<String>> buildStrategyDropdownItems(Map<String, String> va
       '40': -0.004,
       '20': -0.007,
     };
+
+    int hashCode(String string) {
+  int hash = 0;
+  for (int i = 0; i < string.length; i++) {
+    int code = string.codeUnitAt(i);
+    hash = ((hash << 5) - hash + code) & 0xFFFFFFFF;
+  }
+  // Convert to signed 32-bit integer
+  return hash >= 0x80000000 ? hash - 0x100000000 : hash;
+}

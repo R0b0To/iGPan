@@ -750,10 +750,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                     final fuelEstimation = fuelPerLap > 0 ? (selectedFuel / fuelPerLap).floor() : 0; // Calculate and round down
 
                     widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = fuelEstimation.toString(); // Save estimated laps as String
-                    // Ensure the list has enough elements for index 2
-                    while (widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].length <= 2) {
-                        widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex].add(null); // Add null or a default value
-                    }
+
                     widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][2] = selectedFuel.toInt().toString(); // Save fuel as String
                   } else {
                     widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = selectedLaps.toInt().toString(); // Save laps as String
