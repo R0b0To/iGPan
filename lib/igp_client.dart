@@ -191,15 +191,8 @@ Future<void> login(Account account) async {
 
       if (loginResponseJson != null && loginResponseJson['status'] == 1) {
         debugPrint('Login successful for ${account.email}');
-        // Make the fireUp request
-        final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
         try {
-          final fireUpResponse = await dio.get(
-            fireUpUrl.toString(),
-          );
-          final fireUpJson = jsonDecode(fireUpResponse.data);
-          debugPrint('is ${account.email} a guest? ${fireUpJson['guestAccount']}');
-          account.fireUpData = fireUpJson; // Store fireUp data after successful login
+          startClientSessions(accountsNotifier);
         } catch (e) {
           debugPrint('Error making fireUp request for ${account.email}: $e');
         }
