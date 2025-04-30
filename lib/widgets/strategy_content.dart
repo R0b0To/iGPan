@@ -150,9 +150,8 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
-              textStyle: TextStyle(fontSize: 12), // Adjust text size
             ),
-            child: Text('S/L'),
+            child: Icon(MdiIcons.contentSaveAll),
           ),
           ),
         ),

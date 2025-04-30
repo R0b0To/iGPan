@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart'; // May be needed for file path resolution if relative path fails
-
+import 'dart:math';
 import '../igp_client.dart'; // Import Account
 import '../utils/helpers.dart' as helpers; // Import helpers for hashCode
 import '../utils/math_utils.dart'; // Import Track for track info
@@ -314,7 +314,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       // Ensure nested maps exist before assigning
       widget.account.raceData ??= {};
       widget.account.raceData!['vars'] ??= {};
-      widget.account.raceData!['vars']![pitKey] = numberOfPits;
+      widget.account.raceData!['vars']![pitKey] = min(numberOfPits,4);
 
 
       // 4. Reconstruct the parsedStrategy list
@@ -332,7 +332,20 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
         Map<String, dynamic> stint = loadedStints[key];
         String? tyre = stint['tyre']?.toString().replaceFirst('ts-', '');
         String laps = stint['laps']?.toString() ?? '0';
-        String push = stint['push']?.toString() ?? '60';
+        dynamic pushValue = stint['push'];
+        String push;
+        if (pushValue is int) {
+          Map<int, String> pushMap = {
+            1: '20',
+            2: '40',
+            3: '60',
+            4: '80',
+            5: '100',
+          };
+          push = pushMap[pushValue] ?? '60';
+        } else {
+          push = pushValue?.toString() ?? '60';
+        }
 
 
         // Reconstruct the list: [tyre, laps, fuel, push, placeholder2]
@@ -346,7 +359,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
      
       //widget.account.raceData!['parsedStrategy'][widget.carIndex] = newParsedStrategy;
       double totalFuel = 0.0;
-      for (int i = 0; i < newParsedStrategy.length; i++) {
+      for (int i = 0; i < min(newParsedStrategy.length, 5); i++) {
       totalFuel += newParsedStrategy[i][2];
       
       if(widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
@@ -487,9 +500,12 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Save/Load Strategy - Track: $_trackCode'),
+       insetPadding: EdgeInsets.zero,
+       contentPadding: EdgeInsets.all(11),
       content: SizedBox(
-        width: double.maxFinite,
+        
+        width: MediaQuery.of(context).size.width * 0.3, // Adjust width as needed
+        height: MediaQuery.of(context).size.height * 0.5, // Adjust height as needed
         // Use a fixed height or constrain dynamically if needed
         // height: MediaQuery.of(context).size.height * 0.6, // Example: 60% of screen height
         child: Column(
@@ -502,11 +518,10 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically
                 children: [
-                  ElevatedButton.icon(
+                  ElevatedButton(
                     onPressed: _isLoading ? null : _saveCurrentStrategy, // Disable button when loading
-                    icon: Icon(Icons.save, size: 16),
-                    label: Text('Save Current'),
                     style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                    child: Icon(Icons.save, size: 16),
                   ),
                   SizedBox(width: 8), // Add spacing
                   Expanded(
@@ -516,19 +531,14 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                       child: _buildCurrentStrategyPreview(),
                     ),
                   ),
-                   SizedBox(width: 8), // Add spacing
-                  IconButton(
-                    icon: Icon(Icons.close),
-                    tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+
                 ],
               ),
             ),
             Divider(),
             // --- Saved Strategies List ---
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 1.0),
               child: Text('Available Strategies:', style: Theme.of(context).textTheme.titleMedium),
             ),
             // Conditional content based on loading/error state
@@ -567,9 +577,10 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
           String hash = _savedStrategies.keys.elementAt(index);
           Map<String, dynamic> strategyData = _savedStrategies[hash];
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+            
+            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 0.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                    IconButton(
@@ -588,11 +599,11 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                       child: _buildSavedStrategyPreview(strategyData),
                     ),
                 ),
-
-                ElevatedButton(
+          
+                IconButton(
                   onPressed: _isLoading ? null : () => _loadStrategy(hash), // Disable when loading/deleting
-                  child: Text('Load'),
-                  style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
+                  icon: Icon(Icons.upload, color: const Color.fromARGB(255, 44, 94, 32)),
+                  
                 ),
                 
                 // Delete Button
