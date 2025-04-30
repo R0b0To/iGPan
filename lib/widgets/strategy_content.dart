@@ -8,6 +8,7 @@ import 'package:flutter/services.dart'; // Import for input formatters
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/math_utils.dart'; // Import math_utils for wearCalc and Track
 import 'dart:developer' as developer; // For logging
+import 'strategy_save_load_popup.dart'; // Import the new popup widget
 
 // --- StrategyContent Widget ---
 
@@ -122,8 +123,27 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           child: SizedBox(
           height: 30, // Match the height of the SpinBox
           child: ElevatedButton(
-            onPressed: () {
-              // TODO: Implement button action (e.g., add a pit stop)
+            onPressed: () async { // Make async to await dialog result
+              final result = await showDialog<bool>( // Expect a boolean result
+                context: context,
+                builder: (BuildContext context) {
+                  return StrategySaveLoadPopup(
+                    account: widget.account,
+                    carIndex: widget.carIndex,
+                  );
+                },
+              );
+
+              // If a strategy was loaded (result is true), refresh the state
+              if (result == true && mounted) {
+                setState(() {
+                  // Re-initialize state variables based on potentially updated account data
+                  String pitKey = 'd${widget.carIndex + 1}Pits';
+                  var pitValue = widget.account.raceData!['vars']?[pitKey];
+                  _numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
+                  // Add any other state variables that might change after loading a strategy
+                });
+              }
             },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
