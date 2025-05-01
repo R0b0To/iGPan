@@ -1,16 +1,14 @@
-name: Release Flutter App
+name: Flutter CI/CD
 
 on:
   push:
     tags:
-      - 'v*' # Trigger on tags like v1.0.0, v2.1, etc.
+      - 'v*.*.*' # Trigger on tags like v1.0.0
 
 jobs:
   build_and_release:
-    runs-on: ubuntu-latest # Use Ubuntu for building Android
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      tag_name: ${{ steps.get_tag.outputs.TAG }}
+    name: Build and Release
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,75 +16,46 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.3' # Specify your Flutter version if needed
+          flutter-version: '3.29.3'
           channel: 'stable'
+          cache: true
 
-      - name: Get dependencies
+      - name: Enable Windows desktop support
+        run: flutter config --enable-windows-desktop
+
+      - name: Install dependencies
         run: flutter pub get
-        working-directory: igp_app
+        working-directory: ./igp_app # Assuming pubspec.yaml is in igp_app
 
-      # Build Android APK
+      - name: Build Windows executable
+        run: flutter build windows --release
+        working-directory: ./igp_app
+
       - name: Build Android APK
         run: flutter build apk --release
-        working-directory: igp_app
+        working-directory: ./igp_app
 
-      - name: Get Tag Name
-        id: get_tag
-        run: echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+      - name: Get version number from tag
+        id: get_version
+        run: echo "VERSION_NUMBER=$(echo ${GITHUB_REF_NAME} | sed 's/v//')" >> $GITHUB_ENV
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.IGPANSECRET }}
+      - name: Rename Windows artifact
+        run: mv build/windows/runner/Release/igp_app.exe iGPan_${{ env.VERSION_NUMBER }}.exe
+        working-directory: ./igp_app
+
+      - name: Rename Android artifact
+        run: mv build/app/outputs/flutter-apk/app-release.apk iGPan_${{ env.VERSION_NUMBER }}.apk
+        working-directory: ./igp_app
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.get_tag.outputs.TAG }}
-          release_name: Release ${{ steps.get_tag.outputs.TAG }}
+          token: ${{ secrets.IGPANSECRET }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: Automated release for version ${{ env.VERSION_NUMBER }}
           draft: false
           prerelease: false
-
-      - name: Upload Android APK to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.IGPANSECRET }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: igp_app/build/app/outputs/flutter-apk/app-release.apk
-          asset_name: igp_app-${{ steps.get_tag.outputs.TAG }}-android.apk
-          asset_content_type: application/vnd.android.package-archive
-
-  build_windows:
-    runs-on: windows-latest # Use Windows runner for EXE build
-    needs: build_and_release # Run after the initial release is created
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.29.3' # Specify your Flutter version if needed
-          channel: 'stable'
-
-      - name: Get dependencies
-        run: flutter pub get
-        working-directory: igp_app
-
-      - name: Build Windows EXE
-        run: flutter build windows --release
-        working-directory: igp_app
-
-      # Archive the build output before uploading
-      - name: Archive Windows Release
-        shell: pwsh
-        run: Compress-Archive -Path igp_app/build/windows/runner/Release/* -DestinationPath igp_app/build/windows/runner/igp_app-${{ needs.build_and_release.outputs.tag_name }}-windows.zip
-
-      - name: Upload Windows EXE Zip to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.IGPANSECRET }}
-        with:
-          upload_url: ${{ needs.build_and_release.outputs.upload_url }}
-          asset_path: igp_app/build/windows/runner/igp_app-${{ needs.build_and_release.outputs.tag_name }}-windows.zip
-          asset_name: igp_app-${{ needs.build_and_release.outputs.tag_name }}-windows.zip
-          asset_content_type: application/zip
+          files: |
+            ./igp_app/iGPan_${{ env.VERSION_NUMBER }}.exe
+            ./igp_app/iGPan_${{ env.VERSION_NUMBER }}.apk
