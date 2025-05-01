@@ -1,16 +1,10 @@
-# igp_app
+# iGPan [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/K3K2ND3Y8)
 
-A new Flutter project.
+Multi-account interface for igpmanager, continuation of [iGPeasy](https://github.com/R0b0To/iGPeasy) but with cross-platform in mind.
 
-## Getting Started
 
-This project is a starting point for a Flutter application.
 
-A few resources to get you started if this is your first Flutter project:
+![image](https://github.com/user-attachments/assets/629ee61b-7c73-421d-8f31-f588405708f4)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+![igp_app_ftTSCnxPnG](https://github.com/user-attachments/assets/0e446f18-885d-42e6-9451-ecda43d8ca6b) 
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
