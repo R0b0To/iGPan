@@ -126,7 +126,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             ),
             IconButton(
               onPressed: () {
-                saveStrategy( widget.account, accountsNotifier);
+                saveStrategy( widget.account);
               }, // TODO: Implement Save Setup button action
               style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners

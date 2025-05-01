@@ -17,19 +17,29 @@ class Window1Content extends StatefulWidget {
 
 class _Window1ContentState extends State<Window1Content> {
 
+  String _totalEnginesText = 'N/A'; // State variable to hold the text for total engines
+  String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
+  bool _rewardStatus = false; // State variable for reward status
 
   @override
-  Widget build(BuildContext context) {
-    final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
-    final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
-    // Determine reward status directly from account data
-    bool rewardStatus = widget.account.fireUpData != null &&
+  void initState() {
+    super.initState();
+    // Initialize the state variables with the current values from the widget
+    _totalEnginesText = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? 'N/A';
+    _totalPartsText = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? 'N/A';
+    _rewardStatus = widget.account.fireUpData != null &&
         widget.account.fireUpData!.containsKey('notify') && // Added null check
         widget.account.fireUpData!['notify'] != null &&
         widget.account.fireUpData!['notify'] is Map &&
         widget.account.fireUpData!['notify']!['page'] != null &&
         widget.account.fireUpData!['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData!['notify']['page']['nDailyReward'] == '0'; // Assuming '0' means available
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
+    final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
     
     return Column(
      mainAxisAlignment: MainAxisAlignment.start, // Align children to the top
@@ -80,18 +90,20 @@ class _Window1ContentState extends State<Window1Content> {
                   return SizedBox(
                  
                    child: IconButton(
-                     onPressed: rewardStatus
+                     onPressed: _rewardStatus // Use the state variable
                          ? () async { // Make async
                              // Show loading indicator while claiming
                              ScaffoldMessenger.of(context).showSnackBar(
                                SnackBar(content: Text('Claiming reward for ${widget.account.nickname ?? widget.account.email}...')),
                              );
                              try {
-                               await claimDailyReward(widget.account, accountsNotifier); // Assuming accountsNotifier is accessible or passed down
+                               await claimDailyReward(widget.account);
                                ScaffoldMessenger.of(context).showSnackBar(
                                  SnackBar(content: Text('Reward claimed!')),
                                );
-                               // The ValueNotifier should trigger a rebuild where needed
+                               setState(() {
+                                 _rewardStatus = false; // Update the state variable to false after claiming
+                               });
                              } catch (e) {
                                ScaffoldMessenger.of(context).showSnackBar(
                                  SnackBar(content: Text('Failed to claim reward: $e')),
@@ -103,7 +115,7 @@ class _Window1ContentState extends State<Window1Content> {
                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                      
                      ),
-                     icon: rewardStatus ? Icon(MdiIcons.gift, size: 26,color: Colors.red,) : Icon(MdiIcons.giftOpen, size: 26,color: Colors.green,), // Gift icon
+                     icon: _rewardStatus ? Icon(MdiIcons.gift, size: 26,color: Colors.red,) : Icon(MdiIcons.giftOpen, size: 26,color: Colors.green,), // Gift icon
                    ));
                  },
                ),
@@ -113,13 +125,18 @@ class _Window1ContentState extends State<Window1Content> {
                SizedBox(
                 height: 15, 
                  child: ElevatedButton(
-                   onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () {
-                     Navigator.push(
+                   onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () async { // Make async
+                     final result = await Navigator.push( // Await the navigation result
                        context,
                        MaterialPageRoute(
                          builder: (context) => SponsorListScreen(account: widget.account, sponsorNumber: 1), // Pass sponsorNumber 1
                        ),
                      );
+                     if (result == true) { // Check if the result is true
+                       setState(() {
+                         
+                       });
+                     }
                    },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
@@ -135,13 +152,18 @@ class _Window1ContentState extends State<Window1Content> {
                SizedBox(
                  height: 15, 
                  child: ElevatedButton(
-                   onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () {
-                      Navigator.push(
+                   onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () async { // Make async
+                      final result = await Navigator.push( // Await the navigation result
                        context,
                        MaterialPageRoute(
                          builder: (context) => SponsorListScreen(account: widget.account, sponsorNumber: 2), // Pass sponsorNumber 2
                        ),
                      );
+                     if (result == true) { // Check if the result is true
+                       setState(() {
+                         
+                       });
+                     }
                    },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
@@ -197,7 +219,7 @@ class _Window1ContentState extends State<Window1Content> {
                                   children: [
                                     Icon(MdiIcons.carWrench, size: 16), // Engine icon
                                     SizedBox(width: 2), // Space between icon and text
-                                    Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?? 'N/A'}'),
+                                    Text(_totalPartsText), // Use the state variable
                                   ],
                                 ),
                                 
@@ -215,7 +237,7 @@ class _Window1ContentState extends State<Window1Content> {
                                   children: [
                                     Icon(MdiIcons.engine, size: 16), // Engine icon
                                     SizedBox(width: 2), // Space between icon and text
-                                    Text('${widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? 'N/A'}'),
+                                    Text(_totalEnginesText), // Use the state variable
                                   ],
                                 ),
                               ),
@@ -282,16 +304,26 @@ class _Window1ContentState extends State<Window1Content> {
                                      CircularProgressButton(
                                      label: widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}CarBtn'] ?? '',
                                      progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition'] ?? '0') ?? 0.0,
-                                     onPressed: () {
-                                      repairCar(widget.account, i,'parts',accountsNotifier); 
-                                     }, // Add functionality later
+                                     onPressed: () async { // Make the callback async
+                                       final result = await repairCar(widget.account, i,'parts');
+                                       if (result != -1) {
+                                         setState(() {
+                                           _totalPartsText = result.toString(); // Update the state variable
+                                         });
+                                       }
+                                     },
                                    ),
                                    CircularProgressButton(
                                      label: 'Engine',
                                      progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine'] ?? '0') ?? 0.0,
-                                     onPressed: () {
-                                      repairCar(widget.account, i,'engine',accountsNotifier); 
-                                     }, // Add functionality later
+                                     onPressed: () async { // Make the callback async
+                                       final result = await repairCar(widget.account, i,'engine');
+                                       if (result != -1) {
+                                         setState(() {
+                                           _totalEnginesText = result.toString(); // Update the state variable
+                                         });
+                                       }
+                                     },
                                    ),
 
                                  ],

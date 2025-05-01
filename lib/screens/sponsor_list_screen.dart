@@ -109,13 +109,11 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
                                      var result = await saveSponsor(widget.account, widget.sponsorNumber, imageId, income, bonus); // Pass the imageId
                                      
                                      if (result != null && context.mounted) { // Check result and if widget is still mounted
-                                       // Update the notifier to refresh UI elsewhere
-                                       accountsNotifier.value = List<Account>.from(accountsNotifier.value);
                                        
                                        ScaffoldMessenger.of(context).showSnackBar(
                                          SnackBar(content: Text('Sponsor signed successfully (ID: $imageId)')), // Updated message
                                        );
-                                       Navigator.pop(context); // Close the screen on success
+                                       Navigator.pop(context, true); // Close the screen on success and return true
                                      } else if (context.mounted) {
                                         ScaffoldMessenger.of(context).showSnackBar(
                                          SnackBar(content: Text('Failed to sign sponsor (ID: $imageId). API returned null.')),

@@ -8,6 +8,7 @@ import 'igp_client.dart';
 import 'widgets/account_main_container.dart'; // Import the extracted widget
 // Removed utils/helpers.dart import as it's not directly used here anymore
 
+
 void main() {
   runApp(const MyApp());
 }
@@ -65,13 +66,16 @@ class _MyHomePageState extends State<MyHomePage> {
     final directory = await getApplicationDocumentsDirectory();
     appDocumentPath = directory.path; // Set the appDocumentPath
 
-    await loadAccounts(accountsNotifier);
+    await loadAccounts(); // Load accounts into the global list
     setState(() {
       _isLoading = false;
     });
     // Initial session start for all accounts after loading
-    for (var account in accountsNotifier.value) {
+    for (var account in accounts) { // Iterate over the global accounts list
       await startClientSessionForAccount(account);
+      setState(() {
+        
+      });
     }
   }
 
@@ -83,35 +87,25 @@ class _MyHomePageState extends State<MyHomePage> {
 
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : ValueListenableBuilder<List<Account>>( // Use specific type List<Account>
-              valueListenable: accountsNotifier, // Use the imported notifier
-              builder: (context, accounts, child) {
-                // Ensure accounts list is not null before checking if empty
-                if (accounts.isEmpty) {
-                  // Handle null or empty case (e.g., show loading or message)
-                  return Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: <Widget>[
-                            const Text('No accounts registered or still loading.'),
-                            ElevatedButton(
-                              onPressed: () async {
-                                await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const AccountsScreen()),
-                                );
-                                //_loadAccounts();
-                              },
-                              child: const Text('Add Account'),
-                            ),
-                          ],
-                        ),
-                      );
-                }
-                // Build the main content based on the selected bottom navigation index
-                return _buildMainContent(context, accounts);
-              },
-            ),
+          : accounts.isEmpty // Check the global accounts list
+               ? Center(
+                     child: Column(
+                       mainAxisAlignment: MainAxisAlignment.center,
+                       children: <Widget>[
+                         const Text('No accounts registered or still loading.'),
+                         ElevatedButton(
+                           onPressed: () async {
+                             await Navigator.push(
+                               context,
+                               MaterialPageRoute(builder: (context) => const AccountsScreen()),
+                             );
+                           },
+                           child: const Text('Add Account'),
+                         ),
+                       ],
+                     ),
+                   )
+               : _buildMainContent(context, accounts), // Pass the global accounts list
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
           setState(() {

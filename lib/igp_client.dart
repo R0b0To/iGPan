@@ -4,11 +4,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart'; // Import s
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart'; // Import for debugPrint and ValueNotifier
+import 'package:flutter/material.dart'; 
 import 'package:html/parser.dart' as html_parser;
 import 'package:path_provider/path_provider.dart'; // Import path_provider
 
-final ValueNotifier<List<Account>> accountsNotifier = ValueNotifier<List<Account>>([]);
+ List<Account> accounts = []; // List to store accounts
 final _storage = const FlutterSecureStorage(); // Create storage instance
 final String _accountsKey = 'accounts'; // Key for storing accounts
 
@@ -50,17 +50,17 @@ final Map<String, Dio> dioClients = {};
 String? appDocumentPath;
 
 
-Future<void> loadAccounts(ValueNotifier<List<Account>> accountsNotifier) async {
+Future<void> loadAccounts() async {
   try {
     final jsonString = await _storage.read(key: _accountsKey);
     if (jsonString != null) {
       final List<dynamic> jsonList = jsonDecode(jsonString);
-      accountsNotifier.value = jsonList.map((json) => Account.fromJson(json)).toList();
-      debugPrint('Accounts loaded: ${accountsNotifier.value.length}');
+      accounts = jsonList.map((json) => Account.fromJson(json)).toList();
+      debugPrint('Accounts loaded: ${accounts.length}');
 
       // Initialize persistent cookie jars for each account
       if (appDocumentPath != null) { // appDocumentPath is still needed for cookie jars
-        for (var account in accountsNotifier.value) {
+        for (var account in accounts) {
           cookieJars[account.email] = PersistCookieJar(
             storage: FileStorage('$appDocumentPath/.cookies/${account.email}/'),
           );
@@ -74,11 +74,11 @@ Future<void> loadAccounts(ValueNotifier<List<Account>> accountsNotifier) async {
   }
 }
 
-Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) async {
-  if (accountsNotifier.value.isEmpty) return;
+Future<void> startClientSessions() async {
+  if (accounts.isEmpty) return;
 
   // Start session for each account
-  for (var account in accountsNotifier.value) {
+  for (var account in accounts) {
     await startClientSessionForAccount(account);
   }
 }
@@ -116,7 +116,7 @@ Future<void> startClientSessionForAccount(Account account) async {
         if (account.fireUpData != null &&
             account.fireUpData!['team'] != null &&
             account.fireUpData!['team']['_league'] != '0') {
-          await fetchRaceData(account, accountsNotifier);
+          await fetchRaceData(account);
         } else {
           debugPrint('Account ${account.email} is not in a league. Skipping race data fetch.');
         }
@@ -133,14 +133,7 @@ Future<void> startClientSessionForAccount(Account account) async {
     await login(account);
   }
 
-  // Update the specific account in the notifier's list
-  final updatedAccounts = List<Account>.from(accountsNotifier.value);
-  final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
-  if (index != -1) {
-    updatedAccounts[index] = account;
-    accountsNotifier.value = updatedAccounts; // Notify listeners
-    debugPrint('UI updated for ${account.email}');
-  }
+
 }
 
 Future<void> login(Account account) async {
@@ -187,7 +180,7 @@ Future<void> login(Account account) async {
       debugPrint('Error logging in ${account.email}: $e');
     }
 }
-Future<void> claimDailyReward(Account account, ValueNotifier<List<Account>> accountsNotifier) async {
+Future<void> claimDailyReward(Account account) async {
   Dio? dio = dioClients[account.email];
   if (dio == null) {
     debugPrint('Error: Dio client not found for ${account.email}. Cannot claim daily reward.');
@@ -212,15 +205,6 @@ Future<void> claimDailyReward(Account account, ValueNotifier<List<Account>> acco
         account.fireUpData!['notify']['page'].containsKey('nDailyReward')) {
       account.fireUpData!['notify']['page'].remove('nDailyReward');
       debugPrint('Removed nDailyReward key for ${account.email}');
-
-      // Find the account in the notifier's list and update it
-      final updatedAccounts = List<Account>.from(accountsNotifier.value);
-      final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
-      if (index != -1) {
-        updatedAccounts[index] = account;
-        accountsNotifier.value = updatedAccounts; // Notify listeners
-        debugPrint('Accounts notifier updated after claiming daily reward for ${account.email}');
-      }
     }
 
   } catch (e) {
@@ -230,7 +214,7 @@ Future<void> claimDailyReward(Account account, ValueNotifier<List<Account>> acco
   }
 }
 
-Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> accountsNotifier) async {
+Future<void> fetchRaceData(Account account) async {
   Dio? dio = dioClients[account.email];
   if (dio == null) {
     debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
@@ -516,12 +500,13 @@ Future<dynamic> saveSponsor(Account account, int number, String id, String incom
   }
 }
 
-Future<dynamic> repairCar(Account account, int number, String repairType, ValueNotifier<List<Account>> accountsNotifier) async {
+Future<dynamic> repairCar(Account account, int number, String repairType) async {
     Dio? dio = dioClients[account.email];
     if (dio == null) {
       debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch saveSponsor data.');
       throw Exception('Dio client not initialized for account');
     }
+    int totalRemaining = -1;
 
   try {
     final numberKey = 'c${number}Id';
@@ -536,7 +521,8 @@ Future<dynamic> repairCar(Account account, int number, String repairType, ValueN
       final repairRequest = Uri.parse("https://igpmanager.com/index.php?action=send&type=fix&car=$id&btn=c${number}PartSwap&jsReply=fix&csrfName=&csrfToken=");
       final response = await dio.get(repairRequest.toString());
       final jsonData = jsonDecode(response.data);
-      account.fireUpData?['preCache']['p=cars']['vars']['totalParts'] = (totalParts - repairCost).toString();
+      totalRemaining = (totalParts - repairCost);
+      account.fireUpData?['preCache']['p=cars']['vars']['totalParts'] = totalRemaining.toString();
       account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Condition'] = "100";
     }else {
       debugPrint('Repairing car is not possible: ${account.email}');
@@ -552,24 +538,18 @@ Future<dynamic> repairCar(Account account, int number, String repairType, ValueN
       final repairRequest = Uri.parse("https://igpmanager.com/index.php?action=send&type=engine&car=$id&btn=c${number}EngSwap&jsReply=fix&csrfName=&csrfToken=");
       final response = await dio.get(repairRequest.toString());
       final jsonData = jsonDecode(response.data);
-      account.fireUpData?['preCache']['p=cars']['vars']['totalEngines'] = totalEngines - 1;
+      totalRemaining = (totalEngines - 1);
+      account.fireUpData?['preCache']['p=cars']['vars']['totalEngines'] = totalRemaining.toString();
       account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Engine'] = "100";
+     
     }else {
       debugPrint('Replacing engine is not possible: ${account.email}');
       return false;
     }
 
   }
-          // Find the account in the notifier's list and update it
-    final updatedAccounts = List<Account>.from(accountsNotifier.value);
-    final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
-    if (index != -1) {
-      updatedAccounts[index] = account;
-      accountsNotifier.value = updatedAccounts; // Notify listeners
-      debugPrint('Accounts notifier updated after repairing car for${account.email}');
-    }
-    return true;
- 
+      
+  return totalRemaining;
     } catch (e) {
     debugPrint('Error repairing car ${account.email}: $e');
     rethrow;
@@ -577,7 +557,7 @@ Future<dynamic> repairCar(Account account, int number, String repairType, ValueN
 }
 
 
-Future<dynamic> saveStrategy(Account account, ValueNotifier<List<Account>> accountsNotifier) async {
+Future<dynamic> saveStrategy(Account account) async {
     Dio? dio = dioClients[account.email];
     if (dio == null) {
       debugPrint('Error: Dio client not found for ${account.email}. Cannot saveStrategy data.');
@@ -712,15 +692,7 @@ Future<dynamic> saveStrategy(Account account, ValueNotifier<List<Account>> accou
   ...d1Strategy,
   ...d2Strategy,
 };
-Map<String, dynamic> deepStringify(Map<String, dynamic> input) {
-  return input.map((key, value) {
-    if (value is Map<String, dynamic>) {
-      return MapEntry(key, deepStringify(value));
-    } else {
-      return MapEntry(key, value.toString());
-    }
-  });
-}
+
 
   try {
      final response = await dio.post(url.toString(),data: jsonEncode(saveData), );

@@ -50,7 +50,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     TextEditingController passwordController = TextEditingController();
     TextEditingController nicknameController = TextEditingController();
 
-    await showDialog(
+    Account? addedAccount = await showDialog<Account>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -94,9 +94,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   _accounts.add(newAccount);
                 });
                 _saveAccounts();
-                // Start session for the newly added account
-                startClientSessionForAccount(newAccount);
-                Navigator.of(context).pop();
+                // Pass the new account back when popping
+                Navigator.of(context).pop(newAccount);
               },
               child: const Text('Add'),
             ),
@@ -104,6 +103,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
         );
       },
     );
+    // Start session for the newly added account after the dialog is dismissed
+    if (addedAccount != null) {
+      startClientSessionForAccount(addedAccount);
+    }
   }
 
   Future<void> _editAccount(int index) async {
@@ -111,7 +114,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     TextEditingController passwordController = TextEditingController(text: _accounts[index].password);
     TextEditingController nicknameController = TextEditingController(text: _accounts[index].nickname);
 
-    await showDialog(
+    Account? editedAccount = await showDialog<Account>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
@@ -146,17 +149,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 String password = passwordController.text;
                 String nickname = nicknameController.text;
 
+                Account updatedAccount = Account(
+                  email: email,
+                  password: password,
+                  nickname: nickname.isNotEmpty ? nickname : null,
+                );
                 setState(() {
-                  _accounts[index] = Account(
-                    email: email,
-                    password: password,
-                    nickname: nickname.isNotEmpty ? nickname : null,
-                  );
+                  _accounts[index] = updatedAccount;
                 });
                 _saveAccounts();
-                
-                startClientSessionForAccount(_accounts[index]);
-                Navigator.of(context).pop();
+                // Pass the updated account back when popping
+                Navigator.of(context).pop(updatedAccount);
               },
               child: const Text('Save'),
             ),
@@ -164,6 +167,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
         );
       },
     );
+    // Start session for the edited account after the dialog is dismissed
+    if (editedAccount != null) {
+      startClientSessionForAccount(editedAccount);
+    }
   }
 
   Future<void> _deleteAccount(int index) async {
