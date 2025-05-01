@@ -219,6 +219,16 @@ class _AccountsScreenState extends State<AccountsScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                // Add the Switch widget
+                Switch(
+                  value: account.enabled,
+                  onChanged: (bool value) {
+                    setState(() {
+                      account.enabled = value; // Update the account's enabled state
+                    });
+                    _saveAccounts(); // Save the updated accounts list
+                  },
+                ),
                 IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () {

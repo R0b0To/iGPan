@@ -16,11 +16,12 @@ class Account {
   final String email;
   final String password;
   final String? nickname;
+  bool enabled; // Add enabled field
 
   Map<String, dynamic>? fireUpData; // To store fireUp response data
   Map<String, dynamic>? raceData; // To store race data
 
-  Account({required this.email, required this.password, this.nickname, this.fireUpData, this.raceData});
+  Account({required this.email, required this.password, this.nickname, this.fireUpData, this.raceData, this.enabled = true}); // Initialize enabled to true
 
   // Factory constructor to create an Account from a JSON map
   factory Account.fromJson(Map<String, dynamic> json) {
@@ -30,6 +31,7 @@ class Account {
       nickname: json['nickname'],
       fireUpData: json['fireUpData'], // Load existing fireUpData if available
       raceData: json['raceData'], // Load existing raceData if available
+      enabled: json['enabled'] ?? true, // Load enabled state, default to true if not present
     );
   }
 
@@ -41,6 +43,7 @@ class Account {
       'nickname': nickname,
       'fireUpData': fireUpData,
       'raceData': raceData,
+      'enabled': enabled, // Include enabled state in JSON
     };
   }
 }

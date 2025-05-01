@@ -4,7 +4,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:path_provider/path_provider.dart'; // Import path_provider
 
 import 'accounts_screen.dart';
-import 'igp_client.dart'; 
+import 'igp_client.dart';
 import 'widgets/account_main_container.dart'; // Import the extracted widget
 // Removed utils/helpers.dart import as it's not directly used here anymore
 
@@ -70,227 +70,215 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _isLoading = false;
     });
-    // Initial session start for all accounts after loading
+    // Initial session start for all enabled accounts after loading
     for (var account in accounts) { // Iterate over the global accounts list
-      await startClientSessionForAccount(account);
-      setState(() {
-        
-      });
+      if (account.enabled) { // Check if the account is enabled
+        await startClientSessionForAccount(account);
+        setState(() {
+
+        });
+      }
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
+    // Filter accounts to only include enabled ones for the Home view
+    final enabledAccounts = accounts.where((account) => account.enabled).toList();
     //debugPrint('Current screen size: ${MediaQuery.of(context).size.width} x ${MediaQuery.of(context).size.height}');
     return Scaffold(
 
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : accounts.isEmpty // Check the global accounts list
+          : accounts.isEmpty // Check the global accounts list (still show Add Account if no accounts at all)
                ? Center(
                      child: Column(
                        mainAxisAlignment: MainAxisAlignment.center,
                        children: <Widget>[
                          const Text('No accounts registered or still loading.'),
                          ElevatedButton(
-                           onPressed: () async {
-                             await Navigator.push(
-                               context,
-                               MaterialPageRoute(builder: (context) => const AccountsScreen()),
-                             );
+                           onPressed: () {
+                             // Switch to the Accounts tab directly
+                             setState(() {
+                               _bottomNavIndex = 1;
+                             });
                            },
                            child: const Text('Add Account'),
                          ),
                        ],
                      ),
                    )
-               : _buildMainContent(context, accounts), // Pass the global accounts list
-      bottomNavigationBar: NavigationBar(
-        onDestinationSelected: (int index) {
-          setState(() {
-            _bottomNavIndex = index;
+               : IndexedStack(
+                   index: _bottomNavIndex,
+                   children: <Widget>[
+                     // Index 0: Home View (Existing LayoutBuilder content, using enabledAccounts)
+                     LayoutBuilder(
+                       builder: (context, constraints) {
+                         // Define minimum size for sub-windows
+                         const double minWindowWidth = 400;
+                         const double minWindowHeight = 240;
 
-          });
-        },
-        selectedIndex: _bottomNavIndex,
-        destinations: const <Widget>[
-          NavigationDestination(
-            selectedIcon: Icon(Icons.home),
-            icon: Icon(Icons.people_outline),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            selectedIcon: Icon(Icons.settings),
-            icon: Icon(Icons.settings_outlined),
-            label: 'Accounts',
-          ),
-          NavigationDestination(
-            selectedIcon: Icon(Icons.play_circle_filled),
-            icon: Icon(Icons.play_circle_outline),
-            label: 'Actions',
-          ),
-        ],
-      ),
-    );
-  }
+                         // Check if there's enough horizontal space for two windows side-by-side
+                         bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
 
-  // Helper widget to build the main content area based on the bottom nav index
-  Widget _buildMainContent(BuildContext context, List<Account> accounts) {
-    switch (_bottomNavIndex) {
-      case 0: // Accounts View
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Define minimum size for sub-windows
-            const double minWindowWidth = 400;
-            const double minWindowHeight = 240;
+                         if (canStackWindowsHorizontally) {
+                           // Wide screen: Paginated Vertical Stack (Horizontal PageView)
+                           const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
+                           // Use enabledAccounts.length for itemsPerPage calculation
+                           final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, enabledAccounts.length.clamp(1, enabledAccounts.length)); // Ensure at least 1, handle empty enabledAccounts
+                           // Use enabledAccounts.length for pageCount calculation
+                           final pageCount = (enabledAccounts.length / itemsPerPage).ceil();
 
-            // Check if there's enough horizontal space for two windows side-by-side
-            bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
+                           // Handle case where there are no enabled accounts
+                           if (enabledAccounts.isEmpty) {
+                             return const Center(child: Text('No enabled accounts to display.'));
+                           }
 
-            if (canStackWindowsHorizontally) {
-              // Wide screen: Paginated Vertical Stack (Horizontal PageView)
-              const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
-              final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, accounts.length); // Ensure at least 1
-              final pageCount = (accounts.length / itemsPerPage).ceil();
+                           return Column(
+                             mainAxisSize: MainAxisSize.max,
+                             children: [
+                               Expanded(
+                                 child: CarouselSlider.builder(
+                                   itemCount: pageCount,
+                                   options: CarouselOptions(
+                                     viewportFraction: 1 , // Display multiple items per page
+                                     enableInfiniteScroll: false,
+                                     onPageChanged: (index, reason) {
+                                       setState(() {
+                                         _currentPageIndex = index;
+                                       });
+                                     },
+                                     height: constraints.maxHeight,
+                                   ),
+                                   itemBuilder: (context, pageIndex, realIdx) {
+                                     final startIndex = pageIndex * itemsPerPage;
+                                     final endIndex = (startIndex + itemsPerPage).clamp(0, enabledAccounts.length);
 
-              return Column(
-                children: [
-                  Expanded(
-                    child: CarouselSlider.builder(
-                      itemCount: pageCount,
-                      options: CarouselOptions(
-                        viewportFraction: 1 , // Display multiple items per page
-                        enableInfiniteScroll: false,
-                        onPageChanged: (index, reason) {
-                          setState(() {
-                            _currentPageIndex = index;
-                          });
-                        },
-                        height: constraints.maxHeight,
-                      ),
-                      itemBuilder: (context, pageIndex, realIdx) {
-                        final startIndex = pageIndex * itemsPerPage;
-                        final endIndex = (startIndex + itemsPerPage).clamp(0, accounts.length);
+                                     return Column(
+                                       mainAxisSize: MainAxisSize.max, // Take available space
+                                       children: [
+                                         for (int i = startIndex; i < endIndex; i++)
+                                           AccountMainContainer(
+                                             account: enabledAccounts[i], // Use enabledAccounts
+                                             minWindowWidth: minWindowWidth,
+                                             minWindowHeight: minWindowHeight,
+                                             canStackWindowsHorizontally: true, // Windows side-by-side
+                                           ),
+                                       ],
+                                     );
+                                   },
+                                 ),
+                               ),
+                               // Indicator dots for the horizontal pages
+                               if (pageCount > 1) // Only show dots if multiple pages
+                                 Row(
+                                   mainAxisAlignment: MainAxisAlignment.center,
+                                   children: List.generate(pageCount, (index) {
+                                     return Container(
+                                       width: 8.0,
+                                       height: 8.0,
+                                       margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                                       decoration: BoxDecoration(
+                                         shape: BoxShape.circle,
+                                         color: _currentPageIndex == index
+                                             ? Theme.of(context).colorScheme.primary
+                                             : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                       ),
+                                     );
+                                   }),
+                                 ),
+                             ],
+                           );
+                         } else {
+                           // Narrow screen: Horizontal PageView for individual accounts
+                           // Use enabledAccounts.length for itemCount
+                           if (enabledAccounts.isEmpty) {
+                             return const Center(child: Text('No enabled accounts to display.'));
+                           }
+                           return Column(
+                             mainAxisSize: MainAxisSize.max,
+                             children: [
+                               Expanded(
+                                 child: CarouselSlider.builder(
+                                   itemCount: enabledAccounts.length, // Use enabledAccounts
+                                   options: CarouselOptions(
+                                     scrollDirection: Axis.horizontal, // Make it horizontal
+                                     viewportFraction: 1,
+                                     enableInfiniteScroll: false,
+                                     onPageChanged: (index, reason) {
+                                       setState(() {
+                                         _currentNarrowCarouselIndex = index;
+                                       });
+                                     },
+                                     height: constraints.maxHeight,
+                                   ),
+                                   itemBuilder: (context, index, realIdx) {
+                                     final account = enabledAccounts[index]; // Use enabledAccounts
+                                     return AccountMainContainer(
+                                       account: account,
+                                       minWindowWidth: minWindowWidth,
+                                       minWindowHeight: minWindowHeight,
+                                       canStackWindowsHorizontally: false, // Windows stacked vertically
+                                     );
+                                   },
+                                 ),
+                               ),
+                               // Indicator dots for the narrow screen
+                               Row( // Changed to Row for horizontal dots
+                                 mainAxisAlignment: MainAxisAlignment.center,
+                                 children: List.generate(enabledAccounts.length, (index) { // Use enabledAccounts
+                                   return Container(
+                                     width: 8.0,
+                                     height: 8.0,
+                                     margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0), // Adjusted margin
+                                     decoration: BoxDecoration(
+                                       shape: BoxShape.circle,
+                                       color: _currentNarrowCarouselIndex == index
+                                           ? Theme.of(context).colorScheme.primary
+                                           : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                     ),
+                                   );
+                                 }),
+                               ),
+                             ],
+                           );
+                         }
+                       },
+                     ),
+                     // Index 1: Accounts View
+                     const AccountsScreen(),
+                     // Index 2: Actions View (Placeholder)
+                     const Center(child: Text('Actions Area (Not Implemented)')),
+                   ],
+                 ),
+       bottomNavigationBar: NavigationBar(
+         onDestinationSelected: (int index) {
+           setState(() {
+             _bottomNavIndex = index;
 
-                        return Column(
-                          mainAxisSize: MainAxisSize.max, // Take available space
-                          children: [
-                            for (int i = startIndex; i < endIndex; i++)
-                              AccountMainContainer(
-                                account: accounts[i],
-                                minWindowWidth: minWindowWidth,
-                                minWindowHeight: minWindowHeight,
-                                canStackWindowsHorizontally: true, // Windows side-by-side
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  // Indicator dots for the horizontal pages
-                  if (pageCount > 1) // Only show dots if multiple pages
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(pageCount, (index) {
-                        return Container(
-                          width: 8.0,
-                          height: 8.0,
-                          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPageIndex == index
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
-                          ),
-                        );
-                      }),
-                    ),
-                ],
-              );
-            } else {
-              // Narrow screen: Horizontal PageView for individual accounts
-              return Column(
-                children: [
-                  Expanded(
-                    child: CarouselSlider.builder(
-                      itemCount: accounts.length,
-                      options: CarouselOptions(
-                        scrollDirection: Axis.horizontal, // Make it horizontal
-                        viewportFraction: 1,
-                        enableInfiniteScroll: false,
-                        onPageChanged: (index, reason) {
-                          setState(() {
-                            _currentNarrowCarouselIndex = index;
-                          });
-                        },
-                        height: constraints.maxHeight,
-                      ),
-                      itemBuilder: (context, index, realIdx) {
-                        final account = accounts[index];
-                        return AccountMainContainer(
-                          account: account,
-                          minWindowWidth: minWindowWidth,
-                          minWindowHeight: minWindowHeight,
-                          canStackWindowsHorizontally: false, // Windows stacked vertically
-                        );
-                      },
-                    ),
-                  ),
-                  // Indicator dots for the narrow screen
-                  Row( // Changed to Row for horizontal dots
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(accounts.length, (index) {
-                      return Container(
-                        width: 8.0,
-                        height: 8.0,
-                        margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0), // Adjusted margin
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _currentNarrowCarouselIndex == index
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              );
-            }
-          },
-        );
-      case 1: // Settings View
-        // Navigate to AccountsScreen when Settings is tapped
-        // Using WidgetsBinding to navigate after build to avoid issues during build phase
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          // Check if the widget is still mounted before navigating
-          if (mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AccountsScreen()),
-            ).then((_) {
-              // When returning from AccountsScreen, reload accounts and switch back to Accounts tab
-              // Check if mounted again before calling setState
-              if (mounted) {
-                 //_loadAccounts();
-                 setState(() {
-                   _bottomNavIndex = 0;
-                 });
-              }
-            });
-          }
-        });
-        // Show a temporary loading indicator while navigating
-        return const Center(child: CircularProgressIndicator(key: ValueKey('settings_loading')));
-        // Alternative placeholder:
-        // return const Center(child: Text('Settings Area - Navigating...'));
-      case 2: // Actions View (Placeholder)
-        // TODO: Implement Actions View
-        return const Center(child: Text('Actions Area (Not Implemented)'));
-      default: // Should not happen
-        return const Center(child: Text('Error: Invalid selection'));
-    }
-  }
-}
+           });
+         },
+         selectedIndex: _bottomNavIndex,
+         destinations: const <Widget>[
+           NavigationDestination(
+             selectedIcon: Icon(Icons.home),
+             icon: Icon(Icons.home_outlined),
+             label: 'Home',
+           ),
+           NavigationDestination(
+             selectedIcon: Icon(Icons.people),
+             icon: Icon(Icons.people_outline),
+             label: 'Accounts',
+           ),
+           NavigationDestination(
+             selectedIcon: Icon(Icons.play_circle_filled),
+             icon: Icon(Icons.play_circle_outline),
+             label: 'Actions',
+           ),
+         ],
+       ),
+     );
+   }
 
-
+ }
