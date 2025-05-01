@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: app-release-exe
-          path: build/windows/x64/runner/Release/igp_app.exe # Adjust path if necessary
+          path: build\windows\x64\runner\Release\igp_app.exe # Adjust path if necessary
 
   create_release:
     needs: [build_android, build_windows]
