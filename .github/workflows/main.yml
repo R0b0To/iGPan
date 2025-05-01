@@ -69,11 +69,17 @@ jobs:
         with:
           name: app-release-exe
 
+      - name: Rename Android APK
+        run: mv app-release.apk iGPan.apk
+
+      - name: Rename Windows EXE
+        run: mv igp_app.exe iGPan.exe
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             iGPan.apk
-            iGPan.exe # Adjust filename if necessary
+            iGPan.exe
         env:
           GITHUB_TOKEN: ${{ secrets.IGPANSECRET }}
