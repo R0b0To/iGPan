@@ -589,14 +589,12 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                   IconButton(
-                  icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-                  tooltip: 'Delete Strategy',
-                  iconSize: 20, // Adjust size
-                  constraints: BoxConstraints(), // Remove extra padding
-                  padding: EdgeInsets.all(4), // Add minimal padding
-                  onPressed: _isLoading ? null : () => _deleteStrategy(hash), // Disable when loading/deleting
+                    IconButton(
+                  onPressed: _isLoading ? null : () => _loadStrategy(hash), // Disable when loading/deleting
+                  icon: Icon(Icons.upload, color: const Color.fromARGB(255, 44, 94, 32)),
+                  
                 ),
+              
                 SizedBox(width: 4), // Spacing between buttons
                 Expanded(
                    child: Container( // Container to constrain preview height
@@ -605,14 +603,17 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                       child: _buildSavedStrategyPreview(strategyData),
                     ),
                 ),
-          
-                IconButton(
-                  onPressed: _isLoading ? null : () => _loadStrategy(hash), // Disable when loading/deleting
-                  icon: Icon(Icons.upload, color: const Color.fromARGB(255, 44, 94, 32)),
-                  
+                  IconButton(
+                  icon: Icon(Icons.delete_outline, color: Colors.redAccent),
+                  tooltip: 'Delete Strategy',
+                  iconSize: 20, // Adjust size
+                  constraints: BoxConstraints(), // Remove extra padding
+                  padding: EdgeInsets.all(4), // Add minimal padding
+                  onPressed: _isLoading ? null : () => _deleteStrategy(hash), // Disable when loading/deleting
                 ),
+            
                 
-                // Delete Button
+                
              
               ],
             ),

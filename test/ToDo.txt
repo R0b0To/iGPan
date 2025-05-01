@@ -26,4 +26,8 @@ ToDo:
             strategy
             save
         menu bar style/location
-        
+    screens:
+        strategy save load style
+            load should be the preview container   
+            remove hover labels
+            save button should be container with preview
