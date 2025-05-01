@@ -706,3 +706,46 @@ Future<dynamic> saveStrategy(Account account) async {
     rethrow;
   }
 }
+
+Future<dynamic> requestLeagueInfo(Account account) async {
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch saveSponsor data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  final leagueId = account.fireUpData?['team']['_league'];
+  try {
+  final league = Uri.parse("https://igpmanager.com/index.php?action=fetch&p=league&id=${leagueId}&csrfName=&csrfToken=");
+  final response = await dio.get(league.toString());
+  final jsonData = jsonDecode(response.data);
+  account.fireUpData?['league'] = jsonData['vars'];
+  return jsonData;
+    } catch (e) {
+    debugPrint('Error saving sponsor ${account.email}: $e');
+    rethrow;
+  }
+}
+
+Future<dynamic> requestHistoryReports(Account account, int? start, int? numResults) async {
+    // Check if start and numResults are null and set default values
+    start ??= 0; // Default to 0 if null
+    numResults ??= 10; // Default to 10 if null
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch saveSponsor data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  try {
+  final reports = Uri.parse("https://igpmanager.com/index.php?action=send&type=history&start=$start&numResults=$numResults&jsReply=scrollLoader&el=history&csrfName=&csrfToken=");
+  final response = await dio.get(reports.toString());
+  final jsonData = jsonDecode(response.data);
+  final races = parseRaces(jsonData['src']);
+  //account.fireUpData?['league'] = jsonData['vars'];
+  return races;
+    } catch (e) {
+    debugPrint('Error saving sponsor ${account.email}: $e');
+    rethrow;
+  }
+}

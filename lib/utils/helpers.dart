@@ -408,3 +408,57 @@ List<DropdownMenuItem<String>> buildStrategyDropdownItems() {
   // Convert to signed 32-bit integer
   return hash >= 0x80000000 ? hash - 0x100000000 : hash;
 }
+
+List<Map<String, String>> parseRaces(String htmlString) {
+  // Wrap the HTML string in a table to make it valid HTML
+  final wrappedHtml = '<table>$htmlString</table>';
+  
+  // Parse the HTML
+  final document = parse(wrappedHtml);
+  
+  // Get all table rows
+  final rows = document.querySelectorAll('tr');
+  
+  List<Map<String, String>> races = [];
+  
+  for (var row in rows) {
+    try {
+      // Extract the race ID from the href attribute
+      final anchor = row.querySelector('a[href*="id="]');
+      final href = anchor?.attributes['href'] ?? '';
+      
+      // Use RegExp to extract the ID
+      final idMatch = RegExp(r'id=(\d+)').firstMatch(href);
+      final id = idMatch?.group(1) ?? '';
+      
+      // Extract the date from the first td
+      final firstTd = row.querySelector('td');
+      final dateText = firstTd?.text ?? '';
+      final date = dateText;
+      
+      // Extract the track code from the flag class
+      final imgElement = row.querySelector('img.flag');
+      final flagClass = imgElement?.attributes['class'] ?? '';
+      final trackMatch = RegExp(r'f-([a-z]{2})').firstMatch(flagClass);
+      final track = trackMatch?.group(1) ?? '';
+      
+      // Extract the league from the span with class 'grey'
+      final leagueSpan = row.querySelector('span.grey');
+      final league = leagueSpan?.text ?? '';
+      
+      // Create a map with the extracted data
+      final raceInfo = {
+        'id': id,
+        'date': date,
+        'track': track,
+        'league': league,
+      };
+      
+      races.add(raceInfo);
+    } catch (e) {
+      debugPrint('Error parsing row: $e');
+    }
+  }
+  
+  return races;
+}
