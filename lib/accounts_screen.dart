@@ -85,14 +85,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
                 String password = passwordController.text;
                 String nickname = nicknameController.text;
 
+                Account newAccount = Account(
+                  email: email,
+                  password: password,
+                  nickname: nickname.isNotEmpty ? nickname : null,
+                );
                 setState(() {
-                  _accounts.add(Account(
-                    email: email,
-                    password: password,
-                    nickname: nickname.isNotEmpty ? nickname : null,
-                  ));
+                  _accounts.add(newAccount);
                 });
                 _saveAccounts();
+                // Start session for the newly added account
+                startClientSessionForAccount(newAccount);
                 Navigator.of(context).pop();
               },
               child: const Text('Add'),
@@ -151,6 +154,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   );
                 });
                 _saveAccounts();
+                
+                startClientSessionForAccount(_accounts[index]);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),

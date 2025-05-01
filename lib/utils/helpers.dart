@@ -330,7 +330,7 @@ String extractDataValueFromHtml(String htmlString, String elementId) {
 
     final element = document.querySelector('.ratingCircle');
     final attribute = element?.attributes['data-value'];
-    debugPrint(attribute); // Debug print to check if the element is found
+
     return attribute;
   }
 

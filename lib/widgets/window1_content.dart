@@ -158,7 +158,7 @@ class _Window1ContentState extends State<Window1Content> {
          ],
        ),
        DefaultTabController( // Second row with tab bar
-         length: 2,
+         length: 3,
          child: Column(
            children: [
              const TabBar(
@@ -167,6 +167,8 @@ class _Window1ContentState extends State<Window1Content> {
                tabs: [
                  Tab(     
                         child: Text('Car', style: TextStyle(fontSize: 12)),),
+                 Tab(     
+                        child: Text('Team', style: TextStyle(fontSize: 12)),),
                  Tab(  
                         child: Text('Reports', style: TextStyle(fontSize: 12))),
                ],
@@ -176,7 +178,6 @@ class _Window1ContentState extends State<Window1Content> {
                height: widget.minWindowHeight * 0.8, // 80% of minWindowHeight
                child: TabBarView(
                  children: [
-                   // TODO: Implement Car tab content
                    Column(
                      crossAxisAlignment: CrossAxisAlignment.stretch,
                      children: [
@@ -301,7 +302,11 @@ class _Window1ContentState extends State<Window1Content> {
                      ],
                    ),
                    // TODO: Implement Reports tab content
+                  Center(child: Text('Team Content Placeholder')),
+
                    Center(child: Text('Reports Content Placeholder')),
+
+                   
                  ],
                ),
              ),

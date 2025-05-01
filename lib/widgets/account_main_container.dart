@@ -22,7 +22,6 @@ class AccountMainContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     // Check if fireUpData is available (assuming fireUpData is a property of Account)
     if (account.fireUpData == null) {
-      debugPrint('Account data is null or not loaded yet for ${account.nickname ?? account.email}.');
       // Provide a more informative placeholder or loading state
       return Card(
         margin: const EdgeInsets.all(8.0),

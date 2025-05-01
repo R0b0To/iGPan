@@ -6,6 +6,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart'; // Import for debugPrint and ValueNotifier
 import 'package:html/parser.dart' as html_parser;
+import 'package:path_provider/path_provider.dart'; // Import path_provider
 
 final ValueNotifier<List<Account>> accountsNotifier = ValueNotifier<List<Account>>([]);
 final _storage = const FlutterSecureStorage(); // Create storage instance
@@ -48,10 +49,6 @@ final Map<String, CookieJar> cookieJars = {};
 final Map<String, Dio> dioClients = {};
 String? appDocumentPath;
 
-Future<void> initCookieManager() async {
-  // Directory appDocDir = await getApplicationDocumentsDirectory(); // No longer needed for accounts
-  // appDocumentPath = appDocDir.path; // No longer needed for accounts
-}
 
 Future<void> loadAccounts(ValueNotifier<List<Account>> accountsNotifier) async {
   try {
@@ -79,90 +76,77 @@ Future<void> loadAccounts(ValueNotifier<List<Account>> accountsNotifier) async {
 
 Future<void> startClientSessions(ValueNotifier<List<Account>> accountsNotifier) async {
   if (accountsNotifier.value.isEmpty) return;
-  
-  // Create a new list copy to work with
-  final updatedAccounts = List<Account>.from(accountsNotifier.value);
-  bool anyAccountUpdated = false;
-  
-  for (int i = 0; i < updatedAccounts.length; i++) {
-    var account = updatedAccounts[i];
-    // Attempt to use existing cookies first by making the fireUp request
-    bool sessionValid = false;
-    try {
-      CookieJar? cookieJar = cookieJars[account.email];
-      if (cookieJar != null) {
-        Dio dio = dioClients.putIfAbsent(account.email, () {
-          Dio newDio = Dio();
-          newDio.interceptors.add(CookieManager(cookieJar));
-          return newDio;
-        });
-        final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
-        final fireUpResponse = await dio.get(fireUpUrl.toString());
-        final fireUpJson = parseFireUpData(jsonDecode(fireUpResponse.data));
-        
-        if (fireUpJson['guestAccount'] == false) {
-          debugPrint('Session is valid for ${account.email} using saved cookies.');
-          // Update the account in our copy
-          fireUpJson['drivers'] = parseDriversFromHtml(fireUpJson['preCache']['p=staff']['vars']['drivers']);
-          updatedAccounts[i].fireUpData = fireUpJson;
-          anyAccountUpdated = true;
-          sessionValid = true;
 
-          final sponsorUrl = Uri.parse('https://igpmanager.com/index.php?action=fetch&p=finances&csrfName=&csrfToken=');
-          debugPrint('Attempting to fetch sponsor data for ${account.email}');
-           try { 
-                final sponsorResponse = await dio.get(sponsorUrl.toString());
-                debugPrint('sponsor data response status for ${account.email}: ${sponsorResponse.statusCode}');
-                final jsonSponsorResponse = jsonDecode(sponsorResponse.data);
-                fireUpJson['sponsor'] = getSponsors(jsonSponsorResponse);
-           }catch (e) {
-            debugPrint('Error fetching sponsors: $e');
-          }
-          
-          
-          // Check if the account has a team and is in a league
-          if (updatedAccounts[i].fireUpData != null &&
-              updatedAccounts[i].fireUpData!['team'] != null &&
-              updatedAccounts[i].fireUpData!['team']['_league'] != '0') {
-            debugPrint('Account ${account.email} is in a league. Fetching race data.');
-            
-            
-            // Fetch race data for this account
-            await fetchRaceData(updatedAccounts[i], accountsNotifier);
-          } else {
-            debugPrint('Account ${account.email} is not in a league. Skipping race data fetch.');
-          }
-
-        } else {
-          debugPrint('Session invalid for ${account.email} based on fireUp response.');
-        }
-      }
-    } catch (e) {
-      debugPrint('Error during initial fireUp request for ${account.email}: $e. Session likely invalid.');
-      // Error likely means session is not valid
-    }
-    if (!sessionValid) {
-      debugPrint('Attempting full login for ${account.email}.');
-      // If login modifies the account, make sure to update the copy
-      await login(account);
-      // If login modifies account, we need to update our copy
-      updatedAccounts[i] = account;
-      anyAccountUpdated = true;
-    }
-  }
-  
-  // Only update the notifier if changes were made
-  if (anyAccountUpdated) {
-    accountsNotifier.value = updatedAccounts;
+  // Start session for each account
+  for (var account in accountsNotifier.value) {
+    await startClientSessionForAccount(account);
   }
 }
 
+Future<void> startClientSessionForAccount(Account account) async {
+  debugPrint('Attempting to start session for ${account.email}');
+  bool sessionValid = false;
+  try {
+    CookieJar? cookieJar = cookieJars[account.email];
+    if (cookieJar != null) {
+      Dio dio = dioClients.putIfAbsent(account.email, () {
+        Dio newDio = Dio();
+        newDio.interceptors.add(CookieManager(cookieJar));
+        return newDio;
+      });
+      final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
+      final fireUpResponse = await dio.get(fireUpUrl.toString());
+      final fireUpJson = parseFireUpData(jsonDecode(fireUpResponse.data));
+
+      if (fireUpJson['guestAccount'] == false) {
+        debugPrint('Session is valid for ${account.email} using saved cookies.');
+        fireUpJson['drivers'] = parseDriversFromHtml(fireUpJson['preCache']['p=staff']['vars']['drivers']);
+        account.fireUpData = fireUpJson;
+        sessionValid = true;
+
+        final sponsorUrl = Uri.parse('https://igpmanager.com/index.php?action=fetch&p=finances&csrfName=&csrfToken=');
+         try {
+              final sponsorResponse = await dio.get(sponsorUrl.toString());
+              final jsonSponsorResponse = jsonDecode(sponsorResponse.data);
+              fireUpJson['sponsor'] = getSponsors(jsonSponsorResponse);
+         }catch (e) {
+          debugPrint('Error fetching sponsors: $e');
+        }
+
+        if (account.fireUpData != null &&
+            account.fireUpData!['team'] != null &&
+            account.fireUpData!['team']['_league'] != '0') {
+          await fetchRaceData(account, accountsNotifier);
+        } else {
+          debugPrint('Account ${account.email} is not in a league. Skipping race data fetch.');
+        }
+
+      } else {
+        debugPrint('Session invalid for ${account.email} based on fireUp response.');
+      }
+    }
+  } catch (e) {
+    debugPrint('Error during initial fireUp request for ${account.email}: $e. Session likely invalid.');
+  }
+  if (!sessionValid) {
+    debugPrint('Attempting full login for ${account.email}.');
+    await login(account);
+  }
+
+  // Update the specific account in the notifier's list
+  final updatedAccounts = List<Account>.from(accountsNotifier.value);
+  final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
+  if (index != -1) {
+    updatedAccounts[index] = account;
+    accountsNotifier.value = updatedAccounts; // Notify listeners
+    debugPrint('UI updated for ${account.email}');
+  }
+}
 
 Future<void> login(Account account) async {
     CookieJar? cookieJar = cookieJars[account.email];
     if (cookieJar == null) {
       debugPrint('No persistent cookie jar found for ${account.email}. Creating a new one.');
-      // Fallback to a non-persistent cookie jar if persistent storage is not available
       cookieJar = CookieJar();
       cookieJars[account.email] = cookieJar; // Store it for potential future use (though not persistent)
     }
@@ -191,7 +175,7 @@ Future<void> login(Account account) async {
       if (loginResponseJson != null && loginResponseJson['status'] == 1) {
         debugPrint('Login successful for ${account.email}');
         try {
-          startClientSessions(accountsNotifier);
+          await startClientSessionForAccount(account);
         } catch (e) {
           debugPrint('Error making fireUp request for ${account.email}: $e');
         }
@@ -254,13 +238,10 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
   }
 
   final url = Uri.parse('https://igpmanager.com/index.php?action=fetch&p=race&csrfName=&csrfToken=');
-  debugPrint('Attempting to fetch race data for ${account.email} at $url');
+  
 
   try {
     final response = await dio.get(url.toString());
-    debugPrint('Race data response status for ${account.email}: ${response.statusCode}');
-    //debugPrint('Response data: ${response.data}');
-
     final raceDataJson = jsonDecode(response.data);
     if(account.fireUpData?['team']?['_numCars']=='2'){
        raceDataJson['vars']['d2IgnoreAdvanced'] = raceDataJson['vars']['d2IgnoreAdvanced']=='0' ? true:false;
@@ -280,16 +261,6 @@ Future<void> fetchRaceData(Account account, ValueNotifier<List<Account>> account
     raceDataJson['parsedStrategy'] = extractStrategyData(raceDataJson['vars']);
     raceDataJson['vars']['rulesJson'] = jsonDecode(raceDataJson['vars']['rulesJson']);
     account.raceData = raceDataJson;
-    debugPrint('Updated raceData for ${account.email}');
-
-    // Find the account in the notifier's list and update it
-    final updatedAccounts = List<Account>.from(accountsNotifier.value);
-    final index = updatedAccounts.indexWhere((acc) => acc.email == account.email);
-    if (index != -1) {
-      updatedAccounts[index] = account;
-      accountsNotifier.value = updatedAccounts; // Notify listeners
-      debugPrint('Accounts notifier updated after fetching race data for ${account.email}');
-    }
 
   } catch (e) {
     debugPrint('Error fetching race data for ${account.email}: $e');
