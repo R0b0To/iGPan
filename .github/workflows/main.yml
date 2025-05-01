@@ -3,7 +3,7 @@ name: Flutter CI/CD
 on:
   push:
     tags:
-      - 'v*.*.*' # Trigger on tags like v1.0.0
+      - 'v*.*' # Trigger on tags like v1.0.0
 
 jobs:
   build_and_release:
@@ -25,15 +25,15 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
-        working-directory: ./igp_app # Assuming pubspec.yaml is in igp_app
+
 
       - name: Build Windows executable
         run: flutter build windows --release
-        working-directory: ./igp_app
+
 
       - name: Build Android APK
         run: flutter build apk --release
-        working-directory: ./igp_app
+
 
       - name: Get version number from tag
         id: get_version
@@ -41,11 +41,11 @@ jobs:
 
       - name: Rename Windows artifact
         run: mv build/windows/runner/Release/igp_app.exe iGPan_${{ env.VERSION_NUMBER }}.exe
-        working-directory: ./igp_app
+
 
       - name: Rename Android artifact
         run: mv build/app/outputs/flutter-apk/app-release.apk iGPan_${{ env.VERSION_NUMBER }}.apk
-        working-directory: ./igp_app
+
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
