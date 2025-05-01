@@ -48,18 +48,17 @@ jobs:
         run: Get-ChildItem -Path build/windows/x64/runner/Release -Recurse
         shell: pwsh
       
-      - name: Rename Windows artifact
+      - name: Archive Windows Release
         if: runner.os == 'Windows'
-        # Use PowerShell for Windows file operations
-        run: Rename-Item -Path build/windows/x64/runner/Release/igp_app.exe -NewName iGPan_${{ env.VERSION_NUMBER }}.exe
         shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release\* -DestinationPath iGPan_windows_${{ env.VERSION_NUMBER }}.zip
 
-      - name: Upload Windows Artifact
+      - name: Upload Windows Artifact (Zip)
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: windows-build
-          path: build/windows/x64/runner/Release/iGPan_${{ env.VERSION_NUMBER }}.exe
+          name: windows-build-zip
+          path: iGPan_windows_${{ env.VERSION_NUMBER }}.zip
 
       # Android specific steps
       - name: Build Android APK
@@ -91,7 +90,7 @@ jobs:
       - name: Download Windows Artifact
         uses: actions/download-artifact@v4
         with:
-          name: windows-build
+          name: windows-build-zip # Match the artifact name from the build job
 
       - name: Download Android Artifact
         uses: actions/download-artifact@v4
@@ -112,5 +111,5 @@ jobs:
           draft: false
           prerelease: false
           files: | # Paths relative to the runner workspace where artifacts were downloaded
-            iGPan_${{ env.VERSION_NUMBER }}.exe
+            iGPan_windows_${{ env.VERSION_NUMBER }}.zip # Reference the zip file
             iGPan_${{ env.VERSION_NUMBER }}.apk
