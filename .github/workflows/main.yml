@@ -6,9 +6,12 @@ on:
       - 'v*.*' # Trigger on tags like v1.0.0
 
 jobs:
-  build_and_release:
-    name: Build and Release
-    runs-on: ubuntu-latest
+  build:
+    name: Build on ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,36 +19,83 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.29.3'
+          flutter-version: '3.29.3' # Use the same version as before
           channel: 'stable'
           cache: true
-
-      - name: Enable Windows desktop support
-        run: flutter config --enable-windows-desktop
 
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Get version number from tag
+        id: get_version
+        # Use shell appropriate for the OS
+        run: |
+          VERSION_NUMBER=$(echo "${{ github.ref_name }}" | sed 's/v//')
+          echo "VERSION_NUMBER=$VERSION_NUMBER" >> $GITHUB_ENV
+        shell: bash # Works on both Linux and Git Bash (Windows)
+
+      # Windows specific steps
+      - name: Enable Windows desktop support
+        if: runner.os == 'Windows'
+        run: flutter config --enable-windows-desktop
 
       - name: Build Windows executable
+        if: runner.os == 'Windows'
         run: flutter build windows --release
 
+      - name: Rename Windows artifact
+        if: runner.os == 'Windows'
+        # Use PowerShell for Windows file operations
+        run: Rename-Item -Path build/windows/runner/Release/igp_app.exe -NewName iGPan_${{ env.VERSION_NUMBER }}.exe
+        shell: pwsh
 
+      - name: Upload Windows Artifact
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: iGPan_${{ env.VERSION_NUMBER }}.exe
+
+      # Android specific steps
       - name: Build Android APK
+        if: runner.os == 'Linux'
         run: flutter build apk --release
 
+      - name: Rename Android artifact
+        if: runner.os == 'Linux'
+        run: mv build/app/outputs/flutter-apk/app-release.apk iGPan_${{ env.VERSION_NUMBER }}.apk
 
+      - name: Upload Android Artifact
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: iGPan_${{ env.VERSION_NUMBER }}.apk
+
+  release:
+    name: Create Release
+    needs: build # Depends on the build job completing for both OSs
+    runs-on: ubuntu-latest
+    permissions: # Needed for softprops/action-gh-release
+      contents: write
+    steps:
       - name: Get version number from tag
         id: get_version
         run: echo "VERSION_NUMBER=$(echo ${GITHUB_REF_NAME} | sed 's/v//')" >> $GITHUB_ENV
 
-      - name: Rename Windows artifact
-        run: mv build/windows/runner/Release/igp_app.exe iGPan_${{ env.VERSION_NUMBER }}.exe
+      - name: Download Windows Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
 
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: android-build
 
-      - name: Rename Android artifact
-        run: mv build/app/outputs/flutter-apk/app-release.apk iGPan_${{ env.VERSION_NUMBER }}.apk
-
+      # Verify downloaded files (optional but good practice)
+      - name: List downloaded files
+        run: ls -R
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -56,6 +106,6 @@ jobs:
           body: Automated release for version ${{ env.VERSION_NUMBER }}
           draft: false
           prerelease: false
-          files: |
-            ./igp_app/iGPan_${{ env.VERSION_NUMBER }}.exe
-            ./igp_app/iGPan_${{ env.VERSION_NUMBER }}.apk
+          files: | # Paths relative to the runner workspace where artifacts were downloaded
+            iGPan_${{ env.VERSION_NUMBER }}.exe
+            iGPan_${{ env.VERSION_NUMBER }}.apk
