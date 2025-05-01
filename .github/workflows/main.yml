@@ -59,7 +59,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-build
-          path: iGPan_${{ env.VERSION_NUMBER }}.exe
+          path: build/windows/x64/runner/Release/iGPan_${{ env.VERSION_NUMBER }}.exe
 
       # Android specific steps
       - name: Build Android APK
