@@ -42,11 +42,16 @@ jobs:
       - name: Build Windows executable
         if: runner.os == 'Windows'
         run: flutter build windows --release
-
+      
+      - name: Debug build directory
+        if: runner.os == 'Windows'
+        run: Get-ChildItem -Path build/windows/x64/runner/Release -Recurse
+        shell: pwsh
+      
       - name: Rename Windows artifact
         if: runner.os == 'Windows'
         # Use PowerShell for Windows file operations
-        run: Rename-Item -Path build/windows/runner/Release/igp_app.exe -NewName iGPan_${{ env.VERSION_NUMBER }}.exe
+        run: Rename-Item -Path build/windows/x64/runner/Release/igp_app.exe -NewName iGPan_${{ env.VERSION_NUMBER }}.exe
         shell: pwsh
 
       - name: Upload Windows Artifact
