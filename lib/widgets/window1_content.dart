@@ -4,6 +4,7 @@ import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
+import 'package:country_flags/country_flags.dart'; // Import the country_flags package
 
 class Window1Content extends StatefulWidget {
   final double minWindowHeight;
@@ -21,6 +22,14 @@ class _Window1ContentState extends State<Window1Content> {
   String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
   bool _rewardStatus = false; // State variable for reward status
 
+  // Reports tab state
+  final ScrollController _scrollController = ScrollController();
+  List<Map<String, dynamic>> _reports = [];
+  int _start = 0;
+  final int _numResults = 10;
+  bool _isLoading = false;
+  bool _hasMoreReports = true;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +43,53 @@ class _Window1ContentState extends State<Window1Content> {
         widget.account.fireUpData!['notify']!['page'] != null &&
         widget.account.fireUpData!['notify']['page'].containsKey('nDailyReward') &&
         widget.account.fireUpData!['notify']['page']['nDailyReward'] == '0'; // Assuming '0' means available
+
+    // Add listener to scroll controller for infinite scrolling
+    _scrollController.addListener(_onScroll);
+
+    // Fetch initial reports
+    _fetchReports();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Function to fetch reports
+  Future<void> _fetchReports() async {
+    if (_isLoading || !_hasMoreReports) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final newReports = await requestHistoryReports(widget.account, _start, _numResults);
+      setState(() {
+        _reports.addAll(newReports);
+        _start += newReports.length as int; // Increment start by the number of reports received, explicitly cast to int
+        _hasMoreReports = newReports.length == _numResults; // Assume more reports if we got the full batch
+      });
+    } catch (e) {
+      // Handle error, maybe show a SnackBar
+      print('Error fetching reports: $e');
+      setState(() {
+        _hasMoreReports = false; // Stop trying to load more on error
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Scroll listener
+  void _onScroll() {
+    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+      _fetchReports(); // Fetch more reports when scrolled to the bottom
+    }
   }
 
   @override
@@ -336,16 +392,43 @@ class _Window1ContentState extends State<Window1Content> {
                    // TODO: Implement Reports tab content
                   Center(child: Text('Team Content Placeholder')),
 
-                   Center(child: Text('Reports Content Placeholder')),
+                  // Reports Tab Content
+                  ListView.builder(
+                    controller: _scrollController,
+                    itemCount: _reports.length + (_isLoading ? 1 : 0), // Add 1 for loading indicator
+                    itemBuilder: (context, index) {
+                      if (index < _reports.length) {
+                        final report = _reports[index];
+                        return ListTile(
+                          leading: CountryFlag.fromCountryCode(
+                            report['track'] ?? '', // Use report['track'] for country code, handle null
+                            shape: const RoundedRectangle(6),
+                            width: 30, // Adjust size as needed
+                            height: 20, // Adjust size as needed
+                          ),
+                          title: Text('ID: ${report['id']}'),
+                          subtitle: Text('${report['date']}'),
+                          trailing: Text(report['league'] ?? ''), // Add league to the right side
+                          // You can add more details or customize the ListTile appearance
+                        );
+                      } else {
+                        // Show loading indicator at the end
+                        return const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                    },
+                  ),
 
-                   
-                 ],
-               ),
-             ),
-           ],
-         ),
-       ),
-     ],
-   );
- }
+
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
 }

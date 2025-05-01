@@ -449,11 +449,11 @@ List<Map<String, String>> parseRaces(String htmlString) {
       // Create a map with the extracted data
       final raceInfo = {
         'id': id,
-        'date': date,
+        'date': extractDate(date),
         'track': track,
         'league': league,
       };
-      
+      //debugPrint(raceInfo['date']);
       races.add(raceInfo);
     } catch (e) {
       debugPrint('Error parsing row: $e');
@@ -461,4 +461,15 @@ List<Map<String, String>> parseRaces(String htmlString) {
   }
   
   return races;
+}
+
+String extractDate(String text) {
+  // Remove any hidden spans and links
+  final strippedText = text.replaceAll(RegExp(r'<[^>]*>'), '');
+  
+  // Extract the date part, assuming it's at the end of the text
+  final dateRegex = RegExp(r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})');
+  final match = dateRegex.firstMatch(strippedText);
+  
+  return match?.group(1) ?? strippedText.trim();
 }
