@@ -1,3 +1,4 @@
+import 'package:iGPan/widgets/research_dialog_content.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../utils/helpers.dart';
@@ -101,9 +102,35 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              onPressed: () {
-                requestResearch(widget.account);
-              }, 
+              onPressed: () async {
+                final researchData = await requestResearch(widget.account);
+                if (researchData != null) {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: Text('Research Results'),
+                        content: ResearchDialogContent(researchData: researchData), // Need to create this widget
+                        actions: <Widget>[
+                          TextButton(
+                            child: Text('Close'),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                } else {
+                  // Handle case where research data is null (e.g., show an error message)
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to fetch research data.'),
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),

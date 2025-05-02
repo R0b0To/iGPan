@@ -814,7 +814,7 @@ Future<dynamic> requestResearch(Account account) async {
   final jsonDataDesign = jsonDecode(responseDesign.data);
   final researchResponse = (jsonDataResearch['vars']);
   final designResponse = (jsonDataDesign['vars']);
-  final researchMaxEffect = researchResponse['researchMaxEffect'];
+  final researchMaxEffect = (researchResponse['researchMaxEffect']).toDouble();
   final designPoints = int.tryParse(designResponse['designPts']);
   final dMax = (researchResponse['dMax']);
   final int tierFactor = (dMax == 300) ? 3 : 2;
