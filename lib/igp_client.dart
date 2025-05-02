@@ -749,3 +749,47 @@ Future<dynamic> requestHistoryReports(Account account, int? start, int? numResul
     rethrow;
   }
 }
+
+Future<dynamic> requestRaceReport(Account account, String id) async {
+
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  try {
+  final report = Uri.parse("https://igpmanager.com/index.php?action=fetch&d=result&id=$id&tab=race&csrfName=&csrfToken=");
+  final response = await dio.get(report.toString());
+  final jsonData = jsonDecode(response.data);
+  final races = (jsonData['vars']);
+  //account.fireUpData?['league'] = jsonData['vars'];
+  final parsedReport = parseRaceReport(races);
+  return parsedReport;
+    } catch (e) {
+    debugPrint('Error requestRaceReport ${account.email}: $e');
+    rethrow;
+  }
+}
+
+Future<dynamic> requestDriverReport(Account account, String id) async {
+
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  try {
+  final report = Uri.parse("https://igpmanager.com/index.php?action=fetch&d=resultDetail&id=$id&csrfName=&csrfToken=");
+  final response = await dio.get(report.toString());
+  final jsonData = jsonDecode(response.data);
+  final reportRace = (jsonData['vars']);
+
+  final parsedReport = parseDriverResult(reportRace['results']);
+  return parsedReport;
+    } catch (e) {
+    debugPrint('Error requestRaceReport ${account.email}: $e');
+    rethrow;
+  }
+}

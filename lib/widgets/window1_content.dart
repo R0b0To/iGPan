@@ -1,3 +1,4 @@
+import '../screens/race_report_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse; // Import the parse function
 import '../igp_client.dart'; // Import Account and other necessary definitions
@@ -406,10 +407,22 @@ class _Window1ContentState extends State<Window1Content> {
                             width: 30, // Adjust size as needed
                             height: 20, // Adjust size as needed
                           ),
-                          title: Text('ID: ${report['id']}'),
+                          title: Text('${report['text']}'),
                           subtitle: Text('${report['date']}'),
-                          trailing: Text(report['league'] ?? ''), // Add league to the right side
+                          trailing: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: 100),
+                          child: Text(report['league'] ?? ''),
+                            ),
                           // You can add more details or customize the ListTile appearance
+                          onTap: () {
+                            // Navigate to a new screen and pass the report id
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RaceReportScreen(report: report, account: widget.account),
+                              ),
+                            );
+                          },
                         );
                       } else {
                         // Show loading indicator at the end
