@@ -793,3 +793,94 @@ Future<dynamic> requestDriverReport(Account account, String id) async {
     rethrow;
   }
 }
+
+Future<dynamic> requestResearch(Account account) async {
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  try {
+  final researchCar = Uri.parse("https://igpmanager.com/index.php?action=fetch&d=research&csrfName=&csrfToken=");
+  final designCar = Uri.parse('https://igpmanager.com/index.php?action=fetch&d=design&csrfName=&csrfToken=');
+  final responses = await Future.wait([
+  dio.get(researchCar.toString()),
+  dio.get(designCar.toString()),
+]);
+  final responseResearch = responses[0];
+  final responseDesign = responses[1];
+  final jsonDataResearch = jsonDecode(responseResearch.data);
+  final jsonDataDesign = jsonDecode(responseDesign.data);
+  final researchResponse = (jsonDataResearch['vars']);
+  final designResponse = (jsonDataDesign['vars']);
+  final researchMaxEffect = researchResponse['researchMaxEffect'];
+  final designPoints = int.tryParse(designResponse['designPts']);
+  final dMax = (researchResponse['dMax']);
+  final int tierFactor = (dMax == 300) ? 3 : 2;
+  
+  List<String> attributesRating = [
+    'accelerationRating',
+    'brakingRating',
+    'coolingRating',
+    'downforceRating',
+    'fuel_economyRating',
+    'handlingRating',
+    'reliabilityRating',
+    'tyre_economyRating',
+  ];
+  List<String> checks = [
+    'accelerationCheck',
+    'brakingCheck',
+    'coolingCheck',
+    'downforceCheck',
+    'fuel_economyCheck',
+    'handlingCheck',
+    'reliabilityCheck',
+    'tyre_economyCheck',
+  ];
+  List<String> attributes = [
+    'acceleration',
+    'braking',
+    'cooling',
+    'downforce',
+    'fuel_economy',
+    'handling',
+    'reliability',
+    'tyre_economy'
+  ];
+  List<String> attributesBonus = [
+    'accelerationBonus',
+    'brakingBonus',
+    'coolingBonus',
+    'downforceBonus',
+    'fuel_economyBonus',
+    'handlingBonus',
+    'reliabilityBonus',
+    'tyre_economyBonus'
+  ];
+
+  final bonusCarAttributes = attributesBonus.map((key) => (designResponse[key])).toList();
+  final realCarAttributes = attributes.map((key) => int.tryParse(designResponse[key])).toList();
+
+  List<int> teamsDesign = attributesRating.map((key) => parseBest(researchResponse[key] ?? '', tierFactor)).toList();
+
+  List<bool> checkedDesign = checks.map((key) => isChecked(researchResponse[key] ?? '')).toList();
+  
+  final design = {
+    "myCar":realCarAttributes,
+    "bonus":bonusCarAttributes,
+    "best":teamsDesign,
+    "checks":checkedDesign,
+    "points":designPoints,
+    "maxDp":dMax,
+    "maxResearch":researchMaxEffect
+            };
+  return design;
+    } catch (e) {
+    debugPrint('Error research request ${account.email}: $e');
+    rethrow;
+  }
+}
+
+

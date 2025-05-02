@@ -101,7 +101,9 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
-              onPressed: () {}, 
+              onPressed: () {
+                requestResearch(widget.account);
+              }, 
               style: ElevatedButton.styleFrom(
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
                ),
@@ -124,7 +126,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                 ),
               ],
             ),
-            IconButton(
+                       IconButton(
               onPressed: () {
                 saveStrategy( widget.account);
               }, // TODO: Implement Save Setup button action

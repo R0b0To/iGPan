@@ -630,8 +630,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Pit $segmentIndex'),
-          contentPadding: EdgeInsets.zero,
-          insetPadding: EdgeInsets.zero,
+
           content: StatefulBuilder( // Use StatefulBuilder for local state management
             builder: (BuildContext context, StateSetter setDialogState) {
               return Form( // Wrap content in a Form

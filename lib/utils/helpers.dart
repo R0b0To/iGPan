@@ -725,3 +725,25 @@ String getTyreAssetPath(String tyreCode) {
   // Return a default or placeholder path if the code is not recognized
   return 'assets/tyres/_M.png'; // Default to Medium tyre asset
 }
+
+int parseBest(String htmlString, int tierFactor) {
+  final document = parse(htmlString);
+  final svg = document.querySelector('svg');
+
+  if (svg != null) {
+    String? style = svg.attributes['style'];
+    if (style != null && style.contains('calc(')) {
+      String percentagePart = style.split('calc(')[1].split('%')[0];
+      int value = int.tryParse(percentagePart) ?? 0;
+      return value * tierFactor;
+    }
+  }
+
+  return 0;
+}
+
+bool isChecked(String htmlString) {
+  final document = parse(htmlString);
+  final input = document.querySelector('input');
+  return input?.attributes.containsKey('checked') ?? false;
+}

@@ -510,7 +510,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
        contentPadding: EdgeInsets.all(11),
       content: SizedBox(
         
-        width: MediaQuery.of(context).size.width * 0.3, // Adjust width as needed
+        width: MediaQuery.of(context).size.width * 0.8, // Adjust width as needed
         height: MediaQuery.of(context).size.height * 0.5, // Adjust height as needed
         // Use a fixed height or constrain dynamically if needed
         // height: MediaQuery.of(context).size.height * 0.6, // Example: 60% of screen height
