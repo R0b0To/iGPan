@@ -8,10 +8,12 @@ class ResearchDialogContent extends StatefulWidget {
   const ResearchDialogContent({Key? key, required this.researchData}) : super(key: key);
 
   @override
-  _ResearchDialogContentState createState() => _ResearchDialogContentState();
+  // Make state class public
+  ResearchDialogContentState createState() => ResearchDialogContentState();
 }
 
-class _ResearchDialogContentState extends State<ResearchDialogContent> {
+// Make state class public
+class ResearchDialogContentState extends State<ResearchDialogContent> {
   // State to hold the current myCar values (mutable)
   late List<int> myCarValues;
   // State to hold the checked status for each row
@@ -53,19 +55,92 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
       }
     }
     return totalPoints.toInt();
+
+
+  }
+    Map<String, dynamic> getResearchMap() {
+    final Map<String, dynamic> research = {
+      'maxDp': originalMaxResearch.toInt(), // Use the original value
+      'attributes': <String>[], // Initialize empty list for attribute names
+    };
+
+      List<String> attributeNames = [
+    'acceleration',
+    'braking',
+    'cooling',
+    'downforce',
+    'fuel_economy',
+    'handling',
+    'reliability',
+    'tyre_economy'
+  ];
+
+    for (int i = 0; i < checkedStatus.length; i++) {
+      if (checkedStatus[i]) {
+        (research['attributes'] as List<String>).add(attributeNames[i]);
+      }
+    }
+    return research;
+  }
+
+  // Method to get the design list (myCarValues) for saving
+  List<String> getDesignList() {
+    List<String> attributeNames = [
+    'acceleration',
+    'braking',
+    'cooling',
+    'downforce',
+    'fuel_economy',
+    'handling',
+    'reliability',
+    'tyre_economy'
+  ];
+  List<String> pointsSpent = [];
+    for (int i = 0; i < attributeNames.length; i++) {
+    pointsSpent.add('&${attributeNames[i]}=${myCarValues[i]}');
+    }
+    return pointsSpent;
   }
 
 
   @override
   Widget build(BuildContext context) {
-    final myCarAttributes = widget.researchData['myCar'] as List<dynamic>;
+
     final bonusCarAttributes = widget.researchData['bonus'] as List<dynamic>;
     final bestCarAttributes = widget.researchData['best'] as List<dynamic>;
-    final checkedDesign = widget.researchData['checks'] as List<dynamic>;
-    final maxResearch = widget.researchData['maxResearch'] as double;
+    
+    final List<IconData> attributeIcons = [
+      MdiIcons.gauge,
+      MdiIcons.carBrakeLowPressure,
+      MdiIcons.thermometer,
+      MdiIcons.arrowDown,
+      MdiIcons.gasStation,
+      MdiIcons.steering,
+      MdiIcons.wrench,
+      MdiIcons.tire,
+      ];
 
-    // Placeholder icons - replace with actual attribute icons later
-    final List<IconData> attributeIcons = List.generate(myCarAttributes.length, (index) => MdiIcons.car);
+    // --- Calculate Max Theoretical Gain ---
+    int maxGainIndex = -1;
+    double maxGain = -1.0;
+
+    for (int i = 0; i < myCarValues.length; i++) {
+      // Skip 3rd (index 2) and 7th (index 6) attributes
+      if (i == 2 || i == 6) continue;
+
+      final bestValue = bestCarAttributes[i] as int;
+      final myValue = myCarValues[i]; // Use current mutable value
+      final gap = bestValue - myValue;
+      // Use recalculatedMaxResearch for dynamic highlighting based on current selections
+      final potentialGain = (math.max(0, gap) * recalculatedMaxResearch / 100).ceilToDouble();
+
+      if (potentialGain > maxGain) {
+        maxGain = potentialGain;
+        maxGainIndex = i;
+      }
+    }
+    // --- End Calculate Max Theoretical Gain ---
+
 
     return Container(
       width: double.maxFinite, // Allow the dialog to take more width
@@ -77,7 +152,7 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Text('Remaining Points: $remainingDesignPoints'),
                 Text('Research Power: ${recalculatedMaxResearch.toStringAsFixed(2)}'),
@@ -87,13 +162,15 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
           Divider(),
           // Header Row
           Padding(
+            
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 SizedBox(width: 24), // Space for icon
                 SizedBox(width: 40, child: Center(child: Icon(Icons.check, size: 20))),
                 SizedBox(width: 40, child: Center(child: Icon(Icons.person, size: 20))),
-                SizedBox(width: 25),
+                SizedBox(width: 30),
                 SizedBox(width: 40, child: Center(child: Icon(Icons.people, size: 20))),
                 SizedBox(width: 40, child: Center(child: Icon(Icons.compare_arrows, size: 20))),
                 SizedBox(width: 80,),
@@ -105,18 +182,22 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
           // Data Rows
           Expanded( // Use Expanded to allow the ListView to take available space
             child: ListView.builder(
+              
               shrinkWrap: true, // Use shrinkWrap with Expanded
               itemCount: myCarValues.length,
               itemBuilder: (context, index) {
                 final myValue = myCarValues[index];
                 final bonusValue = bonusCarAttributes[index] as String;
                 final bestValue = bestCarAttributes[index] as int;
-                final checkValue = checkedDesign[index] as bool; // Assuming checkedDesign is a list of booleans
                 final gap = bestValue - myValue;
+                final isMaxGainRow = index == maxGainIndex;
 
-                return Padding(
+                return Container( // Wrap with Container for potential highlighting
+                  color: isMaxGainRow ? const Color.fromARGB(255, 79, 128, 121).withOpacity(0.3) : null, // Highlight if it's the max gain row
+                  child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                  child: Row(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       // Attribute Icon
                       SizedBox(width: 24, child: Icon(attributeIcons[index], size: 18)),
@@ -144,7 +225,7 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
                       // MyCar Value
                       SizedBox(width: 40, child: Center(child: Text(myValue.toString()))),
                       // Bonus Value
-                      SizedBox(width: 25, child: Center(child: Text(bonusValue.toString(), style: TextStyle(fontSize: 10, color: (double.tryParse(bonusValue.toString().replaceAll('(', '').replaceAll(')', '')) ?? 0) >= 0 ? Colors.green : Colors.red)))),
+                      SizedBox(width: 30, child: Center(child: Text(bonusValue.toString(), style: TextStyle(fontSize: 10, color: (double.tryParse(bonusValue.toString().replaceAll('(', '').replaceAll(')', '')) ?? 0) >= 0 ? Colors.green : Colors.red)))),
                       // Best Value
                       SizedBox(width: 40, child: Center(child: Text(bestValue.toString()))),
                       // Gap
@@ -187,12 +268,12 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
                           ],
                         ),
                       ),
-                      // Total (Placeholder - calculation needs refinement)
                        SizedBox(width: 60, child: Center(child: Text(
                          checkedStatus[index] ? (math.max(0, gap) * recalculatedMaxResearch / 100).ceil().toString() : '0'
-                       ))), // Placeholder for calculated total per row if needed
+                       ))), 
                      ],
                    ),
+                  ),
                 );
               },
             ),

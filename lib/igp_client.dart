@@ -911,3 +911,33 @@ Future<dynamic> requestResearch(Account account) async {
 }
 
 
+Future<void> saveDesign(Account account, Map research, List<String> design) async {
+
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+  List<String> attributesToSave = [];
+    for (int i = 0; i < research['attributes'].length; i++) {
+        attributesToSave.add('&c%5B%5D=${research['attributes'][i]}');
+    
+    }
+
+ 
+    try {
+  final researchCar = Uri.parse("https://igpmanager.com/index.php?action=send&addon=igp&type=research&jsReply=research&ajax=1&researchMaxEffect=${research['maxDp']}${attributesToSave.join('')}&csrfName=&csrfToken=");
+  final designCar = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=design&jsReply=design&ajax=1${design.join('')}&csrfName=&csrfToken=');
+  final responses = await Future.wait([
+  dio.get(researchCar.toString()),
+  dio.get(designCar.toString()),
+  ]);
+  final jsonData = jsonDecode(responses[0].data);
+
+  
+    } catch (e) {
+    debugPrint('Error saving design ${account.email}: $e');
+    rethrow;
+  }
+}

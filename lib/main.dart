@@ -71,13 +71,22 @@ class _MyHomePageState extends State<MyHomePage> {
       _isLoading = false;
     });
     // Initial session start for all enabled accounts after loading
-    for (var account in accounts) { // Iterate over the global accounts list
-      if (account.enabled) { // Check if the account is enabled
-        await startClientSessionForAccount(account);
-        setState(() {
+    // Create a list to hold the futures
+    List<Future<void>> futures = [];
 
-        });
+    // Iterate over the accounts and add futures for enabled accounts
+    for (var account in accounts) {
+      if (account.enabled) {
+        futures.add(startClientSessionForAccount(account));
       }
+    }
+
+    // Wait for all the futures to complete
+    await Future.wait(futures);
+
+    // Update the state once after all operations are done
+    if (mounted) { // Check if the widget is still mounted before calling setState
+      setState(() {});
     }
   }
 

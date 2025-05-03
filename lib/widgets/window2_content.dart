@@ -105,17 +105,44 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               onPressed: () async {
                 final researchData = await requestResearch(widget.account);
                 if (researchData != null) {
+                  // Create a GlobalKey for ResearchDialogContent
+                  final GlobalKey<ResearchDialogContentState> researchDialogKey = GlobalKey<ResearchDialogContentState>();
+
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        title: Text('Research Results'),
-                        content: ResearchDialogContent(researchData: researchData), // Need to create this widget
+                        // Assign the key to ResearchDialogContent
+                        content: ResearchDialogContent(key: researchDialogKey, researchData: researchData),
                         actions: <Widget>[
                           TextButton(
                             child: Text('Close'),
                             onPressed: () {
                               Navigator.of(context).pop();
+                            },
+                          ),
+                          TextButton( // Add the Save button
+                            child: Text('Save'),
+                            onPressed: () async { // Make async if saveDesign is async
+                              // Access the state via the key
+                              final currentState = researchDialogKey.currentState;
+                              if (currentState != null) {
+                                // Assume methods exist to get the data (will verify/add in ResearchDialogContent)
+                                final Map<String, dynamic> research = currentState.getResearchMap();
+                                final List<String> designList = currentState.getDesignList(); // Renamed for clarity
+
+                           
+                                // Call the save function from igp_client.dart with the correct types
+                                await saveDesign(widget.account, research, designList); // Use await if saveDesign is async
+
+                                // Close the dialog after saving
+                                Navigator.of(context).pop();
+                              } else {
+                                // Handle error: couldn't access dialog state
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error accessing dialog data.')),
+                                );
+                              }
                             },
                           ),
                         ],
