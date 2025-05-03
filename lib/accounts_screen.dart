@@ -31,6 +31,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
           _accounts = jsonList.map((json) => Account.fromJson(json)).toList();
         });
         //accountsNotifier.value = _accounts; // Update the ValueNotifier
+        // After loading, ensure Driver objects are correctly deserialized if they exist
+        for (var account in _accounts) {
+          if (account.fireUpData != null && account.fireUpData!.containsKey('drivers') && account.fireUpData!['drivers'] is List) {
+            account.fireUpData!['drivers'] = (account.fireUpData!['drivers'] as List).map((driverJson) => Driver.fromJson(driverJson)).toList();
+          }
+        }
       }
     } catch (e) {
       // Handle errors

@@ -41,11 +41,20 @@ class Account {
       'email': email,
       'password': password,
       'nickname': nickname,
-      'fireUpData': fireUpData,
+      'fireUpData': fireUpData != null ? _serializeFireUpData(fireUpData!) : null,
       'raceData': raceData,
       'enabled': enabled, // Include enabled state in JSON
     };
   }
+}
+
+// Helper function to serialize fireUpData, including Driver objects
+Map<String, dynamic> _serializeFireUpData(Map<String, dynamic> fireUpData) {
+  final serializedData = Map<String, dynamic>.from(fireUpData);
+  if (serializedData.containsKey('drivers') && serializedData['drivers'] is List<Driver>) {
+    serializedData['drivers'] = (serializedData['drivers'] as List<Driver>).map((driver) => driver.toJson()).toList();
+  }
+  return serializedData;
 }
 
 final Map<String, CookieJar> cookieJars = {};
@@ -261,6 +270,24 @@ class Driver {
   final String contract;
   
   Driver({required this.name, required this.attributes, required this.contract});
+  
+  // Method to convert a Driver object to a JSON map
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'attributes': attributes,
+      'contract': contract,
+    };
+  }
+
+  // Factory constructor to create a Driver from a JSON map
+  factory Driver.fromJson(Map<String, dynamic> json) {
+    return Driver(
+      name: json['name'],
+      attributes: json['attributes'],
+      contract: json['contract'],
+    );
+  }
   
   @override
   String toString() {

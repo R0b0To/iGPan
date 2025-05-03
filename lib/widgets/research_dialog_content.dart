@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart'; // Assuming MdiIcons is used for placeholders
+import 'dart:math' as math;
 
 class ResearchDialogContent extends StatefulWidget {
   final Map<String, dynamic> researchData;
@@ -17,47 +18,41 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
   late List<bool> checkedStatus;
   // State to hold the remaining design points
   late int remainingDesignPoints;
+  // State to hold the recalculated maxResearch value
+  late double recalculatedMaxResearch;
+  // Store the original maxResearch value
+  late double originalMaxResearch;
 
   @override
   void initState() {
     super.initState();
     // Initialize myCarValues from researchData['myCar']
     myCarValues = List<int>.from(widget.researchData['myCar']);
-    // Initialize checkedStatus to all false
-    checkedStatus = List<bool>.filled(myCarValues.length, false);
+    // Initialize checkedStatus from researchData['checks']
+    checkedStatus = List<bool>.from(widget.researchData['checks']);
     // Initialize remainingDesignPoints from researchData['points']
     remainingDesignPoints = widget.researchData['points'] as int;
+    // Initialize originalMaxResearch from researchData['maxResearch']
+    originalMaxResearch = widget.researchData['maxResearch'] as double;
+    // Initialize recalculatedMaxResearch
+    recalculatedMaxResearch = originalMaxResearch;
   }
 
-  // Function to calculate the total points
-  double calculateTotalPoints() {
-    final maxResearch = widget.researchData['maxResearch'] as double;
-    final bestCarAttributes = widget.researchData['best'] as List<dynamic>;
-
+  // Function to calculate the total points by summing row calculations
+  int calculateTotalPoints() {
     double totalPoints = 0.0;
-    int selectedCheckboxes = 0;
+    final bestCarAttributes = widget.researchData['best'] as List<dynamic>;
+    final myCarAttributes = myCarValues; // Use the mutable state value
 
     for (int i = 0; i < checkedStatus.length; i++) {
       if (checkedStatus[i]) {
-        selectedCheckboxes++;
-        // Calculate the gap for the selected row
         final bestValue = bestCarAttributes[i] as int;
-        final myValue = myCarValues[i];
+        final myValue = myCarAttributes[i]; // Use the mutable state value
         final gap = bestValue - myValue;
-
-        // Add gap to total points for selected rows
-        totalPoints += gap.toDouble();
+        totalPoints += (math.max(0, gap) * recalculatedMaxResearch / 100).ceil();
       }
     }
-
-    // Apply the maxResearch factor based on the number of selected checkboxes
-    if (selectedCheckboxes > 0) {
-       totalPoints = totalPoints * (maxResearch / selectedCheckboxes);
-    } else {
-      totalPoints = 0.0; // If no checkboxes are selected, total points is 0
-    }
-
-    return totalPoints;
+    return totalPoints.toInt();
   }
 
 
@@ -85,7 +80,7 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Remaining Points: $remainingDesignPoints'),
-                Text('Max Research: ${maxResearch.toStringAsFixed(2)}'),
+                Text('Research Power: ${recalculatedMaxResearch.toStringAsFixed(2)}'),
               ],
             ),
           ),
@@ -96,13 +91,13 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
             child: Row(
               children: [
                 SizedBox(width: 24), // Space for icon
-                SizedBox(width: 40, child: Center(child: Text('Check'))),
-                SizedBox(width: 40, child: Center(child: Text('MyCar'))),
-                SizedBox(width: 40, child: Center(child: Text('Bonus'))),
-                SizedBox(width: 40, child: Center(child: Text('Best'))),
-                SizedBox(width: 40, child: Center(child: Text('Gap'))),
-                SizedBox(width: 80, child: Center(child: Text('Adjust'))),
-                SizedBox(width: 60, child: Center(child: Text('Total'))),
+                SizedBox(width: 40, child: Center(child: Icon(Icons.check, size: 20))),
+                SizedBox(width: 40, child: Center(child: Icon(Icons.person, size: 20))),
+                SizedBox(width: 25),
+                SizedBox(width: 40, child: Center(child: Icon(Icons.people, size: 20))),
+                SizedBox(width: 40, child: Center(child: Icon(Icons.compare_arrows, size: 20))),
+                SizedBox(width: 80,),
+                SizedBox(width: 60, child: Center(child: Icon(MdiIcons.magnify, size: 20))),
               ],
             ),
           ),
@@ -134,6 +129,13 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
                             onChanged: (bool? newValue) {
                               setState(() {
                                 checkedStatus[index] = newValue ?? false;
+                                // Recalculate maxResearch based on selected checkboxes
+                                int selectedCount = checkedStatus.where((status) => status).length;
+                                if (selectedCount > 0) {
+                                  recalculatedMaxResearch = originalMaxResearch / selectedCount;
+                                } else {
+                                  recalculatedMaxResearch = originalMaxResearch; // Or 0.0 depending on desired behavior when none are selected
+                                }
                               });
                             },
                           ),
@@ -142,11 +144,13 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
                       // MyCar Value
                       SizedBox(width: 40, child: Center(child: Text(myValue.toString()))),
                       // Bonus Value
-                      SizedBox(width: 40, child: Center(child: Text(bonusValue.toString()))),
+                      SizedBox(width: 25, child: Center(child: Text(bonusValue.toString(), style: TextStyle(fontSize: 10, color: (double.tryParse(bonusValue.toString().replaceAll('(', '').replaceAll(')', '')) ?? 0) >= 0 ? Colors.green : Colors.red)))),
                       // Best Value
                       SizedBox(width: 40, child: Center(child: Text(bestValue.toString()))),
                       // Gap
                       SizedBox(width: 40, child: Center(child: Text(gap.toString()))),
+
+                      
                       // Adjust Buttons
                       SizedBox(
                         width: 80,
@@ -166,6 +170,7 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
                               padding: EdgeInsets.zero,
                               constraints: BoxConstraints(),
                             ),
+                            SizedBox(width: 10,),
                             IconButton(
                               icon: Icon(Icons.add, size: 18),
                               onPressed: () {
@@ -183,9 +188,11 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
                         ),
                       ),
                       // Total (Placeholder - calculation needs refinement)
-                       SizedBox(width: 60, child: Center(child: Text('Calc'))), // Placeholder for calculated total per row if needed
-                    ],
-                  ),
+                       SizedBox(width: 60, child: Center(child: Text(
+                         checkedStatus[index] ? (math.max(0, gap) * recalculatedMaxResearch / 100).ceil().toString() : '0'
+                       ))), // Placeholder for calculated total per row if needed
+                     ],
+                   ),
                 );
               },
             ),
@@ -197,7 +204,7 @@ class _ResearchDialogContentState extends State<ResearchDialogContent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text('Overall Total Points: ${calculateTotalPoints().toStringAsFixed(2)}'),
+                Text('Overall Total Points: ${calculateTotalPoints()}'),
               ],
             ),
           ),
