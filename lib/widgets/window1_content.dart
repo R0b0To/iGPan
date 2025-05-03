@@ -17,11 +17,13 @@ class Window1Content extends StatefulWidget {
   State<Window1Content> createState() => _Window1ContentState();
 }
 
-class _Window1ContentState extends State<Window1Content> {
+class _Window1ContentState extends State<Window1Content>
+    with SingleTickerProviderStateMixin { // Add mixin for TabController
 
   String _totalEnginesText = 'N/A'; // State variable to hold the text for total engines
   String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
   bool _rewardStatus = false; // State variable for reward status
+  TabController? _tabController; // Controller for the tabs
 
   // Reports tab state
   final ScrollController _scrollController = ScrollController();
@@ -30,6 +32,7 @@ class _Window1ContentState extends State<Window1Content> {
   final int _numResults = 10;
   bool _isLoading = false;
   bool _hasMoreReports = true;
+  bool _reportsFetched = false; // Flag to track if reports have been fetched initially
 
   @override
   void initState() {
@@ -48,12 +51,25 @@ class _Window1ContentState extends State<Window1Content> {
     // Add listener to scroll controller for infinite scrolling
     _scrollController.addListener(_onScroll);
 
-    // Fetch initial reports
-    _fetchReports();
+    // Initialize TabController
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController!.addListener(_handleTabSelection);
+
+  }
+
+  void _handleTabSelection() {
+    if (_tabController!.indexIsChanging) {
+      // Check if the Reports tab (index 2) is selected and reports haven't been fetched yet
+      if (_tabController!.index == 2 && !_reportsFetched) {
+        _fetchReports();
+        _reportsFetched = true; // Set flag to true after first fetch
+      }
+    }
   }
 
   @override
   void dispose() {
+    _tabController?.dispose(); // Dispose the TabController
     _scrollController.dispose();
     super.dispose();
   }
@@ -62,6 +78,8 @@ class _Window1ContentState extends State<Window1Content> {
   Future<void> _fetchReports() async {
     if (_isLoading || !_hasMoreReports) return;
 
+
+    debugPrint('loading reports');
     setState(() {
       _isLoading = true;
     });
@@ -236,29 +254,28 @@ class _Window1ContentState extends State<Window1Content> {
            ),
          ],
        ),
-       DefaultTabController( // Second row with tab bar
-         length: 3,
-         child: Column(
-           children: [
-             const TabBar(
-              
-
-               tabs: [
-                 Tab(     
-                        child: Text('Car', style: TextStyle(fontSize: 12)),),
-                 Tab(     
-                        child: Text('Team', style: TextStyle(fontSize: 12)),),
-                 Tab(  
-                        child: Text('Reports', style: TextStyle(fontSize: 12))),
-               ],
-
-             ),
-             SizedBox(
-               height: widget.minWindowHeight * 0.8, // 80% of minWindowHeight
-               child: TabBarView(
-                 children: [
-                   Column(
-                     crossAxisAlignment: CrossAxisAlignment.stretch,
+       Column( // Use Column directly instead of DefaultTabController
+         children: [
+           TabBar( // Pass the controller
+             controller: _tabController,
+             tabs: const [
+               Tab(
+                 child: Text('Car', style: TextStyle(fontSize: 12)),
+               ),
+               Tab(
+                 child: Text('Team', style: TextStyle(fontSize: 12)),
+               ),
+               Tab(
+                 child: Text('Reports', style: TextStyle(fontSize: 12))),
+             ],
+           ),
+           SizedBox(
+             height: widget.minWindowHeight * 0.8, // 80% of minWindowHeight
+             child: TabBarView(
+               controller: _tabController, // Pass the controller
+               children: [
+                 Column(
+                   crossAxisAlignment: CrossAxisAlignment.stretch,
                      children: [
                        // First row: totalparts, totalengine buttons and restock races label
                        Row(
@@ -440,7 +457,6 @@ class _Window1ContentState extends State<Window1Content> {
             ),
           ],
         ),
-      ),
     ],
   );
 }

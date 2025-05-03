@@ -1,3 +1,4 @@
+import 'widgets/account_list_view.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -23,7 +24,7 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       darkTheme: ThemeData.dark(useMaterial3: true),
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 3, 146, 67)),
         useMaterial3: true,
       ),
       home: const MyHomePage(title: 'iGPan'),
@@ -51,8 +52,6 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _loadAccounts();
-    // Refresh data every 30 seconds
-    //Timer.periodic(const Duration(seconds: 30), (timer) {_startClientSessions();});
   }
 
   @override
@@ -167,13 +166,12 @@ class _MyHomePageState extends State<MyHomePage> {
                                      return Column(
                                        mainAxisSize: MainAxisSize.max, // Take available space
                                        children: [
-                                         for (int i = startIndex; i < endIndex; i++)
-                                           AccountMainContainer(
-                                             account: enabledAccounts[i], // Use enabledAccounts
-                                             minWindowWidth: minWindowWidth,
-                                             minWindowHeight: minWindowHeight,
-                                             canStackWindowsHorizontally: true, // Windows side-by-side
-                                           ),
+                                       AccountListView(
+                                         accounts: enabledAccounts.sublist(startIndex, endIndex),
+                                         minWindowWidth: minWindowWidth,
+                                         minWindowHeight: minWindowHeight,
+                                         canStackWindowsHorizontally: true,
+                                       ),
                                        ],
                                      );
                                    },

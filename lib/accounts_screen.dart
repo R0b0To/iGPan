@@ -231,8 +231,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   onChanged: (bool value) {
                     setState(() {
                       account.enabled = value; // Update the account's enabled state
+                      _saveAccounts(); // Save the updated accounts list
                     });
-                    _saveAccounts(); // Save the updated accounts list
+                    // Consider adding a callback here to notify the parent widget
+                    // or a state management solution about the change.
                   },
                 ),
                 IconButton(

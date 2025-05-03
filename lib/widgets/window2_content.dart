@@ -343,7 +343,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildInfoButton(context, driver.name, () { /* TODO: Driver action */ }),
+              _buildInfoButton(context, driver?.name, () { /* TODO: Driver action */ }),
               _buildInfoButton(context, '${driver.attributes?[12]?.toStringAsFixed(0) ?? 'N/A'}', () { /* TODO: Stamina action */ }), // Added null check
               _buildInfoButton(context, '${driver.contract ?? 'N/A'}', () { /* TODO: Contract action */ }), // Added null check
             ],

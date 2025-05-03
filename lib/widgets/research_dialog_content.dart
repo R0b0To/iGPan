@@ -37,7 +37,12 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
     // Initialize originalMaxResearch from researchData['maxResearch']
     originalMaxResearch = widget.researchData['maxResearch'] as double;
     // Initialize recalculatedMaxResearch
-    recalculatedMaxResearch = originalMaxResearch;
+    int selectedCount = checkedStatus.where((status) => status).length;
+    if (selectedCount > 0) {
+      recalculatedMaxResearch = originalMaxResearch / selectedCount;
+    } else {
+      recalculatedMaxResearch = originalMaxResearch;
+    }
   }
 
   // Function to calculate the total points by summing row calculations

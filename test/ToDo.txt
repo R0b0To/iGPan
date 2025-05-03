@@ -14,8 +14,6 @@ ToDo:
         restore stamina
         
     tabs:
-        reports
-            race reports
         create team tab
             staff
     misc:
