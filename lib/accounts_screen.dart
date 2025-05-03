@@ -110,7 +110,13 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
     // Start session for the newly added account after the dialog is dismissed
     if (addedAccount != null) {
-      startClientSessionForAccount(addedAccount);
+      
+      startClientSessionForAccount(addedAccount, onSuccess: () {
+          if (mounted) {
+            setState(() {});
+            debugPrint('test account layout from accounts_screen.dart');
+          }
+        });
     }
   }
 
@@ -175,7 +181,12 @@ class _AccountsScreenState extends State<AccountsScreen> {
     );
     // Start session for the edited account after the dialog is dismissed
     if (editedAccount != null) {
-      startClientSessionForAccount(editedAccount);
+      startClientSessionForAccount(editedAccount, onSuccess: () {
+          if (mounted) {
+            debugPrint('test account layout from accounts_screnn.dart');
+            setState(() {});
+          }
+        });
     }
   }
 
@@ -232,10 +243,11 @@ class _AccountsScreenState extends State<AccountsScreen> {
                     Switch(
                       value: account.enabled,
                       onChanged: (bool value) {
-                        // Update the account's enabled state in the ValueNotifier's list
-                        accountsNotifier.value = List.from(accountsNotifier.value)
-                          ..[index].enabled = value;
-                        _saveAccounts(); // Save the updated accounts list
+
+                        setState(() {
+                          account.enabled=value;
+                        });
+                        _saveAccounts();
                         // No need for setState here as ValueNotifier handles updates
                       },
                     ),

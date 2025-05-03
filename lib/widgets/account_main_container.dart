@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iGPan/main.dart';
 import 'window1_content.dart'; // Will create this file next
 import 'window2_content.dart'; // Will create this file later
 import '../igp_client.dart'; // Import Account definition
@@ -22,7 +23,11 @@ class AccountMainContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     // Check if fireUpData is available (assuming fireUpData is a property of Account)
     if (account.fireUpData == null) {
-      startClientSessionForAccount(account);
+      startClientSessionForAccount(account, onSuccess: () {
+          debugPrint('test account layout from account_main_container.dart');
+          accountsNotifier.value = List.from(accountsNotifier.value);
+        });
+      
       // Provide a more informative placeholder or loading state
       return Card(
         margin: const EdgeInsets.all(8.0),

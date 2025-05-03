@@ -81,7 +81,8 @@ Future<void> loadAccounts() async {
 
 
 
-Future<void> startClientSessionForAccount(Account account) async {
+// Modified startClientSessionForAccount
+Future<bool> startClientSessionForAccount(Account account, {VoidCallback? onSuccess}) async {
   debugPrint('Attempting to start session for ${account.email}');
   bool sessionValid = false;
   try {
@@ -118,6 +119,8 @@ Future<void> startClientSessionForAccount(Account account) async {
         } else {
           debugPrint('Account ${account.email} is not in a league. Skipping race data fetch.');
         }
+        // *** Call onSuccess here ***
+        onSuccess?.call();
 
       } else {
         debugPrint('Session invalid for ${account.email} based on fireUp response.');
@@ -128,18 +131,22 @@ Future<void> startClientSessionForAccount(Account account) async {
   }
   if (!sessionValid) {
     debugPrint('Attempting full login for ${account.email}.');
-    await login(account);
+    // Pass onSuccess to login
+    sessionValid = await login(account, onSuccess: onSuccess);
   }
-
-
+  return sessionValid; // Return success status
 }
 
-Future<void> login(Account account) async {
+// Modified login
+Future<bool> login(Account account, {VoidCallback? onSuccess}) async {
     CookieJar? cookieJar = cookieJars[account.email];
     if (cookieJar == null) {
       debugPrint('No persistent cookie jar found for ${account.email}. Creating a new one.');
-      cookieJar = CookieJar();
-      cookieJars[account.email] = cookieJar; // Store it for potential future use (though not persistent)
+      // Use MemoryCookieJar if persistent path isn't available or needed here
+      cookieJar = appDocumentPath != null
+          ? PersistCookieJar(storage: FileStorage('$appDocumentPath/.cookies/${account.email}/'))
+          : CookieJar(); // Fallback to in-memory
+      cookieJars[account.email] = cookieJar;
     }
 
     Dio dio = dioClients.putIfAbsent(account.email, () {
@@ -165,18 +172,16 @@ Future<void> login(Account account) async {
 
       if (loginResponseJson != null && loginResponseJson['status'] == 1) {
         debugPrint('Login successful for ${account.email}');
-        try {
-          await startClientSessionForAccount(account);
-        } catch (e) {
-          debugPrint('Error making fireUp request for ${account.email}: $e');
-        }
+        // After successful login, re-attempt session start, passing the callback
+        // The recursive call will execute onSuccess if it succeeds
+        return await startClientSessionForAccount(account, onSuccess: onSuccess);
       } else {
         debugPrint('Login failed for ${account.email}. Response: ${response.data}');
-        
-        // Handle failed login, e.g., show an error message to the user
+        return false; // Login failed
       }
     } catch (e) {
       debugPrint('Error logging in ${account.email}: $e');
+      return false; // Login failed due to error
     }
 }
 Future<void> claimDailyReward(Account account) async {
@@ -254,9 +259,9 @@ class Driver {
   final String name;
   final List<dynamic> attributes;
   final String contract;
-  
+
   Driver({required this.name, required this.attributes, required this.contract});
-  
+
   // Method to convert a Driver object to a JSON map
   Map<String, dynamic> toJson() {
     return {
@@ -274,7 +279,7 @@ class Driver {
       contract: json['contract'],
     );
   }
-  
+
   @override
   String toString() {
     return 'Driver{name: $name, attributes: $attributes, contract: $contract}';

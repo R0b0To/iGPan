@@ -1,4 +1,3 @@
-import 'widgets/account_list_view.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -74,23 +73,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _isLoading = false;
     });
     
-    // Create a list to hold the futures
-    List<Future<void>> futures = [];
-
-    // Iterate over the accounts and add futures for enabled accounts
-    for (var account in accountsNotifier.value) { // Use accountsNotifier.value
-      if (account.enabled) {
-        futures.add(startClientSessionForAccount(account));
-      }
-    }
-
-    // Wait for all the futures to complete
-    await Future.wait(futures);
-
-    // Update the state once after all operations are done
-    if (mounted) { // Check if the widget is still mounted before calling setState
-      setState(() {});
-    }
   }
 
 
@@ -105,8 +87,6 @@ class _MyHomePageState extends State<MyHomePage> {
               builder: (context, accounts, child) {
                 // Filter accounts to only include enabled ones for the Home view
                 final enabledAccounts = accounts.where((account) => account.enabled).toList();
-                
-                debugPrint('account ${enabledAccounts.length}');
 
                 if (accounts.isEmpty) { // Check the ValueNotifier's list
                   return Center(
@@ -176,12 +156,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                       return Column(
                                         mainAxisSize: MainAxisSize.max, // Take available space
                                         children: [
-                                        AccountListView(
-                                          accounts: enabledAccounts.sublist(startIndex, endIndex),
-                                          minWindowWidth: minWindowWidth,
-                                          minWindowHeight: minWindowHeight,
-                                          canStackWindowsHorizontally: true,
-                                        ),
+                                          for (int i = startIndex; i < endIndex; i++)
+                                           AccountMainContainer(
+                                             account: enabledAccounts[i], // Use enabledAccounts
+                                             minWindowWidth: minWindowWidth,
+                                             minWindowHeight: minWindowHeight,
+                                             canStackWindowsHorizontally: true, // Windows side-by-side
+                                           ),
                                         ],
                                       );
                                     },
