@@ -22,6 +22,7 @@ class AccountMainContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     // Check if fireUpData is available (assuming fireUpData is a property of Account)
     if (account.fireUpData == null) {
+      startClientSessionForAccount(account);
       // Provide a more informative placeholder or loading state
       return Card(
         margin: const EdgeInsets.all(8.0),
@@ -61,8 +62,7 @@ class AccountMainContainer extends StatelessWidget {
         minFontSize: 12,    // Don't go smaller than 12
         overflow: TextOverflow.ellipsis, // "..." if really needed
       ),
-            // Use Flexible or Expanded if windows need to fill space,
-            // but for fixed min size, direct Container might be okay.
+
             _buildInternalWindows(context),
           ],
         ),

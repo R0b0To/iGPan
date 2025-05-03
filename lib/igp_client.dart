@@ -29,8 +29,8 @@ class Account {
       email: json['email'],
       password: json['password'],
       nickname: json['nickname'],
-      fireUpData: json['fireUpData'], // Load existing fireUpData if available
-      raceData: json['raceData'], // Load existing raceData if available
+      fireUpData: null, // Load existing fireUpData if available
+      raceData: null, // Load existing raceData if available
       enabled: json['enabled'] ?? true, // Load enabled state, default to true if not present
     );
   }
@@ -41,21 +41,14 @@ class Account {
       'email': email,
       'password': password,
       'nickname': nickname,
-      'fireUpData': fireUpData != null ? _serializeFireUpData(fireUpData!) : null,
-      'raceData': raceData,
+      'fireUpData': null,
+      'raceData': null,
       'enabled': enabled, // Include enabled state in JSON
     };
   }
 }
 
-// Helper function to serialize fireUpData, including Driver objects
-Map<String, dynamic> _serializeFireUpData(Map<String, dynamic> fireUpData) {
-  final serializedData = Map<String, dynamic>.from(fireUpData);
-  if (serializedData.containsKey('drivers') && serializedData['drivers'] is List<Driver>) {
-    serializedData['drivers'] = (serializedData['drivers'] as List<Driver>).map((driver) => driver.toJson()).toList();
-  }
-  return serializedData;
-}
+
 
 final Map<String, CookieJar> cookieJars = {};
 final Map<String, Dio> dioClients = {};
@@ -86,14 +79,7 @@ Future<void> loadAccounts() async {
   }
 }
 
-Future<void> startClientSessions() async {
-  if (accounts.isEmpty) return;
 
-  // Start session for each account
-  for (var account in accounts) {
-    await startClientSessionForAccount(account);
-  }
-}
 
 Future<void> startClientSessionForAccount(Account account) async {
   debugPrint('Attempting to start session for ${account.email}');
@@ -186,6 +172,7 @@ Future<void> login(Account account) async {
         }
       } else {
         debugPrint('Login failed for ${account.email}. Response: ${response.data}');
+        
         // Handle failed login, e.g., show an error message to the user
       }
     } catch (e) {
@@ -225,7 +212,6 @@ Future<void> claimDailyReward(Account account) async {
     rethrow;
   }
 }
-
 Future<void> fetchRaceData(Account account) async {
   Dio? dio = dioClients[account.email];
   if (dio == null) {

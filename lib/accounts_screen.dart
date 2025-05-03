@@ -12,7 +12,7 @@ class AccountsScreen extends StatefulWidget {
 }
 
 class _AccountsScreenState extends State<AccountsScreen> {
-  List<Account> _accounts = [];
+  // Removed the local _accounts list, will use accountsNotifier from main.dart
   final _storage = const FlutterSecureStorage(); // Create storage instance
   final String _accountsKey = 'accounts'; // Key for storing accounts
 
@@ -26,17 +26,17 @@ class _AccountsScreenState extends State<AccountsScreen> {
     try {
       final jsonString = await _storage.read(key: _accountsKey);
       if (jsonString != null) {
-        setState(() {
-          final List<dynamic> jsonList = jsonDecode(jsonString);
-          _accounts = jsonList.map((json) => Account.fromJson(json)).toList();
-        });
-        //accountsNotifier.value = _accounts; // Update the ValueNotifier
+        //final List<dynamic> jsonList = jsonDecode(jsonString);
+        // Update the ValueNotifier directly
+        //accountsNotifier.value = jsonList.map((json) => Account.fromJson(json)).toList();
+
         // After loading, ensure Driver objects are correctly deserialized if they exist
-        for (var account in _accounts) {
+        /*for (var account in accountsNotifier.value) { // Use accountsNotifier.value
           if (account.fireUpData != null && account.fireUpData!.containsKey('drivers') && account.fireUpData!['drivers'] is List) {
             account.fireUpData!['drivers'] = (account.fireUpData!['drivers'] as List).map((driverJson) => Driver.fromJson(driverJson)).toList();
           }
-        }
+        }*/
+        // No need for setState here as ValueNotifier handles updates
       }
     } catch (e) {
       // Handle errors
@@ -45,10 +45,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   Future<void> _saveAccounts() async {
-    final jsonList = _accounts.map((account) => account.toJson()).toList();
+    final jsonList = accountsNotifier.value.map((account) => account.toJson()).toList(); // Use accountsNotifier.value
     final jsonString = jsonEncode(jsonList);
     await _storage.write(key: _accountsKey, value: jsonString);
-    //accountsNotifier.value = _accounts; // Update the ValueNotifier
+    // No need to update ValueNotifier here as changes are made directly to its value
   }
 
   Future<void> _addAccount() async {
@@ -96,9 +96,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   password: password,
                   nickname: nickname.isNotEmpty ? nickname : null,
                 );
-                setState(() {
-                  _accounts.add(newAccount);
-                });
+                // Update the ValueNotifier and notify listeners
+                accountsNotifier.value = List.from(accountsNotifier.value)..add(newAccount);
                 _saveAccounts();
                 // Pass the new account back when popping
                 Navigator.of(context).pop(newAccount);
@@ -116,9 +115,10 @@ class _AccountsScreenState extends State<AccountsScreen> {
   }
 
   Future<void> _editAccount(int index) async {
-    TextEditingController emailController = TextEditingController(text: _accounts[index].email);
-    TextEditingController passwordController = TextEditingController(text: _accounts[index].password);
-    TextEditingController nicknameController = TextEditingController(text: _accounts[index].nickname);
+    // Use accountsNotifier.value to get the account
+    TextEditingController emailController = TextEditingController(text: accountsNotifier.value[index].email);
+    TextEditingController passwordController = TextEditingController(text: accountsNotifier.value[index].password);
+    TextEditingController nicknameController = TextEditingController(text: accountsNotifier.value[index].nickname);
 
     Account? editedAccount = await showDialog<Account>(
       context: context,
@@ -160,9 +160,9 @@ class _AccountsScreenState extends State<AccountsScreen> {
                   password: password,
                   nickname: nickname.isNotEmpty ? nickname : null,
                 );
-                setState(() {
-                  _accounts[index] = updatedAccount;
-                });
+                // Update the ValueNotifier and notify listeners
+                accountsNotifier.value = List.from(accountsNotifier.value)
+                  ..[index] = updatedAccount;
                 _saveAccounts();
                 // Pass the updated account back when popping
                 Navigator.of(context).pop(updatedAccount);
@@ -195,9 +195,8 @@ class _AccountsScreenState extends State<AccountsScreen> {
             ),
             TextButton(
               onPressed: () {
-                setState(() {
-                  _accounts.removeAt(index);
-                });
+                // Update the ValueNotifier and notify listeners
+                accountsNotifier.value = List.from(accountsNotifier.value)..removeAt(index);
                 _saveAccounts();
                 Navigator.of(context).pop();
               },
@@ -211,53 +210,58 @@ class _AccountsScreenState extends State<AccountsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Account Manager'),
-      ),
-      body: ListView.builder(
-        itemCount: _accounts.length,
-        itemBuilder: (context, index) {
-          final account = _accounts[index];
-          return ListTile(
-            title: Text(account.email),
-            subtitle: Text(account.nickname ?? ''),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Add the Switch widget
-                Switch(
-                  value: account.enabled,
-                  onChanged: (bool value) {
-                    setState(() {
-                      account.enabled = value; // Update the account's enabled state
-                      _saveAccounts(); // Save the updated accounts list
-                    });
-                    // Consider adding a callback here to notify the parent widget
-                    // or a state management solution about the change.
-                  },
+    // Use ValueListenableBuilder to react to changes in accountsNotifier
+    return ValueListenableBuilder<List<Account>>(
+      valueListenable: accountsNotifier,
+      builder: (context, accounts, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Account Manager'),
+          ),
+          body: ListView.builder(
+            itemCount: accounts.length, // Use the list from ValueNotifier
+            itemBuilder: (context, index) {
+              final account = accounts[index]; // Use the account from the ValueNotifier's list
+              return ListTile(
+                title: Text(account.email),
+                subtitle: Text(account.nickname ?? ''),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Add the Switch widget
+                    Switch(
+                      value: account.enabled,
+                      onChanged: (bool value) {
+                        // Update the account's enabled state in the ValueNotifier's list
+                        accountsNotifier.value = List.from(accountsNotifier.value)
+                          ..[index].enabled = value;
+                        _saveAccounts(); // Save the updated accounts list
+                        // No need for setState here as ValueNotifier handles updates
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        _editAccount(index);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        _deleteAccount(index);
+                      },
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  onPressed: () {
-                    _editAccount(index);
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    _deleteAccount(index);
-                  },
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addAccount,
-        child: const Icon(Icons.add),
-      ),
+              );
+            },
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _addAccount,
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }

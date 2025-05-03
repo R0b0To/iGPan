@@ -48,7 +48,6 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    
     // Get the number of cars, default to 1 if not available or invalid
     final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
     final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
@@ -330,7 +329,6 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     if (driver == null) {
       return Center(child: Text('Driver data not available.'));
     }
-
     return Padding( // Add padding around the content
       padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4.0),
       child: Column(
