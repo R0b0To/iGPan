@@ -103,15 +103,15 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             IconButton(
               onPressed: () async {
                 final researchData = await requestResearch(widget.account);
-                if (researchData != null) {
-                  // Create a GlobalKey for ResearchDialogContent
+                if (researchData != null) {                
                   final GlobalKey<ResearchDialogContentState> researchDialogKey = GlobalKey<ResearchDialogContentState>();
 
                   showDialog(
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        // Assign the key to ResearchDialogContent
+                         insetPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 1), // margin from screen edges
+                         contentPadding: EdgeInsets.fromLTRB(1, 1, 1, 1), // left, top, right, bottom
                         content: ResearchDialogContent(key: researchDialogKey, researchData: researchData),
                         actions: <Widget>[
                           TextButton(

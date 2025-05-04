@@ -254,6 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
        bottomNavigationBar: NavigationBar(
+        height: 60,
          onDestinationSelected: (int index) {
            setState(() {
              _bottomNavIndex = index;

@@ -53,13 +53,9 @@ class AccountMainContainer extends StatelessWidget {
 
     double fontSize = minWindowWidth > 100 ? 24 : 18; // <<< Change font size based on width
     return Card(
-      margin: const EdgeInsets.all(2),
-      child: Container( // Use Container to constrain height if needed, though Card might handle it
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Important for Column height in ListView/PageView
-          children: [
+        child: SafeArea(
+          child: Column(
+            children:[
             AutoSizeText(
         account.nickname ?? account.email ?? 'Unnamed Account',
         style: Theme.of(context).textTheme.titleLarge,
@@ -69,15 +65,15 @@ class AccountMainContainer extends StatelessWidget {
       ),
 
             _buildInternalWindows(context),
-          ],
+          ],)
         ),
-      ),
+      
     );
   }
 
   Widget _buildInternalWindows(BuildContext context) {
     // Create instances of the window content widgets once
-    final window1Content = Window1Content(minWindowHeight: minWindowHeight, account: account);
+    final window1Content = Window1Content(minWindowHeight: minWindowHeight+50, account: account);
     // Check if the account is in a league before creating Window2Content
     final bool isInLeague = account.fireUpData?['team']?['_league'] != null &&
                            account.fireUpData!['team']['_league'] != '0'; // Added null check for safety
@@ -85,17 +81,12 @@ class AccountMainContainer extends StatelessWidget {
 
 
      if (canStackWindowsHorizontally) {
-        // Stack windows horizontally
+
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start, // Align tops
           children: [
             Expanded(
               child: Container(
-                constraints: BoxConstraints(
-                  minWidth: minWindowWidth,
-                  minHeight: minWindowHeight,
-                ),
-                // color: const Color.fromARGB(255, 96, 121, 141), // Remove placeholder color
                 child: window1Content,
               ),
             ),
@@ -104,11 +95,6 @@ class AccountMainContainer extends StatelessWidget {
               const SizedBox(width: 8.0),
               Expanded(
                 child: Container(
-                  constraints: BoxConstraints(
-                    minWidth: minWindowWidth,
-                    minHeight: minWindowHeight,
-                  ),
-                  // color: const Color.fromARGB(255, 98, 121, 99), // Remove placeholder color
                   child: window2Content,
                 ),
               ),
@@ -122,22 +108,11 @@ class AccountMainContainer extends StatelessWidget {
            mainAxisSize: MainAxisSize.min, // Ensure column takes minimum required height
            children: [
             Container(
-              constraints: BoxConstraints(
-                minWidth: double.infinity, // Take full width available
-                minHeight: minWindowHeight,
-              ),
-              // color: const Color.fromARGB(255, 93, 108, 121), // Remove placeholder color
               child: window1Content,
             ),
             // Only add SizedBox and second window if it exists
             if (window2Content != null) ...[
-
               Container(
-                constraints: BoxConstraints(
-                   minWidth: double.infinity, // Take full width available
-                   minHeight: minWindowHeight,
-                ),
-                // color: const Color.fromARGB(255, 111, 133, 112), // Remove placeholder color
                 child: window2Content,
               ),
             ]

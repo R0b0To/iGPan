@@ -144,15 +144,15 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
         maxGainIndex = i;
       }
     }
-    // --- End Calculate Max Theoretical Gain ---
+    // --- End Calculate Max Theoretical Gain --
 
-
-    return Container(
+    return SizedBox(
       width: double.maxFinite, // Allow the dialog to take more width
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          
           // Row with remaining points and maxResearch labels
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -168,18 +168,18 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
           // Header Row
           Padding(
             
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal:0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 SizedBox(width: 24), // Space for icon
-                SizedBox(width: 40, child: Center(child: Icon(Icons.check, size: 20))),
-                SizedBox(width: 40, child: Center(child: Icon(Icons.person, size: 20))),
+                SizedBox(width: 30, child: Center(child: Icon(Icons.check, size: 20))),
+                SizedBox(width: 30, child: Center(child: Icon(Icons.person, size: 20))),
                 SizedBox(width: 30),
-                SizedBox(width: 40, child: Center(child: Icon(Icons.people, size: 20))),
-                SizedBox(width: 40, child: Center(child: Icon(Icons.compare_arrows, size: 20))),
-                SizedBox(width: 80,),
-                SizedBox(width: 60, child: Center(child: Icon(MdiIcons.magnify, size: 20))),
+                SizedBox(width: 30, child: Center(child: Icon(Icons.people, size: 20))),
+                SizedBox(width: 30, child: Center(child: Icon(Icons.compare_arrows, size: 20))),
+
+                SizedBox(width: 80),
               ],
             ),
           ),
@@ -200,7 +200,7 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                 return Container( // Wrap with Container for potential highlighting
                   color: isMaxGainRow ? const Color.fromARGB(255, 79, 128, 121).withOpacity(0.3) : null, // Highlight if it's the max gain row
                   child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -208,7 +208,7 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                       SizedBox(width: 24, child: Icon(attributeIcons[index], size: 18)),
                       // Checkbox
                       SizedBox(
-                        width: 40,
+                        width: 30,
                         child: Center(
                           child: Checkbox(
                             value: checkedStatus[index],
@@ -228,13 +228,13 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                         ),
                       ),
                       // MyCar Value
-                      SizedBox(width: 40, child: Center(child: Text(myValue.toString()))),
+                      SizedBox(width: 30, child: Center(child: Text(myValue.toString()))),
                       // Bonus Value
                       SizedBox(width: 30, child: Center(child: Text(bonusValue.toString(), style: TextStyle(fontSize: 10, color: (double.tryParse(bonusValue.toString().replaceAll('(', '').replaceAll(')', '')) ?? 0) >= 0 ? Colors.green : Colors.red)))),
                       // Best Value
-                      SizedBox(width: 40, child: Center(child: Text(bestValue.toString()))),
+                      SizedBox(width: 30, child: Center(child: Text(bestValue.toString()))),
                       // Gap
-                      SizedBox(width: 40, child: Center(child: Text(gap.toString()))),
+                      SizedBox(width: 30, child: Center(child: Text(gap.toString()))),
 
                       
                       // Adjust Buttons
@@ -256,7 +256,7 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                               padding: EdgeInsets.zero,
                               constraints: BoxConstraints(),
                             ),
-                            SizedBox(width: 10,),
+
                             IconButton(
                               icon: Icon(Icons.add, size: 18),
                               onPressed: () {
@@ -273,9 +273,6 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                           ],
                         ),
                       ),
-                       SizedBox(width: 60, child: Center(child: Text(
-                         checkedStatus[index] ? (math.max(0, gap) * recalculatedMaxResearch / 100).ceil().toString() : '0'
-                       ))), 
                      ],
                    ),
                   ),
