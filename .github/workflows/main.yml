@@ -111,5 +111,5 @@ jobs:
           draft: false
           prerelease: false
           files: | # Paths relative to the runner workspace where artifacts were downloaded
-            iGPan_Windows_${{ env.VERSION_NUMBER }}.zip
+            windows-build-zip.zip
             iGPan_${{ env.VERSION_NUMBER }}.apk
