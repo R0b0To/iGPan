@@ -80,7 +80,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
               controller: _tabController, // Use the shared controller
               children: [
-              
+               
                 SetupContent(account: widget.account, carIndex: carIndex),
                 Center(child: Text('Practice Content Placeholder')),
                 StrategyContent(account: widget.account, carIndex: carIndex),
@@ -101,6 +101,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             IconButton(
+              
               onPressed: () async {
                 final researchData = await requestResearch(widget.account);
                 if (researchData != null) {                
@@ -110,7 +111,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                         insetPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 1), // margin from screen edges
+                         insetPadding: EdgeInsets.symmetric(horizontal: 10), // margin from screen edges, vertical padding removed to allow auto-sizing
                          contentPadding: EdgeInsets.fromLTRB(1, 1, 1, 1), // left, top, right, bottom
                         content: ResearchDialogContent(key: researchDialogKey, researchData: researchData),
                         actions: <Widget>[

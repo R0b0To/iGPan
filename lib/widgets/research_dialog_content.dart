@@ -152,14 +152,13 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           // Row with remaining points and maxResearch labels
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Text('Remaining Points: $remainingDesignPoints'),
+                Text('Points: $remainingDesignPoints'),
                 Text('Research Power: ${recalculatedMaxResearch.toStringAsFixed(2)}'),
               ],
             ),
@@ -185,7 +184,7 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
           ),
           Divider(),
           // Data Rows
-          Expanded( // Use Expanded to allow the ListView to take available space
+          SizedBox( // Use Expanded to allow the ListView to take available space
             child: ListView.builder(
               
               shrinkWrap: true, // Use shrinkWrap with Expanded
@@ -285,7 +284,7 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Text('Overall Total Points: ${calculateTotalPoints()}'),
               ],

@@ -463,8 +463,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
 
      return Padding(
        padding: const EdgeInsets.symmetric(horizontal: 1.0),
-       child: Tooltip( // Add tooltip to show full details on hover
-         message: 'Tyre: $tyreAsset\nLaps: $laps',
+       child: SizedBox( // Add tooltip to show full details on hover
          child: Stack(
            alignment: Alignment.center,
            children: [
@@ -473,6 +472,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                  imagePath,
                  width: 28,
                  height: 28,
+                 scale: 1,
                  errorBuilder: (context, error, stackTrace) {
                    return Container(
                      width: 28, height: 28,
@@ -481,7 +481,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                  },
                )
              else
-               Container(
+               SizedBox(
                  width: 28, height: 28,
                  child: Icon(Icons.help_outline, size: 14, color: Colors.grey[600]),
                ),
@@ -506,20 +506,17 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-       insetPadding: EdgeInsets.zero,
-       contentPadding: EdgeInsets.all(11),
+  
+
       content: SizedBox(
-        
-        width: MediaQuery.of(context).size.width * 0.8, // Adjust width as needed
-        height: MediaQuery.of(context).size.height * 0.5, // Adjust height as needed
-        // Use a fixed height or constrain dynamically if needed
-        // height: MediaQuery.of(context).size.height * 0.6, // Example: 60% of screen height
+        width: double.maxFinite, // Allow the dialog to take more width
+
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // --- Header Row ---
             Padding(
-              padding: const EdgeInsets.only(bottom: 15.0),
+              padding: const EdgeInsets.only(bottom: 6.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically
@@ -529,7 +526,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                     style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
                     child: Icon(Icons.save, size: 16),
                   ),
-                  SizedBox(width: 8), // Add spacing
+                  
                   Expanded(
                     child: Container( // Container to constrain preview height
                       height: 35, // Adjust height as needed
@@ -574,7 +571,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     }
 
     // Use Expanded + ListView for scrollable content
-    return Expanded(
+    return SizedBox(
       child: ListView.builder(
         
         shrinkWrap: true, // Important within Column
@@ -605,7 +602,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                 ),
                   IconButton(
                   icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-                  tooltip: 'Delete Strategy',
                   iconSize: 20, // Adjust size
                   constraints: BoxConstraints(), // Remove extra padding
                   padding: EdgeInsets.all(4), // Add minimal padding

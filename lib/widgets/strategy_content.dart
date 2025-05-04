@@ -119,7 +119,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           height: 30, // Match the height of the SpinBox
           child: ElevatedButton(
             onPressed: () async { // Make async to await dialog result
-              final result = await showDialog<bool>( // Expect a boolean result
+              final result = await showDialog<bool>(
                 context: context,
                 builder: (BuildContext context) {
                   return StrategySaveLoadPopup(
