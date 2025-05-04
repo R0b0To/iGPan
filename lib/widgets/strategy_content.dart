@@ -727,10 +727,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                               selectedLaps = value;
                             });
                           },
-                          // No validator needed as SpinBox handles range
+                        
                         ),
                       ],
-                      // TODO: Add Fuel input if needed later
+                     
                     ],
                   ),
                 ),

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:iGPan/main.dart';
-import 'window1_content.dart'; // Will create this file next
-import 'window2_content.dart'; // Will create this file later
+import 'package:iGPan/main.dart'; // Assuming dioClients is accessible via this
+// import 'package:url_launcher/url_launcher.dart'; // No longer needed for external launch here
+
+import '../screens/in_app_webview_screen.dart'; // Import the new screen (will create next)
+import 'window1_content.dart';
+import 'window2_content.dart';
 import '../igp_client.dart'; // Import Account definition
 import 'package:auto_size_text/auto_size_text.dart';
 
-class AccountMainContainer extends StatelessWidget {
+class AccountMainContainer extends StatefulWidget { // Changed to StatefulWidget
   final Account account; // Use the specific Account type
   final double minWindowWidth;
   final double minWindowHeight;
@@ -20,25 +23,84 @@ class AccountMainContainer extends StatelessWidget {
   });
 
   @override
+  State<AccountMainContainer> createState() => _AccountMainContainerState(); // Create state
+}
+
+class _AccountMainContainerState extends State<AccountMainContainer> { // State class
+
+  // Handles menu item selections
+  void _handleMenuSelection(String value) async { // Make async for launchUrl
+    print('Selected menu item: $value for account: ${widget.account.nickname ?? widget.account.email}');
+
+    if (value == 'browser') {
+      final Uri url = Uri.parse('https://igpmanager.com/app/');
+      final dio = dioClients[widget.account.email]; // Get the Dio instance for this account
+
+      if (dio == null) {
+         print('Error: Dio client not found for ${widget.account.email}');
+         if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text('Could not find session data to open browser.')),
+           );
+         }
+         return; // Stop if no dio instance
+      }
+
+      // Navigate to the new WebView screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => InAppWebViewScreen(
+            initialUrl: url.toString(),
+            dioInstance: dio, // Pass the specific Dio instance
+            accountNickname: widget.account.nickname ?? widget.account.email ?? 'Account',
+          ),
+        ),
+      );
+    }
+  }
+
+  List<PopupMenuEntry<String>> _buildMenuItems(BuildContext context) {
+    // Build the list of menu items dynamically if needed
+    return <PopupMenuEntry<String>>[
+
+      const PopupMenuItem<String>(
+        value: 'browser', // Keep existing
+        child: Text('Open in Browser'),
+      ),
+      const PopupMenuItem<String>(
+        value: 'league', // Keep existing
+        child: Text('League Info'), // Slightly better text?
+      ),
+      // Add more PopupMenuItems here as needed
+    ];
+  }
+
+
+  @override
   Widget build(BuildContext context) {
-    // Check if fireUpData is available (assuming fireUpData is a property of Account)
-    if (account.fireUpData == null) {
-      startClientSessionForAccount(account, onSuccess: () {
+    // Access properties using widget.
+    if (widget.account.fireUpData == null) {
+      startClientSessionForAccount(widget.account, onSuccess: () {
           debugPrint('test account layout from account_main_container.dart');
-          accountsNotifier.value = List.from(accountsNotifier.value);
+          // Trigger rebuild if necessary, might need setState if UI depends on this change directly
+          if (mounted) { // Check if the state is still mounted
+             setState(() {}); // Basic way to trigger rebuild, refine if needed
+          }
+          accountsNotifier.value = List.from(accountsNotifier.value); // Assuming this handles state elsewhere
         });
-      
+
       // Provide a more informative placeholder or loading state
       return Card(
         margin: const EdgeInsets.all(8.0),
         child: Container(
           padding: const EdgeInsets.all(16.0),
-          height: canStackWindowsHorizontally ? minWindowHeight + 50 : (minWindowHeight * 2) + 60,
+          height: widget.canStackWindowsHorizontally ? widget.minWindowHeight + 50 : (widget.minWindowHeight * 2) + 60,
           child: Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(account.nickname ?? account.email ?? 'Unnamed Account', style: Theme.of(context).textTheme.titleLarge),
+                Text(widget.account.nickname ?? widget.account.email ?? 'Unnamed Account', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 10),
                 const CircularProgressIndicator(),
                 const SizedBox(height: 10),
@@ -51,36 +113,51 @@ class AccountMainContainer extends StatelessWidget {
     }
 
 
-    double fontSize = minWindowWidth > 100 ? 24 : 18; // <<< Change font size based on width
+    double fontSize = widget.minWindowWidth > 100 ? 24 : 18; // <<< Change font size based on width
     return Card(
         child: SafeArea(
           child: Column(
             children:[
-            AutoSizeText(
-        account.nickname ?? account.email ?? 'Unnamed Account',
-        style: Theme.of(context).textTheme.titleLarge,
-        maxLines: 1,        // Only 1 line, shrink font if needed
-        minFontSize: 12,    // Don't go smaller than 12
-        overflow: TextOverflow.ellipsis, // "..." if really needed
-      ),
+            Padding( // Add some padding around the Row
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: Row(
+                children: [
+                  Expanded( // Make text take available space
+                    child: AutoSizeText(
+                      widget.account.nickname ?? widget.account.email ?? 'Unnamed Account',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: fontSize), // Apply dynamic font size
+                      maxLines: 1,        // Only 1 line, shrink font if needed
+                      minFontSize: 12,    // Don't go smaller than 12
+                      overflow: TextOverflow.ellipsis, // "..." if really needed
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert), // Standard menu icon
+                    onSelected: _handleMenuSelection, // Now defined in state
+                    itemBuilder: _buildMenuItems,      // Now defined in state
+                    tooltip: 'Account Options', // Add tooltip for accessibility
+                  ),
+                ],
+              ),
+            ),
 
-            _buildInternalWindows(context),
+            _buildInternalWindows(context), // Call helper method from state
           ],)
         ),
-      
+
     );
   }
 
+  // Moved helper method into the state class
   Widget _buildInternalWindows(BuildContext context) {
-    // Create instances of the window content widgets once
-    final window1Content = Window1Content(minWindowHeight: minWindowHeight+50, account: account);
-    // Check if the account is in a league before creating Window2Content
-    final bool isInLeague = account.fireUpData?['team']?['_league'] != null &&
-                           account.fireUpData!['team']['_league'] != '0'; // Added null check for safety
-    final window2Content = isInLeague ? Window2Content(minWindowHeight: minWindowHeight-50, account: account) : null;
+    // Access properties using widget.
+    final window1Content = Window1Content(minWindowHeight: widget.minWindowHeight+50, account: widget.account);
+    final bool isInLeague = widget.account.fireUpData?['team']?['_league'] != null &&
+                           widget.account.fireUpData!['team']['_league'] != '0';
+    final window2Content = isInLeague ? Window2Content(minWindowHeight: widget.minWindowHeight-50, account: widget.account) : null;
 
 
-     if (canStackWindowsHorizontally) {
+     if (widget.canStackWindowsHorizontally) {
 
         return Row(
           crossAxisAlignment: CrossAxisAlignment.start, // Align tops
@@ -90,7 +167,6 @@ class AccountMainContainer extends StatelessWidget {
                 child: window1Content,
               ),
             ),
-            // Only add SizedBox and second window if it exists
             if (window2Content != null) ...[
               const SizedBox(width: 8.0),
               Expanded(
@@ -98,19 +174,17 @@ class AccountMainContainer extends StatelessWidget {
                   child: window2Content,
                 ),
               ),
-            ] else // Add an empty Expanded to maintain layout if window2 is absent
+            ] else
               Expanded(child: SizedBox.shrink()),
           ],
         );
       } else {
-        // Stack windows vertically
         return Column(
-           mainAxisSize: MainAxisSize.min, // Ensure column takes minimum required height
+           mainAxisSize: MainAxisSize.min,
            children: [
             Container(
               child: window1Content,
             ),
-            // Only add SizedBox and second window if it exists
             if (window2Content != null) ...[
               Container(
                 child: window2Content,

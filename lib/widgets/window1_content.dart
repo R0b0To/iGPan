@@ -166,24 +166,11 @@ class _Window1ContentState extends State<Window1Content>
                  
                    child: IconButton(
                      onPressed: _rewardStatus // Use the state variable
-                         ? () async { // Make async
-                             // Show loading indicator while claiming
-                             ScaffoldMessenger.of(context).showSnackBar(
-                               SnackBar(content: Text('Claiming reward for ${widget.account.nickname ?? widget.account.email}...')),
-                             );
-                             try {
-                               await claimDailyReward(widget.account);
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 SnackBar(content: Text('Reward claimed!')),
-                               );
+                         ? ()  { // Make async
+                              claimDailyReward(widget.account);
                                setState(() {
                                  _rewardStatus = false; // Update the state variable to false after claiming
                                });
-                             } catch (e) {
-                               ScaffoldMessenger.of(context).showSnackBar(
-                                 SnackBar(content: Text('Failed to claim reward: $e')),
-                               );
-                             }
                            }
                          : null, // Disable button if reward not available
                        style: ElevatedButton.styleFrom(

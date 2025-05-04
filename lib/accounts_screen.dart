@@ -12,43 +12,20 @@ class AccountsScreen extends StatefulWidget {
 }
 
 class _AccountsScreenState extends State<AccountsScreen> {
-  // Removed the local _accounts list, will use accountsNotifier from main.dart
-  final _storage = const FlutterSecureStorage(); // Create storage instance
-  final String _accountsKey = 'accounts'; // Key for storing accounts
+  final _storage = const FlutterSecureStorage();
+  final String _accountsKey = 'accounts';
 
   @override
   void initState() {
     super.initState();
-    _loadAccounts();
   }
 
-  Future<void> _loadAccounts() async {
-    try {
-      final jsonString = await _storage.read(key: _accountsKey);
-      if (jsonString != null) {
-        //final List<dynamic> jsonList = jsonDecode(jsonString);
-        // Update the ValueNotifier directly
-        //accountsNotifier.value = jsonList.map((json) => Account.fromJson(json)).toList();
 
-        // After loading, ensure Driver objects are correctly deserialized if they exist
-        /*for (var account in accountsNotifier.value) { // Use accountsNotifier.value
-          if (account.fireUpData != null && account.fireUpData!.containsKey('drivers') && account.fireUpData!['drivers'] is List) {
-            account.fireUpData!['drivers'] = (account.fireUpData!['drivers'] as List).map((driverJson) => Driver.fromJson(driverJson)).toList();
-          }
-        }*/
-        // No need for setState here as ValueNotifier handles updates
-      }
-    } catch (e) {
-      // Handle errors
-      debugPrint('Error loading accounts: $e');
-    }
-  }
 
   Future<void> _saveAccounts() async {
     final jsonList = accountsNotifier.value.map((account) => account.toJson()).toList(); // Use accountsNotifier.value
     final jsonString = jsonEncode(jsonList);
     await _storage.write(key: _accountsKey, value: jsonString);
-    // No need to update ValueNotifier here as changes are made directly to its value
   }
 
   Future<void> _addAccount() async {

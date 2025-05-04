@@ -12,6 +12,7 @@ import 'widgets/account_main_container.dart'; // Import the extracted widget
 ValueNotifier<List<Account>> accountsNotifier = ValueNotifier([]);
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure bindings are initialized
   runApp(const MyApp());
 }
 
