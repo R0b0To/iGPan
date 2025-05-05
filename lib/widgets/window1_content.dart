@@ -22,6 +22,7 @@ class _Window1ContentState extends State<Window1Content>
 
   String _totalEnginesText = 'N/A'; // State variable to hold the text for total engines
   String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
+  String _totalTokens = 'N/A';
   bool _rewardStatus = false; // State variable for reward status
   TabController? _tabController; // Controller for the tabs
 
@@ -40,6 +41,7 @@ class _Window1ContentState extends State<Window1Content>
     // Initialize the state variables with the current values from the widget
     _totalEnginesText = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] ?? 'N/A';
     _totalPartsText = widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] ?? 'N/A';
+    _totalTokens = widget.account.fireUpData?['manager']?['tokens'] ?? 'N/A';
     _rewardStatus = widget.account.fireUpData != null &&
         widget.account.fireUpData!.containsKey('notify') && // Added null check
         widget.account.fireUpData!['notify'] != null &&
@@ -156,7 +158,7 @@ class _Window1ContentState extends State<Window1Content>
                   height: 18, // Adjust size as needed
                 ),
                 SizedBox(width: 4), // Add some spacing between image and text
-                Text(widget.account.fireUpData?['manager']?['tokens'] ?? '0',style: TextStyle(fontSize: 16),), // Added null check and default
+                Text(_totalTokens,style: TextStyle(fontSize: 16),), // Added null check and default
               ],
             ),
 
@@ -288,7 +290,7 @@ class _Window1ContentState extends State<Window1Content>
                             ),
                            Expanded(
                              child: ElevatedButton(
-                               onPressed: () {}, // Add functionality later
+                               onPressed: _showBuyEnginesDialog,
                                style: ElevatedButton.styleFrom(
                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                                  padding: EdgeInsets.zero
@@ -382,6 +384,7 @@ class _Window1ContentState extends State<Window1Content>
                                        if (result != -1) {
                                          setState(() {
                                            _totalEnginesText = result.toString(); // Update the state variable
+                                          
                                          });
                                        }
                                      },
@@ -447,4 +450,98 @@ class _Window1ContentState extends State<Window1Content>
     ],
   );
 }
+  // Function to show the buy engines dialog
+  Future<void> _showBuyEnginesDialog() async {
+    // Show the initial options dialog
+    await showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Buy Engines with Tokens'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the options dialog
+                    _confirmPurchase(3, 1); // Confirm purchase: 3 tokens for 1 engine
+                  },
+                  child: const Text('1 Engine for 3 Tokens'),
+                ),
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the options dialog
+                    _confirmPurchase(4, 3); // Confirm purchase: 4 tokens for 3 engines
+                  },
+                  child: const Text('3 Engines for 4 Tokens'),
+                ),
+                SimpleDialogOption(
+                  onPressed: () {
+                    Navigator.pop(context); // Close the options dialog
+                    _confirmPurchase(5, 5); // Confirm purchase: 5 tokens for 5 engines
+                  },
+                  child: const Text('5 Engines for 5 Tokens'),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the options dialog
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Function to show the confirmation dialog and handle purchase
+  Future<void> _confirmPurchase(int tokenCost, int engineAmount) async {
+    bool? confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // User must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Are you sure?'),
+          content: Text('Buy $engineAmount engine(s) for $tokenCost tokens?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(false); // Return false (not confirmed)
+              },
+            ),
+            TextButton(
+              child: const Text('Accept'),
+              onPressed: () {
+                Navigator.of(context).pop(true); // Return true (confirmed)
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+
+        var result = await buyEnginesWithTokens(widget.account, tokenCost); // Call the purchase function
+        setState(() {
+          _totalEnginesText = result['engines']; 
+          _totalTokens = result['tokens']; // Update the state variable
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Purchase successful! New engine total: $_totalEnginesText')),
+        );
+      } catch (e) {
+        // Handle potential errors during purchase
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Purchase failed: $e')),
+        );
+      }
+    }
+  }
 }

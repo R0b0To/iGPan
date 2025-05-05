@@ -6,7 +6,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart'; 
 import 'package:html/parser.dart' as html_parser;
-import 'package:path_provider/path_provider.dart'; // Import path_provider
+
 
  List<Account> accounts = []; // List to store accounts
 final _storage = const FlutterSecureStorage(); // Create storage instance
@@ -906,7 +906,7 @@ Future<void> saveDesign(Account account, Map research, List<String> design) asyn
 
     Dio? dio = dioClients[account.email];
     if (dio == null) {
-      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch race data.');
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot save design.');
       throw Exception('Dio client not initialized for account');
     }
 
@@ -931,4 +931,49 @@ Future<void> saveDesign(Account account, Map research, List<String> design) asyn
     debugPrint('Error saving design ${account.email}: $e');
     rethrow;
   }
+}
+
+Future<Map> buyEnginesWithTokens(Account account, int cost) async {
+
+    Dio? dio = dioClients[account.email];
+    if (dio == null) {
+      debugPrint('Error: Dio client not found for ${account.email}. Cannot fetch buy engines.');
+      throw Exception('Dio client not initialized for account');
+    }
+
+    Map costMap = {
+      3:1,
+      4:3,
+      5:5
+    };
+
+  final totalTokens = int.tryParse(account.fireUpData?['manager']?['tokens'])??0;
+  final enginesTotal = int.tryParse(account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'])??0;
+  final result = {'tokens':totalTokens.toString(),'engines':enginesTotal.toString()};
+  if(totalTokens>cost)
+  {
+  try {
+
+    final buyEngines = Uri.parse("https://igpmanager.com/index.php?action=send&type=shop&item=engines&amount=$cost&jsReply=shop&csrfName=&csrfToken=");
+    
+  
+    final response = await dio.get(buyEngines.toString());
+ 
+    final jsonData = jsonDecode(response.data);
+
+        result['engines'] = (enginesTotal+costMap[cost]).toString();
+        result['tokens'] = (totalTokens-cost).toString();
+        
+        account.fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] = result['engines'];
+        account.fireUpData?['manager']?['tokens'] = result['tokens'];
+        
+        return result;
+        } catch (e) {
+        debugPrint('Error buying engines ${account.email}: $e');
+        rethrow;
+  }
+
+  }
+    return result;
+
 }
