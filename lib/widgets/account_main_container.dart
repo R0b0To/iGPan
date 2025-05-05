@@ -56,7 +56,12 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
             accountNickname: widget.account.nickname ?? widget.account.email ?? 'Account',
           ),
         ),
-      );
+      ).then((value) {
+           startClientSessionForAccount(widget.account, onSuccess: () {
+          debugPrint('reloaded account after webview session');
+          accountsNotifier.value = List.from(accountsNotifier.value); // Assuming this handles state elsewhere
+        });
+      });
     }
   }
 
@@ -82,8 +87,7 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
     // Access properties using widget.
     if (widget.account.fireUpData == null) {
       startClientSessionForAccount(widget.account, onSuccess: () {
-          debugPrint('test account layout from account_main_container.dart');
-          // Trigger rebuild if necessary, might need setState if UI depends on this change directly
+          debugPrint('layout loaded from account_main_container.dart');
           if (mounted) { // Check if the state is still mounted
              setState(() {}); // Basic way to trigger rebuild, refine if needed
           }
