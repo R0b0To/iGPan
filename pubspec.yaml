@@ -47,8 +47,7 @@ dependencies:
 
   flutter_secure_storage: ^9.0.0
   url_launcher: ^6.3.0 # Added for opening URLs
-  webview_flutter: ^4.11.0
-  flutter_inappwebview: ^6.0.0 # Added for advanced webview capabilities
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:
