@@ -25,6 +25,8 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
   // Store the original maxResearch value
   late double originalMaxResearch;
 
+  late int researchLimit;
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +38,8 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
     remainingDesignPoints = widget.researchData['points'] as int;
     // Initialize originalMaxResearch from researchData['maxResearch']
     originalMaxResearch = widget.researchData['maxResearch'] as double;
+
+    researchLimit = widget.researchData['maxDp'] as int;
     // Initialize recalculatedMaxResearch
     int selectedCount = checkedStatus.where((status) => status).length;
     if (selectedCount > 0) {
@@ -260,7 +264,7 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                               icon: Icon(Icons.add, size: 18),
                               onPressed: () {
                                 setState(() {
-                                  if (remainingDesignPoints > 0) { // Only increment if points are available
+                                  if (remainingDesignPoints > 0 && myCarValues[index] < researchLimit) { // Only increment if points are available and below limit
                                     myCarValues[index]++;
                                     remainingDesignPoints--;
                                   }
