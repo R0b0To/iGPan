@@ -11,8 +11,9 @@ import 'strategy_save_load_popup.dart'; // Import the new popup widget
 class StrategyContent extends StatefulWidget { // Changed to StatefulWidget
   final Account account; // Use specific Account type
   final int carIndex;
+   final ValueChanged<bool> onAccountChanged; // Added callback
 
-  const StrategyContent({super.key, required this.account, required this.carIndex});
+  const StrategyContent({super.key, required this.account, required this.carIndex, required this.onAccountChanged});
 
   @override
   _StrategyContentState createState() => _StrategyContentState();
@@ -132,6 +133,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
               // If a strategy was loaded (result is true), refresh the state
               if (result == true && mounted) {
                 setState(() {
+                   widget.onAccountChanged(true);
                   // Re-initialize state variables based on potentially updated account data
                   String pitKey = 'd${widget.carIndex + 1}Pits';
                   var pitValue = widget.account.raceData!['vars']?[pitKey];
@@ -173,6 +175,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             String pitKey = 'd${widget.carIndex + 1}Pits';
             if (widget.account.raceData != null && widget.account.raceData!['vars'] != null) {
               widget.account.raceData!['vars']?[pitKey] = _numberOfPits;
+               widget.onAccountChanged(true);
             }
           });
         },
@@ -280,14 +283,12 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           strategyItemWidget = _buildInvalidSegment(i, 'Invalid tyre');
         }
       
-        // Wear label (Placeholder)
-        
+
         final tyreWear = double.tryParse(calculatedWear[tyreAsset] ?? '0.0') ?? 0.0;
         final segmentLaps = int.tryParse(labelText) ?? 0;
         final stintWear = stintWearCalc(tyreWear, segmentLaps, track);
         wearLabelWidget = Text(stintWear);
 
-        // Dropdown (Placeholder)
         dropdownWidget = DropdownButton<String>(
           value: pushLevel, // Default value
           icon: SizedBox.shrink(), // Remove the default arrow icon
@@ -296,9 +297,9 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           onChanged: (String? newValue) {
             setState(() {
                 carStrategy[i][3] = newValue ?? '60'; // Update the strategy data
-
+                widget.onAccountChanged(true); // Notify parent of change
             });
-          
+
           },
         );
 
@@ -380,6 +381,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                     setState(() {
                                       isAdvancedEnabled = value;
                                       widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
+                                       widget.onAccountChanged(true);
                                       // No need to update parent state here, will be done on dialog close
                                     });
                                   },
@@ -399,6 +401,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                       // Update the value in widget.account.raceData
                                       if (widget.account.raceData?['vars'] != null) {
                                         widget.account.raceData?['vars']?['d${widget.carIndex+1}AdvancedFuel'] = value.toInt().toString();
+                                         widget.onAccountChanged(true);
                                       }
                                     },
                                   ),
@@ -415,9 +418,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                   if (newValue != null) {
                                     selectedPushLevel = newValue;
                                     widget.account.raceData?['vars']?['d${widget.carIndex+1}PushLevel'] = newValue;
+                                    widget.onAccountChanged(true); // Notify parent of change
                                 }
                                 });
-                                
+
                               },
                             ),
                             
@@ -457,6 +461,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 onChanged: (String? newValue) {
                                   if (newValue != null) {
                                     setState(() {
+                                       widget.onAccountChanged(true);
                                       widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStartTyre'] = newValue;
                                     });
                                   }
@@ -493,6 +498,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                       onChanged: (value) {
                                         setState(() {
                                           widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStartDepth'] = value.toInt();
+                                          widget.onAccountChanged(true); // Notify parent of change
                                         });
                                       },
                                     ),
@@ -535,6 +541,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 onChanged: (String? newValue) {
                                   if (newValue != null) {
                                     setState(() {
+                                       widget.onAccountChanged(true);
                                       widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStopTyre'] = newValue;
                                     });
                                   }
@@ -558,6 +565,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             ),
                                   onChanged: (value) {
                                     setState(() {
+                                      widget.onAccountChanged(true);
                                       widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStopLap'] = value.toInt();
                                     });
                                   },
@@ -687,7 +695,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           ),
                           onChanged: (value) {
-                            setDialogState(() { // Use setDialogState to update the dialog's state
+                            setDialogState(() {
                               selectedFuel = value;
                             });
                           },
@@ -723,7 +731,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                           ),
                           onChanged: (value) {
-                            setDialogState(() { // Use setDialogState to update the dialog's state
+                            setDialogState(() { 
                               selectedLaps = value;
                             });
                           },
@@ -764,7 +772,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                     widget.account.raceData!['parsedStrategy'][widget.carIndex][segmentIndex][1] = selectedLaps.toInt().toString(); // Save laps as String
                   }
                 }
-                // Trigger a rebuild of the parent widget to reflect changes
+                 widget.onAccountChanged(true);
                 setState(() {});
                 Navigator.of(context).pop();
               },

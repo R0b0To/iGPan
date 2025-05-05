@@ -547,7 +547,7 @@ Future<dynamic> repairCar(Account account, int number, String repairType) async 
       account.fireUpData?['preCache']?['p=cars']?['vars']?['c${number}Condition'] = "100";
     }else {
       debugPrint('Repairing car is not possible: ${account.email}');
-      return false;
+      return totalRemaining;
     }
     
   } else if (repairType == 'engine') {
@@ -565,7 +565,7 @@ Future<dynamic> repairCar(Account account, int number, String repairType) async 
      
     }else {
       debugPrint('Replacing engine is not possible: ${account.email}');
-      return false;
+      return totalRemaining;
     }
 
   }

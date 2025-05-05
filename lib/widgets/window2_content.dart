@@ -22,6 +22,14 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
   late TabController _tabController;
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentCarouselIndex = 0; // Renamed for clarity
+  bool _hasChanges = false; // Added state variable to track changes
+
+  // Callback function to update _hasChanges
+  void _setHasChanges(bool value) {
+    setState(() {
+      _hasChanges = value;
+    });
+  }
 
   // Define the tabs as a class member
   final List<Tab> tabs = const [
@@ -81,9 +89,9 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               controller: _tabController, // Use the shared controller
               children: [
                
-                SetupContent(account: widget.account, carIndex: carIndex),
+                SetupContent(account: widget.account, carIndex: carIndex, onAccountChanged: _setHasChanges),
                 Center(child: Text('Practice Content Placeholder')),
-                StrategyContent(account: widget.account, carIndex: carIndex),
+                StrategyContent(account: widget.account, carIndex: carIndex, onAccountChanged: _setHasChanges),
 
               ],
             ),
@@ -183,9 +191,11 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                        IconButton(
               onPressed: () {
                 saveStrategy( widget.account);
+                _setHasChanges(false); // Reset changes flag after saving
               }, // TODO: Implement Save Setup button action
               style: ElevatedButton.styleFrom(
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                
+                 backgroundColor: _hasChanges ?  const Color.fromARGB(255, 172, 47, 38) : const Color.fromARGB(255, 23, 109, 23), // Highlight if changes exist
                ),
               icon: const Icon(Icons.save,size: 26,), // Use icon instead of text for save action
             ),
@@ -260,8 +270,9 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 class SetupContent extends StatefulWidget {
   final Account account; // Use specific Account type
   final int carIndex;
+  final ValueChanged<bool> onAccountChanged; // Added callback
 
-  const SetupContent({super.key, required this.account, required this.carIndex});
+  const SetupContent({super.key, required this.account, required this.carIndex, required this.onAccountChanged});
 
   @override
   _SetupContentState createState() => _SetupContentState();
@@ -368,6 +379,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                     initialSuspension = newValue;
                     String skey = 'd${widget.carIndex + 1}Suspension';
                     widget.account.raceData?['vars']?[skey] = suspensionMapRev[newValue];
+                    widget.onAccountChanged(true); // Notify parent of change
                   });
                 }
               },
@@ -437,6 +449,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               onChanged: (newValue) {
                 String rkey = 'd${widget.carIndex + 1}Ride';
                 widget.account.raceData?['vars']?[rkey] = int.tryParse(newValue) ?? 0;
+                 widget.onAccountChanged(true);
               },
             ),
             control2: _buildTextField(
@@ -463,6 +476,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
               onChanged: (newValue) {
                 String akey = 'd${widget.carIndex + 1}Aerodynamics';
                 widget.account.raceData?['vars']?[akey] = int.tryParse(newValue) ?? 0;
+                 widget.onAccountChanged(true);
               },
             ),
             control2: _buildTextField(
