@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:iGPan/main.dart'; // Assuming dioClients is accessible via this
+import 'package:igpan/main.dart'; // Assuming dioClients is accessible via this
 // import 'package:url_launcher/url_launcher.dart'; // No longer needed for external launch here
 
 import '../screens/in_app_webview_screen.dart'; // Import the new screen (will create next)
@@ -53,7 +53,7 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
           builder: (context) => InAppWebViewScreen(
             initialUrl: url.toString(),
             dioInstance: dio, // Pass the specific Dio instance
-            accountNickname: widget.account.nickname ?? widget.account.email ?? 'Account',
+            accountNickname: widget.account.nickname ?? widget.account.email,
           ),
         ),
       ).then((value) {

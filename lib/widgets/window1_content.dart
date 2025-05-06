@@ -4,6 +4,9 @@ import 'package:html/parser.dart' show parse; // Import the parse function
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
+import '../services/history_service.dart'; // Import HistoryService
+import '../services/account_actions_service.dart'; // Import AccountActionsService
+import '../services/car_service.dart'; // Import CarService
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:country_flags/country_flags.dart'; // Import the country_flags package
 
@@ -19,6 +22,10 @@ class Window1Content extends StatefulWidget {
 
 class _Window1ContentState extends State<Window1Content>
     with SingleTickerProviderStateMixin { // Add mixin for TabController
+
+  final HistoryService _historyService = HistoryService(); // Instantiate HistoryService
+  final AccountActionsService _accountActionsService = AccountActionsService(); // Instantiate AccountActionsService
+  final CarService _carService = CarService(); // Instantiate CarService
 
   String _totalEnginesText = 'N/A'; // State variable to hold the text for total engines
   String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
@@ -87,7 +94,7 @@ class _Window1ContentState extends State<Window1Content>
     });
 
     try {
-      final newReports = await requestHistoryReports(widget.account, _start, _numResults);
+      final newReports = await _historyService.requestHistoryReports(widget.account, start: _start, numResults: _numResults); // Use service instance
       setState(() {
         _reports.addAll(newReports);
         _start += newReports.length as int; // Increment start by the number of reports received, explicitly cast to int
@@ -168,10 +175,10 @@ class _Window1ContentState extends State<Window1Content>
                  
                    child: IconButton(
                      onPressed: _rewardStatus // Use the state variable
-                         ? ()  { // Make async
-                              claimDailyReward(widget.account);
-                               setState(() {
-                                 _rewardStatus = false; // Update the state variable to false after claiming
+                        ? () async { // Make async
+                             await _accountActionsService.claimDailyReward(widget.account); // Use service instance
+                              setState(() {
+                                _rewardStatus = false; // Update the state variable to false after claiming
                                });
                            }
                          : null, // Disable button if reward not available
@@ -368,7 +375,7 @@ class _Window1ContentState extends State<Window1Content>
                                      label: widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}CarBtn'] ?? '',
                                      progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition'] ?? '0') ?? 0.0,
                                      onPressed: () async { // Make the callback async
-                                       final result = await repairCar(widget.account, i,'parts');
+                                       final result = await _carService.repairCar(widget.account, i,'parts'); // Use service instance
                                        if (result != -1) {
                                          setState(() {
                                            _totalPartsText = result.toString(); // Update the state variable
@@ -380,7 +387,7 @@ class _Window1ContentState extends State<Window1Content>
                                      label: 'Engine',
                                      progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine'] ?? '0') ?? 0.0,
                                      onPressed: () async { // Make the callback async
-                                       final result = await repairCar(widget.account, i,'engine');
+                                       final result = await _carService.repairCar(widget.account, i,'engine'); // Use service instance
                                        if (result != -1) {
                                          setState(() {
                                            _totalEnginesText = result.toString(); // Update the state variable
@@ -397,7 +404,6 @@ class _Window1ContentState extends State<Window1Content>
                        ),
                      ],
                    ),
-                   // TODO: Implement Reports tab content
                   Center(child: Text('Team Content Placeholder')),
 
                   // Reports Tab Content
@@ -528,10 +534,10 @@ class _Window1ContentState extends State<Window1Content>
     if (confirmed == true) {
       try {
 
-        var result = await buyEnginesWithTokens(widget.account, tokenCost); // Call the purchase function
+        var result = await _carService.buyEnginesWithTokens(widget.account, tokenCost); // Use service instance
         setState(() {
-          _totalEnginesText = result['engines']; 
-          _totalTokens = result['tokens']; // Update the state variable
+          _totalEnginesText = result['engines'] ?? 'N/A'; // Handle potential null
+          _totalTokens = result['tokens'] ?? 'N/A'; // Handle potential null
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Purchase successful! New engine total: $_totalEnginesText')),

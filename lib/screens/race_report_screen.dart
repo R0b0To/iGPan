@@ -1,7 +1,8 @@
-import '../igp_client.dart'; // Import the IGP client
+import '../igp_client.dart'; // Import the IGP client (for Account model)
 import 'package:flutter/material.dart';
 import 'package:country_flags/country_flags.dart'; // Import for CountryFlag
 import '../screens/driver_report_screen.dart';
+import '../services/history_service.dart'; // Import the HistoryService
 
 class RaceReportScreen extends StatefulWidget {
   final Map report;
@@ -14,6 +15,7 @@ class RaceReportScreen extends StatefulWidget {
 }
 
 class _RaceReportScreenState extends State<RaceReportScreen> {
+  final HistoryService _historyService = HistoryService(); // Instantiate the service
   Map<dynamic, dynamic>? _reportInfo;
   bool _isLoading = true;
   late Account _account; // Add Account to state
@@ -27,7 +29,7 @@ class _RaceReportScreenState extends State<RaceReportScreen> {
 
   Future<void> _fetchRaceReport() async {
     try {
-      final reportData = await requestRaceReport(_account, widget.report['id']); // Pass account and reportId
+      final reportData = await _historyService.requestRaceReport(_account, widget.report['id']); // Call method on service instance
       setState(() {
         _reportInfo = reportData;
         _isLoading = false;

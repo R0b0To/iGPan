@@ -5,7 +5,6 @@ import 'package:path_provider/path_provider.dart'; // May be needed for file pat
 import 'dart:math';
 import '../igp_client.dart'; // Import Account
 import '../utils/helpers.dart' as helpers; // Import helpers for hashCode
-import '../utils/math_utils.dart'; // Import Track for track info
 import 'dart:developer' as developer; // For logging
 
 class StrategySaveLoadPopup extends StatefulWidget {
@@ -41,6 +40,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
 
   Future<String> _getSaveFilePath() async {
     final directory = await getApplicationDocumentsDirectory();
+    
     return '${directory.path}/save.json';
   }
 

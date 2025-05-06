@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../igp_client.dart'; // Assuming pickSponsor and Account are here
+import '../igp_client.dart'; // Assuming Account is here
+import '../services/sponsor_service.dart'; // Import the SponsorService
 
 class SponsorListScreen extends StatefulWidget {
   final Account account;
@@ -12,6 +13,7 @@ class SponsorListScreen extends StatefulWidget {
 }
 
 class _SponsorListScreenState extends State<SponsorListScreen> {
+  final SponsorService _sponsorService = SponsorService(); // Instantiate the service
   List<dynamic>? _sponsors;
   bool _isLoading = true;
   String? _errorMessage;
@@ -29,9 +31,14 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
     });
     try {
       // Pass the sponsorNumber to pickSponsor
-      final data = await pickSponsor(widget.account, widget.sponsorNumber);
+      final Map<String, List<String>> data = await _sponsorService.pickSponsor(widget.account, widget.sponsorNumber); // Call method on service instance
       setState(() {
-        _sponsors = data;
+        // Transform the map into the list format expected by the UI
+        _sponsors = [
+          data['incomeList'] ?? [],
+          data['bonusList'] ?? [],
+          data['idList'] ?? [],
+        ];
         _isLoading = false;
       });
     } catch (e) {
@@ -106,7 +113,7 @@ class _SponsorListScreenState extends State<SponsorListScreen> {
                                  onPressed: () async { // Make async
                                    try {
                                      // Await the saveSponsor call
-                                     var result = await saveSponsor(widget.account, widget.sponsorNumber, imageId, income, bonus); // Pass the imageId
+                                     var result = await _sponsorService.saveSponsor(widget.account, widget.sponsorNumber, imageId, income, bonus); // Call method on service instance
                                      
                                      if (result != null && context.mounted) { // Check result and if widget is still mounted
                                        

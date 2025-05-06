@@ -1,4 +1,4 @@
-import 'package:iGPan/widgets/research_dialog_content.dart';
+import 'package:igpan/widgets/research_dialog_content.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 import '../utils/helpers.dart';
@@ -7,6 +7,7 @@ import 'package:flutter/services.dart'; // Import for input formatters
 import 'package:carousel_slider/carousel_slider.dart';
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import 'strategy_content.dart';
+
 
 class Window2Content extends StatefulWidget {
   final double minWindowHeight;
@@ -19,6 +20,9 @@ class Window2Content extends StatefulWidget {
 }
 
 class _Window2ContentState extends State<Window2Content> with TickerProviderStateMixin {
+  final CarService _carService = CarService(); // Instantiate CarService
+  final RaceService _raceService = RaceService(); // Instantiate RaceService
+
   late TabController _tabController;
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentCarouselIndex = 0; // Renamed for clarity
@@ -111,8 +115,8 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             IconButton(
               
               onPressed: () async {
-                final researchData = await requestResearch(widget.account);
-                if (researchData != null) {                
+                final researchData = await _carService.requestResearch(widget.account); // Use service instance
+                if (researchData != null) {
                   final GlobalKey<ResearchDialogContentState> researchDialogKey = GlobalKey<ResearchDialogContentState>();
 
                   showDialog(
@@ -140,10 +144,10 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                                 final List<String> designList = currentState.getDesignList(); // Renamed for clarity
 
                            
-                                // Call the save function from igp_client.dart with the correct types
-                                await saveDesign(widget.account, research, designList); // Use await if saveDesign is async
+                               // Call the save function from igp_client.dart with the correct types
+                               await _carService.saveDesign(widget.account, research, designList); // Use service instance
 
-                                // Close the dialog after saving
+                               // Close the dialog after saving
                                 Navigator.of(context).pop();
                               } else {
                                 // Handle error: couldn't access dialog state
@@ -189,10 +193,10 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               ],
             ),
                        IconButton(
-              onPressed: () {
-                saveStrategy( widget.account);
+              onPressed: () async { // Make async to await saveStrategy
+                await _raceService.saveStrategy(widget.account); // Use service instance
                 _setHasChanges(false); // Reset changes flag after saving
-              }, // TODO: Implement Save Setup button action
+              }, 
               style: ElevatedButton.styleFrom(
                 
                  backgroundColor: _hasChanges ?  const Color.fromARGB(255, 172, 47, 38) : const Color.fromARGB(255, 23, 109, 23), // Highlight if changes exist
@@ -425,12 +429,12 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 }
               },
               style: ElevatedButton.styleFrom(
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+              
                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Adjust padding
-                 textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
-                 minimumSize: Size(60, 30), // Ensure minimum size
+                 textStyle: Theme.of(context).textTheme.bodyLarge, // Use smaller text
+
                ),
-              child: const Text('ideal'),
+              child: Icon(MdiIcons.headLightbulbOutline, size: 30), // Or MdiIcons.thumbUpOutline
             ),
           ),
           SizedBox(height: 8),
@@ -501,11 +505,9 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
   Widget _buildInfoButton(BuildContext context, String text, VoidCallback onPressed) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         padding: EdgeInsets.symmetric(horizontal: 0, vertical: 4), // Adjust padding
-        textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
+        textStyle: Theme.of(context).textTheme.bodyMedium, // Use smaller text
         minimumSize: Size(60, 30), // Ensure minimum size
-        maximumSize: Size(100, 30)
       ),
       onPressed: onPressed,
       child: Text(text, textAlign: TextAlign.center),
@@ -514,18 +516,18 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
 
   // Helper to build setup rows consistently
   Widget _buildSetupRow(BuildContext context, {required String label, required Widget control, Widget? control2}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 0),
-      child: Row(
+
+
+   return  Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Space out elements
         children: [
-          Expanded(flex: 2, child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(flex: 1, child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
           Expanded(flex: 1, child: control),
           if (control2 != null) Expanded(flex: 1, child: Padding(padding: const EdgeInsets.only(left: 8.0), child: control2)),
           if (control2 == null) Spacer(flex: 1), // Add spacer if no second control
         ],
-      ),
-    );
+      );
+  
   }
 
 

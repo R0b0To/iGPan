@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart'; // Assuming MdiIcons is used for placeholders
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:math' as math;
+import 'dart:async';
 
 class ResearchDialogContent extends StatefulWidget {
   final Map<String, dynamic> researchData;
 
-  const ResearchDialogContent({Key? key, required this.researchData}) : super(key: key);
+  const ResearchDialogContent({super.key, required this.researchData});
 
   @override
   // Make state class public
@@ -25,22 +26,22 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
   // Store the original maxResearch value
   late double originalMaxResearch;
 
+  // Timers for continuous press
+  Timer? _addTimer;
+  Timer? _removeTimer;
+
   late int researchLimit;
 
   @override
   void initState() {
     super.initState();
-    // Initialize myCarValues from researchData['myCar']
+
     myCarValues = List<int>.from(widget.researchData['myCar']);
-    // Initialize checkedStatus from researchData['checks']
     checkedStatus = List<bool>.from(widget.researchData['checks']);
-    // Initialize remainingDesignPoints from researchData['points']
     remainingDesignPoints = widget.researchData['points'] as int;
-    // Initialize originalMaxResearch from researchData['maxResearch']
     originalMaxResearch = widget.researchData['maxResearch'] as double;
 
     researchLimit = widget.researchData['maxDp'] as int;
-    // Initialize recalculatedMaxResearch
     int selectedCount = checkedStatus.where((status) => status).length;
     if (selectedCount > 0) {
       recalculatedMaxResearch = originalMaxResearch / selectedCount;
@@ -53,12 +54,12 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
   int calculateTotalPoints() {
     double totalPoints = 0.0;
     final bestCarAttributes = widget.researchData['best'] as List<dynamic>;
-    final myCarAttributes = myCarValues; // Use the mutable state value
+    final myCarAttributes = myCarValues;
 
     for (int i = 0; i < checkedStatus.length; i++) {
       if (checkedStatus[i]) {
         final bestValue = bestCarAttributes[i] as int;
-        final myValue = myCarAttributes[i]; // Use the mutable state value
+        final myValue = myCarAttributes[i];
         final gap = bestValue - myValue;
         totalPoints += (math.max(0, gap) * recalculatedMaxResearch / 100).ceil();
       }
@@ -69,8 +70,8 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
   }
     Map<String, dynamic> getResearchMap() {
     final Map<String, dynamic> research = {
-      'maxDp': originalMaxResearch.toInt(), // Use the original value
-      'attributes': <String>[], // Initialize empty list for attribute names
+      'maxDp': originalMaxResearch.toInt(),
+      'attributes': <String>[],
     };
 
       List<String> attributeNames = [
@@ -110,6 +111,64 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
     }
     return pointsSpent;
   }
+
+  // --- Timer and continuous press logic ---
+  void _incrementValue(int index) {
+    if (remainingDesignPoints > 0 && myCarValues[index] < researchLimit) {
+      setState(() {
+        myCarValues[index]++;
+        remainingDesignPoints--;
+      });
+    } else {
+      _stopAddTimer(); // Stop if cannot increment
+    }
+  }
+
+  void _decrementValue(int index) {
+    final initialTotalPoints = widget.researchData['points'] as int;
+    if (myCarValues[index] > 0 && remainingDesignPoints < initialTotalPoints) {
+      setState(() {
+        myCarValues[index]--;
+        remainingDesignPoints++;
+      });
+    } else {
+      _stopRemoveTimer(); // Stop if cannot decrement
+    }
+  }
+
+  void _startAddTimer(int index) {
+    _addTimer?.cancel();
+    _incrementValue(index); // Execute once on long press start
+    _addTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+      _incrementValue(index);
+    });
+  }
+
+  void _stopAddTimer() {
+    _addTimer?.cancel();
+    _addTimer = null;
+  }
+
+  void _startRemoveTimer(int index) {
+    _removeTimer?.cancel();
+    _decrementValue(index); // Execute once on long press start
+    _removeTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
+      _decrementValue(index);
+    });
+  }
+
+  void _stopRemoveTimer() {
+    _removeTimer?.cancel();
+    _removeTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _addTimer?.cancel();
+    _removeTimer?.cancel();
+    super.dispose();
+  }
+  // --- End Timer logic ---
 
 
   @override
@@ -246,32 +305,44 @@ class ResearchDialogContentState extends State<ResearchDialogContent> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            IconButton(
-                              icon: Icon(Icons.remove, size: 18),
-                              onPressed: () {
-                                setState(() {
-                                  if (myCarValues[index] > 0 && remainingDesignPoints < (widget.researchData['points'] as int)) { // Prevent negative values and don't exceed initial points
-                                    myCarValues[index]--;
-                                    remainingDesignPoints++;
-                                  }
-                                });
+                            GestureDetector(
+                              onLongPressStart: (_) {
+                                _startRemoveTimer(index);
                               },
-                              padding: EdgeInsets.zero,
-                              constraints: BoxConstraints(),
+                              onLongPressEnd: (_) {
+                                _stopRemoveTimer();
+                              },
+                              onLongPressCancel: () { // Handle interruption
+                                _stopRemoveTimer();
+                              },
+                              child: IconButton(
+                                icon: Icon(Icons.remove, size: 25),
+                                onPressed: () {
+                                  _decrementValue(index);
+                                },
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
                             ),
 
-                            IconButton(
-                              icon: Icon(Icons.add, size: 18),
-                              onPressed: () {
-                                setState(() {
-                                  if (remainingDesignPoints > 0 && myCarValues[index] < researchLimit) { // Only increment if points are available and below limit
-                                    myCarValues[index]++;
-                                    remainingDesignPoints--;
-                                  }
-                                });
+                            GestureDetector(
+                              onLongPressStart: (_) {
+                                _startAddTimer(index);
                               },
-                              padding: EdgeInsets.zero,
-                              constraints: BoxConstraints(),
+                              onLongPressEnd: (_) {
+                                _stopAddTimer();
+                              },
+                              onLongPressCancel: () { // Handle interruption
+                                _stopAddTimer();
+                              },
+                              child: IconButton(
+                                icon: Icon(Icons.add, size: 26),
+                                onPressed: () {
+                                  _incrementValue(index);
+                                },
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
                             ),
                           ],
                         ),
