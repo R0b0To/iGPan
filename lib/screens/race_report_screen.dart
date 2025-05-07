@@ -5,7 +5,7 @@ import '../screens/driver_report_screen.dart';
 
 class RaceReportScreen extends StatefulWidget {
   final Map report;
-  final Account account; // Add Account property
+  final Account account;
 
   const RaceReportScreen({required this.report, required this.account});
 
@@ -17,8 +17,7 @@ class _RaceReportScreenState extends State<RaceReportScreen> {
   final HistoryService _historyService = HistoryService(); // Instantiate the service
   Map<dynamic, dynamic>? _reportInfo;
   bool _isLoading = true;
-  late Account _account; // Add Account to state
-
+  late Account _account;
   @override
   void initState() {
     super.initState();

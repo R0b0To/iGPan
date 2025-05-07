@@ -89,169 +89,170 @@ class _MyHomePageState extends State<MyHomePage> {
                 // Filter accounts to only include enabled ones for the Home view
                 final enabledAccounts = accounts.where((account) => account.enabled).toList();
 
-                if (accounts.isEmpty) { // Check the ValueNotifier's list
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        const Text('No accounts registered or still loading.'),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Switch to the Accounts tab directly
-                            setState(() {
-                              _bottomNavIndex = 1;
-                            });
-                          },
-                          child: const Text('Add Account'),
-                        ),
-                      ],
-                    ),
-                  );
-                } else {
-                  return IndexedStack(
-                    index: _bottomNavIndex,
-                    children: <Widget>[
-                      // Index 0: Home View (Existing LayoutBuilder content, using enabledAccounts)
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          // Define minimum size for sub-windows
-                          const double minWindowWidth = 400;
-                          const double minWindowHeight = 240;
-
-                          // Check if there's enough horizontal space for two windows side-by-side
-                          bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
-
-                          if (canStackWindowsHorizontally) {
-                            // Wide screen: Paginated Vertical Stack (Horizontal PageView)
-                            const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
-                            // Use enabledAccounts.length for itemsPerPage calculation
-                            final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, enabledAccounts.length.clamp(1, enabledAccounts.length)); // Ensure at least 1, handle empty enabledAccounts
-                            // Use enabledAccounts.length for pageCount calculation
-                            final pageCount = (enabledAccounts.length / itemsPerPage).ceil();
-
-                            // Handle case where there are no enabled accounts
-                            if (enabledAccounts.isEmpty) {
-                              return const Center(child: Text('No enabled accounts to display.'));
-                            }
-
-                            return Column(
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                Expanded(
-                                  child: CarouselSlider.builder(
-                                    itemCount: pageCount,
-                                    options: CarouselOptions(
-                                      viewportFraction: 1 , // Display multiple items per page
-                                      enableInfiniteScroll: false,
-                                      onPageChanged: (index, reason) {
-                                        setState(() {
-                                          _currentPageIndex = index;
-                                        });
-                                      },
-                                      height: constraints.maxHeight,
-                                    ),
-                                    itemBuilder: (context, pageIndex, realIdx) {
-                                      final startIndex = pageIndex * itemsPerPage;
-                                      final endIndex = (startIndex + itemsPerPage).clamp(0, enabledAccounts.length);
-
-                                      return Column(
-                                        mainAxisSize: MainAxisSize.max, // Take available space
-                                        children: [
-                                          for (int i = startIndex; i < endIndex; i++)
-                                           AccountMainContainer(
-                                             account: enabledAccounts[i], // Use enabledAccounts
-                                             minWindowWidth: minWindowWidth,
-                                             minWindowHeight: minWindowHeight,
-                                             canStackWindowsHorizontally: true, // Windows side-by-side
-                                           ),
-                                        ],
-                                      );
-                                    },
-                                  ),
+                return IndexedStack(
+                  index: _bottomNavIndex,
+                  children: <Widget>[
+                    // Index 0: Home View
+                    Builder(
+                      builder: (context) {
+                        if (accounts.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: <Widget>[
+                                const Text('No accounts registered.'),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    // Switch to the Accounts tab directly
+                                    setState(() {
+                                      _bottomNavIndex = 1;
+                                    });
+                                  },
+                                  child: const Text('Add Account'),
                                 ),
-                                // Indicator dots for the horizontal pages
-                                if (pageCount > 1) // Only show dots if multiple pages
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: List.generate(pageCount, (index) {
-                                      return Container(
-                                        width: 8.0,
-                                        height: 8.0,
-                                        margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: _currentPageIndex == index
-                                              ? Theme.of(context).colorScheme.primary
-                                              : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                              ],
+                            ),
+                          );
+                        } else {
+                          // Accounts exist, use LayoutBuilder for enabledAccounts
+                          return LayoutBuilder(
+                            builder: (context, constraints) {
+                              // Define minimum size for sub-windows
+                              const double minWindowWidth = 400;
+                              const double minWindowHeight = 240;
+
+                              // Check if there's enough horizontal space for two windows side-by-side
+                              bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
+
+                              if (canStackWindowsHorizontally) {
+                                // Wide screen: Paginated Vertical Stack (Horizontal PageView)
+                                const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
+                                final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, enabledAccounts.length.clamp(1, enabledAccounts.length)); // Ensure at least 1, handle empty enabledAccounts
+                                final pageCount = (enabledAccounts.length / itemsPerPage).ceil();
+
+                                if (enabledAccounts.isEmpty) {
+                                  return const Center(child: Text('No enabled accounts to display. Manage accounts in the \'Accounts\' tab.'));
+                                }
+
+                                return Column(
+                                  mainAxisSize: MainAxisSize.max,
+                                  children: [
+                                    Expanded(
+                                      child: CarouselSlider.builder(
+                                        itemCount: pageCount,
+                                        options: CarouselOptions(
+                                          viewportFraction: 1 , // Display multiple items per page
+                                          enableInfiniteScroll: false,
+                                          onPageChanged: (index, reason) {
+                                            setState(() {
+                                              _currentPageIndex = index;
+                                            });
+                                          },
+                                          height: constraints.maxHeight,
                                         ),
-                                      );
-                                    }),
-                                  ),
-                              ],
-                            );
-                          } else {
-                            // Narrow screen: Horizontal PageView for individual accounts
-                            // Use enabledAccounts.length for itemCount
-                            if (enabledAccounts.isEmpty) {
-                              return const Center(child: Text('No enabled accounts to display.'));
-                            }
-                            return Column(
-                              mainAxisSize: MainAxisSize.max,
-                              children: [
-                                Expanded(
-                                  child: CarouselSlider.builder(
-                                    itemCount: enabledAccounts.length, // Use enabledAccounts
-                                    options: CarouselOptions(
-                                      scrollDirection: Axis.horizontal, // Make it horizontal
-                                      viewportFraction: 1,
-                                      enableInfiniteScroll: false,
-                                      onPageChanged: (index, reason) {
-                                        setState(() {
-                                          _currentNarrowCarouselIndex = index;
-                                        });
-                                      },
-                                      height: constraints.maxHeight,
-                                    ),
-                                    itemBuilder: (context, index, realIdx) {
-                                      final account = enabledAccounts[index]; // Use enabledAccounts
-                                      return AccountMainContainer(
-                                        account: account,
-                                        minWindowWidth: minWindowWidth,
-                                        minWindowHeight: minWindowHeight,
-                                        canStackWindowsHorizontally: false, // Windows stacked vertically
-                                      );
-                                    },
-                                  ),
-                                ),
-                                // Indicator dots for the narrow screen
-                                Row( // Changed to Row for horizontal dots
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: List.generate(enabledAccounts.length, (index) { // Use enabledAccounts
-                                    return Container(
-                                      width: 8.0,
-                                      height: 8.0,
-                                      margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0), // Adjusted margin
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: _currentNarrowCarouselIndex == index
-                                            ? Theme.of(context).colorScheme.primary
-                                            : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                        itemBuilder: (context, pageIndex, realIdx) {
+                                          final startIndex = pageIndex * itemsPerPage;
+                                          final endIndex = (startIndex + itemsPerPage).clamp(0, enabledAccounts.length);
+
+                                          return Column(
+                                            mainAxisSize: MainAxisSize.max, // Take available space
+                                            children: [
+                                              for (int i = startIndex; i < endIndex; i++)
+                                               AccountMainContainer(
+                                                 account: enabledAccounts[i], // Use enabledAccounts
+                                                 minWindowWidth: minWindowWidth,
+                                                 minWindowHeight: minWindowHeight,
+                                                 canStackWindowsHorizontally: true, // Windows side-by-side
+                                               ),
+                                            ],
+                                          );
+                                        },
                                       ),
-                                    );
-                                  }),
-                                ),
-                              ],
-                            );
-                          }
-                        },
-                      ),
-                      // Index 1: Accounts View
-                      const AccountsScreen(),
+                                    ),
+                                    // Indicator dots for the horizontal pages
+                                    if (pageCount > 1) // Only show dots if multiple pages
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: List.generate(pageCount, (index) {
+                                          return Container(
+                                            width: 8.0,
+                                            height: 8.0,
+                                            margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              color: _currentPageIndex == index
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                            ),
+                                          );
+                                        }),
+                                      ),
+                                  ],
+                                );
+                              } else {
+                                // Narrow screen: Horizontal PageView for individual accounts
+                                if (enabledAccounts.isEmpty) {
+                                  return const Center(child: Text('No enabled accounts to display. Manage accounts in the \'Accounts\' tab.'));
+                                }
+                                return Column(
+                                  mainAxisSize: MainAxisSize.max,
+                                  children: [
+                                    Expanded(
+                                      child: CarouselSlider.builder(
+                                        itemCount: enabledAccounts.length, // Use enabledAccounts
+                                        options: CarouselOptions(
+                                          scrollDirection: Axis.horizontal, // Make it horizontal
+                                          viewportFraction: 1,
+                                          enableInfiniteScroll: false,
+                                          onPageChanged: (index, reason) {
+                                            setState(() {
+                                              _currentNarrowCarouselIndex = index;
+                                            });
+                                          },
+                                          height: constraints.maxHeight,
+                                        ),
+                                        itemBuilder: (context, index, realIdx) {
+                                          final account = enabledAccounts[index]; // Use enabledAccounts
+                                          return AccountMainContainer(
+                                            account: account,
+                                            minWindowWidth: minWindowWidth,
+                                            minWindowHeight: minWindowHeight,
+                                            canStackWindowsHorizontally: false, // Windows stacked vertically
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    // Indicator dots for the narrow screen
+                                    Row( // Changed to Row for horizontal dots
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: List.generate(enabledAccounts.length, (index) { // Use enabledAccounts
+                                        return Container(
+                                          width: 8.0,
+                                          height: 8.0,
+                                          margin: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 2.0), // Adjusted margin
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: _currentNarrowCarouselIndex == index
+                                                ? Theme.of(context).colorScheme.primary
+                                                : Theme.of(context).colorScheme.secondary.withOpacity(0.4),
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ],
+                                );
+                              }
+                            },
+                          );
+                        }
+                      },
+                    ),
+                    // Index 1: Accounts View
+                    const AccountsScreen(),
                       // Index 2: Actions View (Placeholder)
                       const Center(child: Text('Actions Area (Not Implemented)')),
                     ],
                   );
-                }
               },
             ),
        bottomNavigationBar: NavigationBar(

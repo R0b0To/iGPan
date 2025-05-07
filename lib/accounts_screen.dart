@@ -88,12 +88,7 @@ class _AccountsScreenState extends State<AccountsScreen> {
     // Start session for the newly added account after the dialog is dismissed
     if (addedAccount != null) {
       
-      startClientSessionForAccount(addedAccount, onSuccess: () {
-          if (mounted) {
-            setState(() {});
-            debugPrint('test account layout from accounts_screen.dart');
-          }
-        });
+     //notifier is updated on save accounts that triggers the main build that calls startSession
     }
   }
 
