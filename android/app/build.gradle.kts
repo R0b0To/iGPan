@@ -6,9 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.example.igp_app"
+    namespace = "com.r0b0to.igpan"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = flutter.ndkVersion 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
