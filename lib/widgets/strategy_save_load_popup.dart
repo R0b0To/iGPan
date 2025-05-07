@@ -2,10 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart'; // May be needed for file path resolution if relative path fails
+import 'package:file_picker/file_picker.dart';
+import 'package:file_saver/file_saver.dart'; // For exporting files
+import 'package:flutter/foundation.dart' show kIsWeb; // For platform specific logic if needed
+import 'dart:typed_data'; // For Uint8List
+
 import 'dart:math';
 import '../igp_client.dart'; // Import Account
 import '../utils/helpers.dart' as helpers; // Import helpers for hashCode
 import 'dart:developer' as developer; // For logging
+
+enum _PopupMenuOptions { importSave, exportSave }
 
 class StrategySaveLoadPopup extends StatefulWidget {
   final Account account;
@@ -53,32 +60,29 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       final file = File(_saveFilePath);
       if (await file.exists()) {
         final content = await file.readAsString();
-        // Handle potential empty file or invalid JSON
         if (content.trim().isEmpty) {
            _savedStrategies = {};
         } else {
-          final decoded = jsonDecode(content) as Map<String, dynamic>?; // Make nullable
+          final decoded = jsonDecode(content) as Map<String, dynamic>?; 
           if (decoded != null && decoded.containsKey('save') && decoded['save'] is Map && decoded['save'][_trackCode] != null) {
-             // Ensure the track data is also a map
              if (decoded['save'][_trackCode] is Map) {
                 _savedStrategies = Map<String, dynamic>.from(decoded['save'][_trackCode]);
              } else {
                 developer.log('Track data for $_trackCode is not a Map: ${decoded['save'][_trackCode]}', name: 'StrategySaveLoadPopup');
-                _savedStrategies = {}; // Treat invalid track data as empty
+                _savedStrategies = {}; 
              }
           } else {
-            _savedStrategies = {}; // No 'save' key or no strategies for this track yet
+            _savedStrategies = {}; 
           }
         }
       } else {
-        _savedStrategies = {}; // File doesn't exist
+        _savedStrategies = {}; 
       }
     } catch (e, stackTrace) {
       developer.log('Error loading strategies: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
       _error = 'Error loading strategies: $e';
       _savedStrategies = {};
     } finally {
-      // Ensure widget is still mounted before calling setState
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -90,7 +94,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
  Future<void> _deleteStrategy(String hash) async {
    if (!mounted) return;
 
-   // Confirmation Dialog
    final confirmed = await showDialog<bool>(
      context: context,
      builder: (BuildContext context) {
@@ -99,11 +102,11 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
          content: Text('Are you sure you want to delete this saved strategy?'),
          actions: <Widget>[
            TextButton(
-             onPressed: () => Navigator.of(context).pop(false), // Not confirmed
+             onPressed: () => Navigator.of(context).pop(false), 
              child: Text('Cancel'),
            ),
            TextButton(
-             onPressed: () => Navigator.of(context).pop(true), // Confirmed
+             onPressed: () => Navigator.of(context).pop(true), 
              child: Text('Delete', style: TextStyle(color: Colors.red)),
            ),
          ],
@@ -112,13 +115,12 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
    );
 
    if (confirmed != true) {
-     return; // User cancelled
+     return; 
    }
 
    setState(() { _isLoading = true; _error = null; });
 
    try {
-     // 1. Read save.json
      final file = File(_saveFilePath);
      Map<String, dynamic> allSaves;
      try {
@@ -130,27 +132,24 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
            allSaves = jsonDecode(content) as Map<String, dynamic>? ?? {'save': {}};
          }
        } else {
-         // Should not happen if we are deleting something, but handle defensively
          allSaves = {'save': {}};
          throw Exception("Save file not found during delete operation.");
        }
      } catch (e) {
        developer.log('Error reading or decoding save.json during delete: $e', name: 'StrategySaveLoadPopup');
-       throw Exception("Failed to read save file for deletion."); // Propagate error
+       throw Exception("Failed to read save file for deletion."); 
      }
 
-     // 2. Remove the strategy entry
      bool deleted = false;
      if (allSaves['save'] != null &&
          allSaves['save'] is Map &&
          allSaves['save'][_trackCode] != null &&
          allSaves['save'][_trackCode] is Map)
      {
-        // Ensure the inner map is mutable
         Map<String, dynamic> trackSaves = Map<String, dynamic>.from(allSaves['save'][_trackCode]);
         if (trackSaves.containsKey(hash)) {
           trackSaves.remove(hash);
-          allSaves['save'][_trackCode] = trackSaves; // Put the modified map back
+          allSaves['save'][_trackCode] = trackSaves; 
           deleted = true;
         }
      }
@@ -159,34 +158,30 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
        throw Exception("Strategy hash not found for deletion.");
      }
 
-     // 3. Write the modified data back to save.json
      final encoder = JsonEncoder.withIndent('    ');
      await file.writeAsString(encoder.convert(allSaves));
 
      developer.log('Strategy deleted with hash: $hash', name: 'StrategySaveLoadPopup');
 
-     // 4. Refresh the list
-     await _loadSavedStrategies(); // This handles setState and loading state
+     await _loadSavedStrategies(); 
 
    } catch (e, stackTrace) {
      developer.log('Error deleting strategy: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
      if (mounted) {
        setState(() {
          _error = 'Error deleting strategy: $e';
-         _isLoading = false; // Ensure loading indicator stops on error
+         _isLoading = false; 
        });
      }
    }
-   // No finally block needed here as _loadSavedStrategies handles the final setState
  }
 
 
   Future<void> _saveCurrentStrategy() async {
-     if (!mounted) return; // Check if widget is still in the tree
-    setState(() { _isLoading = true; _error = null; }); // Show loading indicator
+     if (!mounted) return; 
+    setState(() { _isLoading = true; _error = null; }); 
 
     try {
-      // 1. Get current strategy data
       List<dynamic> currentParsedStrategy = widget.account.raceData?['parsedStrategy']?[widget.carIndex] ?? [];
       final pitValue = widget.account.raceData?['vars']?['d${widget.carIndex + 1}Pits'];
       int numberOfPits = pitValue is int ? pitValue : (pitValue is String ? int.tryParse(pitValue) ?? 0 : 0);
@@ -195,7 +190,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       String trackCode = widget.account.raceData?['track'].info['trackCode'] ?? 'unknown';
       String? raceLength = widget.account.raceData?['track']?.info[widget.account.raceData?['vars']?['raceLaps']?.toString()]?.toString();
 
-      // 2. Construct JSON to save
       Map<String, dynamic> stintsToSave = {};
       int currentTotalLaps = 0;
       for (int i = 0; i < numberOfSegments; i++) {
@@ -214,8 +208,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
         }
       }
 
-       // Prevent saving if there are no valid stints
-      if (stintsToSave.isEmpty) {
+       if (stintsToSave.isEmpty) {
         if (mounted) {
           setState(() {
             _error = "Cannot save empty or invalid strategy.";
@@ -236,18 +229,16 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
         }
       };
 
-      // 3. Calculate hash
       String strategyString = jsonEncode(strategyJson);
       String hash = helpers.hashCode(strategyString).toString();
 
-      // 4. Read save.json
       final file = File(_saveFilePath);
       Map<String, dynamic> allSaves;
        try {
          if (await file.exists()) {
            final content = await file.readAsString();
            if (content.trim().isEmpty) {
-             allSaves = {'save': {}}; // Handle empty file
+             allSaves = {'save': {}}; 
            } else {
              allSaves = jsonDecode(content) as Map<String, dynamic>? ?? {'save': {}};
            }
@@ -256,30 +247,26 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
          }
        } catch (e) {
           developer.log('Error reading or decoding save.json: $e', name: 'StrategySaveLoadPopup');
-          allSaves = {'save': {}}; // Start fresh if file is corrupt
+          allSaves = {'save': {}}; 
        }
 
 
-      // 5. Update save.json data (with safety checks)
       if (allSaves['save'] == null || allSaves['save'] is! Map) {
         allSaves['save'] = {};
       }
       if (allSaves['save'][trackCode] == null || allSaves['save'][trackCode] is! Map) {
         allSaves['save'][trackCode] = {};
       }
-      // Ensure the inner map is mutable if it came from JSON decode
       allSaves['save'][trackCode] = Map<String, dynamic>.from(allSaves['save'][trackCode]);
       allSaves['save'][trackCode][hash] = strategyJson;
 
 
-      // 6. Write save.json
       final encoder = JsonEncoder.withIndent('    ');
       await file.writeAsString(encoder.convert(allSaves));
 
       developer.log('Strategy saved with hash: $hash', name: 'StrategySaveLoadPopup');
 
-      // 7. Reload strategies in UI
-      await _loadSavedStrategies(); // This already calls setState if mounted
+      await _loadSavedStrategies(); 
 
     } catch (e, stackTrace) {
       developer.log('Error saving strategy: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
@@ -300,7 +287,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
  void _loadStrategy(String hash) {
     developer.log('Load button pressed for hash: $hash', name: 'StrategySaveLoadPopup');
     try {
-      // 1. Get strategy data for hash from _savedStrategies
       if (!_savedStrategies.containsKey(hash)) {
         throw Exception('Selected strategy hash not found.');
       }
@@ -311,19 +297,15 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
         throw Exception('Selected strategy has no stints defined.');
       }
 
-      // 2. Determine the number of pits
       int numberOfPits = loadedStints.length - 1;
       if (numberOfPits < 0) numberOfPits = 0;
 
-      // 3. Update widget.account.raceData['vars']['d${widget.carIndex + 1}Pits']
       String pitKey = 'd${widget.carIndex + 1}Pits';
-      // Ensure nested maps exist before assigning
       widget.account.raceData ??= {};
       widget.account.raceData!['vars'] ??= {};
       widget.account.raceData!['vars']![pitKey] = min(numberOfPits,4);
 
 
-      // 4. Reconstruct the parsedStrategy list
       List<dynamic> newParsedStrategy = [];
       List<String> sortedKeys = loadedStints.keys.toList()
         ..sort((a, b) => int.parse(a).compareTo(int.parse(b)));
@@ -354,7 +336,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
         }
 
 
-        // Reconstruct the list: [tyre, laps, fuel, push, placeholder2]
         final pushFactor = pushLevelFactorMap[push] ?? 0.0;
         final fuelPerLap = (widget.account.raceData?['kmPerLiter'] + pushFactor) * widget.account.raceData?['track'].info['length'];
         double fuelEstimation = (fuelPerLap * int.tryParse(laps)) ?? 1;
@@ -363,7 +344,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
         newParsedStrategy.add([tyre, laps, fuelEstimation, push]);
       }
      
-      //widget.account.raceData!['parsedStrategy'][widget.carIndex] = newParsedStrategy;
       double totalFuel = 0.0;
       for (int i = 0; i < min(newParsedStrategy.length, 5); i++) {
       totalFuel += newParsedStrategy[i][2];
@@ -371,26 +351,24 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       if(widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
         newParsedStrategy[i][2] = 0;
       }else{
-        newParsedStrategy[i][2] = newParsedStrategy[i][2].ceil(); // Round up fuel estimation
+        newParsedStrategy[i][2] = newParsedStrategy[i][2].ceil(); 
       }
       widget.account.raceData!['parsedStrategy'][widget.carIndex][i]  = newParsedStrategy[i];
     }
-      // if no refuelling update the advanced fuel and set the first stint fuel to total fuel
       if(widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
         widget.account.raceData!['parsedStrategy'][widget.carIndex][0][2] = totalFuel.ceil();
-        widget.account.raceData?['vars']['d${widget.carIndex + 1}AdvancedFuel'] = totalFuel.ceil(); // Update fuel estimation
+        widget.account.raceData?['vars']['d${widget.carIndex + 1}AdvancedFuel'] = totalFuel.ceil(); 
       }
       
       developer.log('Strategy loaded successfully for hash: $hash', name: 'StrategySaveLoadPopup');
 
-      // 5. Close popup and indicate success
-      if (mounted) { // Check if mounted before interacting with context
-        Navigator.of(context).pop(true); // Indicate success
+      if (mounted) { 
+        Navigator.of(context).pop(true); 
       }
 
     } catch (e, stackTrace) {
       developer.log('Error loading strategy: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
-       if (mounted) { // Check if mounted before showing SnackBar
+       if (mounted) { 
          ScaffoldMessenger.of(context).showSnackBar(
            SnackBar(content: Text('Error loading strategy: $e'), backgroundColor: Colors.red),
          );
@@ -398,6 +376,146 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     }
   }
 
+  Future<void> _importSave() async {
+    if (!mounted) return;
+    setState(() { _isLoading = true; _error = null; });
+
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        File pickedFile = File(result.files.single.path!);
+        String content = await pickedFile.readAsString();
+        
+        try {
+          jsonDecode(content); 
+        } catch (e) {
+          throw Exception("Invalid JSON file selected.");
+        }
+
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Confirm Import'),
+              content: Text('This will replace your current save data with the content of the selected file. Are you sure?'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text('Replace', style: TextStyle(color: Colors.orange)),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (confirmed == true) {
+          final targetFile = File(_saveFilePath);
+          await targetFile.writeAsString(content);
+          developer.log('Save file imported from: ${pickedFile.path}', name: 'StrategySaveLoadPopup');
+          await _loadSavedStrategies(); 
+           if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Strategies imported successfully!'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+           if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Import cancelled.'), backgroundColor: Colors.grey),
+            );
+          }
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No file selected for import.'), backgroundColor: Colors.orange),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      developer.log('Error importing save: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
+      if (mounted) {
+        setState(() { _error = 'Error importing save: $e'; });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing save: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _isLoading = false; });
+      }
+    }
+  }
+
+  Future<void> _exportSave() async {
+    if (!mounted) return;
+    setState(() { _isLoading = true; _error = null; });
+
+    try {
+      final file = File(_saveFilePath);
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final fileName = "iGP_strategies_save_${DateTime.now().toIso8601String().split('T').first}";
+        
+        String? savedPath = await FileSaver.instance.saveAs(
+            name: fileName, // Corrected parameter to 'name'
+            bytes: Uint8List.fromList(utf8.encode(content)),
+            ext: "json",
+            mimeType: MimeType.json // Corrected to MimeType.json (lowercase j)
+        );
+
+        // saveAs might return null or an empty string if cancelled, or the path if successful.
+        // The check for savedPath != null and savedPath.isNotEmpty is still valid.
+        if (savedPath != null && savedPath.isNotEmpty) {
+          developer.log('Save file exported to: $savedPath', name: 'StrategySaveLoadPopup');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Strategies exported successfully to $savedPath!'), backgroundColor: Colors.green),
+            );
+          }
+        } else {
+           if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Export cancelled or file not saved.'), backgroundColor: Colors.orange),
+            );
+          }
+        }
+      } else {
+        throw Exception("Save file (save.json) not found for export.");
+      }
+    } catch (e, stackTrace) {
+      developer.log('Error exporting save: $e\n$stackTrace', name: 'StrategySaveLoadPopup');
+      if (mounted) {
+        setState(() { _error = 'Error exporting save: $e'; });
+         ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error exporting save: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _isLoading = false; });
+      }
+    }
+  }
+
+  Future<void> _handleMenuSelection(_PopupMenuOptions option) async {
+    switch (option) {
+      case _PopupMenuOptions.importSave:
+        await _importSave();
+        break;
+      case _PopupMenuOptions.exportSave:
+        await _exportSave();
+        break;
+    }
+  }
 
   Widget _buildCurrentStrategyPreview() {
     List<dynamic> currentStrategy = widget.account.raceData?['parsedStrategy']?[widget.carIndex] ?? [];
@@ -418,7 +536,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       return Center(child: Text('No strategy data', style: TextStyle(fontSize: 10, color: Colors.grey)));
     }
 
-    // Use a Row directly inside Expanded in the build method, or constrain width here if needed
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -437,7 +554,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     List<String> sortedKeys = stints.keys.toList()..sort((a, b) => int.parse(a).compareTo(int.parse(b)));
 
     for (String key in sortedKeys) {
-      Map<String, dynamic> stint = Map<String, dynamic>.from(stints[key]); // Ensure it's a map
+      Map<String, dynamic> stint = Map<String, dynamic>.from(stints[key]); 
       String tyreAsset = stint['tyre']?.toString() ?? 'unknown';
       String laps = stint['laps']?.toString() ?? '?';
       stintWidgets.add(_buildStintPreview(tyreAsset, laps));
@@ -463,7 +580,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
 
      return Padding(
        padding: const EdgeInsets.symmetric(horizontal: 1.0),
-       child: SizedBox( // Add tooltip to show full details on hover
+       child: SizedBox( 
          child: Stack(
            alignment: Alignment.center,
            children: [
@@ -509,42 +626,52 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
   
 
       content: SizedBox(
-        width: double.maxFinite, // Allow the dialog to take more width
+        width: double.maxFinite, 
 
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // --- Header Row ---
             Padding(
               padding: const EdgeInsets.only(bottom: 6.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center, // Align items vertically
+                crossAxisAlignment: CrossAxisAlignment.center, 
                 children: [
                   ElevatedButton(
-                    onPressed: _isLoading ? null : _saveCurrentStrategy, // Disable button when loading
+                    onPressed: _isLoading ? null : _saveCurrentStrategy, 
                     style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
                     child: Icon(Icons.save, size: 16),
                   ),
                   
                   Expanded(
-                    child: Container( // Container to constrain preview height
-                      height: 35, // Adjust height as needed
+                    child: Container( 
+                      height: 35, 
                       alignment: Alignment.center,
                       child: _buildCurrentStrategyPreview(),
                     ),
                   ),
-
+                  PopupMenuButton<_PopupMenuOptions>(
+                    icon: Icon(Icons.more_vert),
+                    onSelected: _handleMenuSelection,
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<_PopupMenuOptions>>[
+                      const PopupMenuItem<_PopupMenuOptions>(
+                        value: _PopupMenuOptions.importSave,
+                        child: ListTile(leading: Icon(Icons.file_upload), title: Text('Import Saves')),
+                      ),
+                      const PopupMenuItem<_PopupMenuOptions>(
+                        value: _PopupMenuOptions.exportSave,
+                        child: ListTile(leading: Icon(Icons.file_download), title: Text('Export Saves')),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
             Divider(),
-            // --- Saved Strategies List ---
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 1.0),
               child: Text('Available Strategies:', style: Theme.of(context).textTheme.titleMedium),
             ),
-            // Conditional content based on loading/error state
             _buildSavedStrategiesList(),
           ],
         ),
@@ -558,7 +685,6 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
     );
   }
 
-  // Helper widget to build the list section
   Widget _buildSavedStrategiesList() {
     if (_isLoading) {
       return const Expanded(child: Center(child: CircularProgressIndicator()));
@@ -570,11 +696,10 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       return const Expanded(child: Center(child: Text('No saved strategies for this track.')));
     }
 
-    // Use Expanded + ListView for scrollable content
     return SizedBox(
       child: ListView.builder(
         
-        shrinkWrap: true, // Important within Column
+        shrinkWrap: true, 
         itemCount: _savedStrategies.length,
         itemBuilder: (context, index) {
           String hash = _savedStrategies.keys.elementAt(index);
@@ -587,25 +712,25 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                     IconButton(
-                  onPressed: _isLoading ? null : () => _loadStrategy(hash), // Disable when loading/deleting
+                  onPressed: _isLoading ? null : () => _loadStrategy(hash), 
                   icon: Icon(Icons.upload, color: const Color.fromARGB(255, 44, 94, 32)),
                   
                 ),
               
-                SizedBox(width: 4), // Spacing between buttons
+                SizedBox(width: 4), 
                 Expanded(
-                   child: Container( // Container to constrain preview height
-                      height: 35, // Match header preview height
-                      alignment: Alignment.center, // Align preview left
+                   child: Container( 
+                      height: 35, 
+                      alignment: Alignment.center, 
                       child: _buildSavedStrategyPreview(strategyData),
                     ),
                 ),
                   IconButton(
                   icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-                  iconSize: 20, // Adjust size
-                  constraints: BoxConstraints(), // Remove extra padding
-                  padding: EdgeInsets.all(4), // Add minimal padding
-                  onPressed: _isLoading ? null : () => _deleteStrategy(hash), // Disable when loading/deleting
+                  iconSize: 20, 
+                  constraints: BoxConstraints(), 
+                  padding: EdgeInsets.all(4), 
+                  onPressed: _isLoading ? null : () => _deleteStrategy(hash), 
                 ),
             
                 
