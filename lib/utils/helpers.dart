@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' show parse;
-import 'package:material_design_icons_flutter/material_design_icons_flutter.dart'; 
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 String abbreviateNumber(String input) {
   final n = double.tryParse(input);
@@ -27,7 +27,7 @@ class CarSetup {
   late final int ride;
   late final int wing;
 
-  CarSetup(this.trackCode, double height, this.tier) : 
+  CarSetup(this.trackCode, double height, this.tier) :
     driverHeight = (height ~/ 5) * 5{
     suggestedSetup = _calculateSetup();
   }
@@ -61,16 +61,16 @@ class CarSetup {
     '11': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 17},   // Europe (eu)
     '19': {'ride': 8, 'wing': 2, 'suspension': 1, 'pit': 20},   // France (fr)
     '18': {'ride': 4, 'wing': 0, 'suspension': 2, 'pit': 23},   // Great Britain (gb)
-    '10': {'ride': 5, 'wing': 6, 'suspension': 0, 'pit': 17},   // Hungary (hu)
-    '13': {'ride': 6, 'wing': -2, 'suspension': 2, 'pit': 24},  // Italy (it)
-    '15': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 20},   // Japan (jp)
-    '6': {'ride': 11, 'wing': 9, 'suspension': 0, 'pit': 16},   // Monaco (mc)
-    '23': {'ride': 3, 'wing': 2, 'suspension': 1, 'pit': 19},   // Mexico (mx)
-    '2': {'ride': 6, 'wing': 1, 'suspension': 1, 'pit': 22},    // Malaysia (my)
-    '24': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 21},   // Russia (ru)
-    '14': {'ride': 8, 'wing': 7, 'suspension': 0, 'pit': 20},   // Singapore (sg)
-    '7': {'ride': 6, 'wing': 2, 'suspension': 1, 'pit': 18},    // Turkey (tr)
-    '25': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 16},   // USA (us)
+    '10': {'ride': 5, 'wing': 6, 'suspension': 0, 'pit': 17},   // Hungary
+    '13': {'ride': 6, 'wing': -2, 'suspension': 2, 'pit': 24},  // Italy
+    '15': {'ride': 6, 'wing': 5, 'suspension': 0, 'pit': 20},   // Japan
+    '6': {'ride': 11, 'wing': 9, 'suspension': 0, 'pit': 16},   // Monaco
+    '23': {'ride': 3, 'wing': 2, 'suspension': 1, 'pit': 19},   // Mexico
+    '2': {'ride': 6, 'wing': 1, 'suspension': 1, 'pit': 22},    // Malaysia
+    '24': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 21},   // Russia
+    '14': {'ride': 8, 'wing': 7, 'suspension': 0, 'pit': 20},   // Singapore
+    '7': {'ride': 6, 'wing': 2, 'suspension': 1, 'pit': 18},    // Turkey
+    '25': {'ride': 2, 'wing': 2, 'suspension': 1, 'pit': 16},   // USA
   },
   // pro
   2: {
@@ -129,10 +129,10 @@ class CarSetup {
     };
 
     Map<String, dynamic> setup = Map<String, dynamic>.from(circuits[tier]![trackCode]!);
-    
+
     // Apply driver height adjustment to ride height
     setup['ride'] += scale[driverHeight]![tier]!;
-    
+
     // Ensure minimum values
     if (setup['ride'] == 0) {
       setup['ride'] = 1;
@@ -140,12 +140,12 @@ class CarSetup {
     if (setup['wing'] <= 0) {
       setup['wing'] = 1;
     }
-    
+
     // Set class properties
     suspension = setup['suspension'];
     ride = setup['ride'];
     wing = setup['wing'];
-    
+
     return setup;
   }
 }
@@ -165,23 +165,23 @@ class CircularProgressButton extends StatelessWidget {
     this.size = 50.0,
     this.backgroundColor = const Color.fromARGB(0, 255, 255, 255),
   });
-  
+
   Color _getProgressColor() {
     // Otherwise, determine color based on progress
       final List<MapEntry<double, Color>> colorStops = [
-    MapEntry(0.0, Colors.red), 
-     
-    MapEntry(90.0, Colors.orange),          
+    MapEntry(0.0, Colors.red),
+
+    MapEntry(90.0, Colors.orange),
     MapEntry(100.0, Colors.green),       // 100% progress - Green
   ];
       for (int i = 0; i < colorStops.length - 1; i++) {
     final currentStop = colorStops[i];
     final nextStop = colorStops[i + 1];
-    
+
     if (progress >= currentStop.key && progress <= nextStop.key) {
       // Calculate how far we are between the two stops (0.0 to 1.0)
       final t = (progress - currentStop.key) / (nextStop.key - currentStop.key);
-      
+
       // Interpolate between the two colors
       return Color.lerp(currentStop.value, nextStop.value, t)!;
     }
@@ -203,7 +203,7 @@ class CircularProgressButton extends StatelessWidget {
   Widget build(BuildContext context) {
     // Ensure progress is between 0 and 100
     final normalizedProgress = progress.clamp(0.0, 100.0);
-    
+
     final displayLabel = _getDisplayLabel();
     return InkWell(
       onTap: onPressed,
@@ -245,35 +245,35 @@ class CircularProgressPainter extends CustomPainter {
   final double progress; // Value between 0.0 and 1.0
   final Color progressColor;
   final Color backgroundColor;
-  
+
   CircularProgressPainter({
     required this.progress,
     required this.progressColor,
     required this.backgroundColor,
   });
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
     const startAngle = -1.5708; // -90 degrees in radians (start from top)
     final sweepAngle = 2 * 3.14159 * progress; // Full circle is 2*PI
-    
+
     // Draw background circle
     final backgroundPaint = Paint()
       ..color = backgroundColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width / 15;
-      
+
     canvas.drawCircle(center, radius - backgroundPaint.strokeWidth / 2, backgroundPaint);
-    
+
     // Draw progress arc
     final progressPaint = Paint()
       ..color = progressColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = size.width / 15
       ..strokeCap = StrokeCap.round;
-      
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius - progressPaint.strokeWidth / 2),
       startAngle,
@@ -282,7 +282,7 @@ class CircularProgressPainter extends CustomPainter {
       progressPaint,
     );
   }
-  
+
   @override
   bool shouldRepaint(CircularProgressPainter oldDelegate) {
     return oldDelegate.progress != progress ||
@@ -294,7 +294,7 @@ class CircularProgressPainter extends CustomPainter {
 Map<String, dynamic> parseFireUpData(dynamic fireUpData) {
   // Placeholder implementation
   if (fireUpData is Map) {
-    
+
     fireUpData['preCache']?['p=cars']?['vars']?['totalParts'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['totalParts'],'totalParts');
     fireUpData['preCache']?['p=cars']?['vars']?['totalEngines'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['totalEngines'],'totalEngines');
     fireUpData['preCache']?['p=cars']?['vars']?['c1CarBtn'] = extractDataValueFromHtml(fireUpData['preCache']?['p=cars']?['vars']?['c1CarBtn'].split(' ').last,'');
@@ -335,31 +335,31 @@ String extractDataValueFromHtml(String htmlString, String elementId) {
 
 Map<String, int> parseCarAttributes(String htmlString) {
   final Map<String, int> attributes = {};
-  
+
   // Parse the HTML
   final document = parse(htmlString);
-  
+
   // Find all attribute rows
   final attributeRows = document.querySelectorAll('.attribute-row');
-  
+
   for (var row in attributeRows) {
     // Extract the attribute name (converting to lowercase for consistency)
     final nameElement = row.querySelector('.attribute-rating-header span');
     if (nameElement == null) continue;
-    
+
     String name = nameElement.text.toLowerCase().replaceAll(' ', '_');
-    
+
     // Extract the attribute value
     final valueElement = row.querySelector('.ratingVal');
     if (valueElement == null) continue;
-    
+
     // Parse the value as an integer
     int value = int.tryParse(valueElement.text) ?? 0;
-    
+
     // Add to the map
     attributes[name] = value;
   }
-  
+
   return attributes;
 }
 final List<DropdownMenuItem<String>> _strategyDropdownItems = [
@@ -406,323 +406,6 @@ List<DropdownMenuItem<String>> buildStrategyDropdownItems() {
   }
   // Convert to signed 32-bit integer
   return hash >= 0x80000000 ? hash - 0x100000000 : hash;
-}
-
-List<Map<String, dynamic>> parseRaces(String htmlString) {
-  // Wrap the HTML string in a table to make it valid HTML
-  final wrappedHtml = '<table>$htmlString</table>';
-  
-  // Parse the HTML
-  final document = parse(wrappedHtml);
-  
-  // Get all table rows
-  final rows = document.querySelectorAll('tr');
-  
-  List<Map<String, dynamic>> races = [];
-  
-  for (var row in rows) {
-    try {
-      // Extract the race ID from the href attribute
-      final anchor = row.querySelector('a[href*="id="]');
-      final href = anchor?.attributes['href'] ?? '';
-      
-      // Use RegExp to extract the ID
-      final idMatch = RegExp(r'id=(\d+)').firstMatch(href);
-      final id = idMatch?.group(1) ?? '';
-      
-      // Extract the date from the first td
-      final firstTd = row.querySelector('td');
-      final dateText = firstTd?.text ?? '';
-      final date = dateText;
-      
-      // Extract the track code from the flag class
-      final img = row.querySelector('img[class*="f-"]');
-      final classAttr = img?.attributes['class'];
-      final track = RegExp(r'f-([a-z]{2})').firstMatch(classAttr ?? '')?.group(1);
-
-      final textNode = row.querySelector('td:nth-child(1)');
-      final leagueSpan = row.querySelector('span.grey');
-      final league = leagueSpan?.text ?? '';
-      final text = textNode?.text.trim().replaceAll(league, "").trim();
-      //final track = trackMatch?.group(1) ?? '';
-      //final text = trackMatch?.group(2) ?? '';
-      
-      
-      // Create a map with the extracted data
-      final raceInfo = {
-        'id': id,
-        'date': extractDate(date),
-        'track': track,
-        'league': league,
-        'text': text 
-      };
-      //debugPrint(raceInfo['date']);
-      races.add(raceInfo);
-    } catch (e) {
-      debugPrint('Error parsing row: $e');
-    }
-  }
-  
-  return races;
-}
-
-String extractDate(String text) {
-  // Remove any hidden spans and links
-  final strippedText = text.replaceAll(RegExp(r'<[^>]*>'), '');
-  
-  // Extract the date part, assuming it's at the end of the text
-  final dateRegex = RegExp(r'(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})');
-  final match = dateRegex.firstMatch(strippedText);
-  
-  return match?.group(1) ?? strippedText.trim();
-}
-
-Map<dynamic,dynamic> parseRaceReport(Map jsonData) {
-  // Wrap the HTML string in a table to make it valid HTML
-  final wrappedHtmlRace = '<table>${jsonData['rResult']}</table>';
-  final wrappedHtmlQualifying = '<table>${jsonData['qResult']}</table>';
-  final wrappedHtmlPractice = '<table>${jsonData['pResult']}</table>';
-
-
-  final raceName = jsonData['raceName'] ?? ''; //to parse
-  final raceRules = jsonData['rRules'] ?? ''; //to parse
-
-  final raceResults = parseRaceResults(wrappedHtmlRace);
-  final qualifyingResults = parsePQResults(wrappedHtmlQualifying);
-  final practiceResults = parsePQResults(wrappedHtmlPractice);
-  
- 
-  
-  try{
-      final Map reportInfo = {
-        'raceName': raceName,
-        'raceResults': raceResults,
-        'qualifyingResults':qualifyingResults,
-        'practiceResults':practiceResults
-       
-      };
-      return reportInfo;
-    } catch (e) {
-      debugPrint('Error parsing row: $e');
-    }
-  
-return {}; // Return an empty map in case of error or if try block fails
-  
- 
-}
-
-
-List<dynamic> parseRaceResults(String html) {
-  
-  final document = parse(html);
-  final rows = document.querySelectorAll('tr');
-  final List results = [];
-  Map<String,dynamic> driverRow;
-  final RegExp idRegExp = RegExp(r'id=(\d+)');
-  for (final row in rows) {
-     final myTeam = row.className.contains('myTeam');
-     final tds = row.querySelectorAll('td');
-     final team = tds[1].querySelector('.teamName')?.text.trim() ?? '';
-     final driverName =  tds[1].text.trim().replaceAll(team, "").trim();
-     final raceTime = tds[2].text.trim();
-     final driverReportId = idRegExp.firstMatch(tds[2].querySelector('a')?.attributes['href']??'')?.group(1)??'';
-     final bestLap = tds[3].text.trim();
-     final topSpeed = tds[4].text.trim();
-     final pits = tds[5].text.trim();
-     final points = tds[6].text.trim();
-     
-     
-     driverRow = {
-      'driver':driverName,
-      'team':team,
-      'raceTime':raceTime,
-      'bestLap':bestLap,
-      'topSpeed':topSpeed,
-      'pits':pits,
-      'points':points,
-      'myTeam':myTeam,
-      'driverReportId':driverReportId
-     };
-     results.add(driverRow);
-  }
-  return results;
-
-}
-
-List<dynamic> parsePQResults(String html) {
-  
-  final document = parse(html);
-  final rows = document.querySelectorAll('tr');
-  final List results = [];
-  Map<String,dynamic> driverRow;
-
-  if(rows.length>1){
-    for (final row in rows) {
-     final myTeam = row.className.contains('myTeam');
-     final tds = row.querySelectorAll('td');
-     final team = tds[1].querySelector('.teamName')?.text.trim() ?? '';
-     final driverName =  tds[1].text.trim().replaceAll(team, "").trim();
-     final lapTime = tds[2].text.trim();
-     final gap = tds[3].text.trim();
-     final tyre = tds[4].className.replaceAll('ts-', '');
-
-     driverRow = {
-      'driver':driverName,
-      'team':team,
-      'lapTime':lapTime,
-      'tyre': tyre,
-      'myTeam':myTeam,
-      'gap':gap
-     };
-     results.add(driverRow);
-     }
-     return results;
-  
-  }
-  return [{
-      'driver':'',
-      'team':'',
-      'lapTime':'',
-      'tyre': '',
-      'myTeam':'',
-      'gap':''
-     }];
-  
-  
-
-}
-
-List<dynamic> parseDriverResult(String html) {
-  
-  final document = parse(html);
-  final rows = document.querySelector('tbody')?.querySelectorAll('tr') ?? [];
-  final List results = [];
-
-    for (final row in rows) {
-     final pitstop = row.className.contains('pit');
-     Map info;
-     final tds = row.querySelectorAll('td');
-     if(pitstop){
-      final span = tds[1].querySelectorAll('span');
-      String duration = '';
-      String tyre;
-      if(span.length >= 2){
-           duration = span[0].text;
-           tyre = span[1].text;
-  
-      }else{
-         tyre = getTyreCode(span[0].text);
-      }
-      
-       info = {
-        'tyre': tyre,
-        'duration': duration
-      };
-     }else{
-
-      final lap = tds[0].text;
-      final time = tds[1].text;
-      final gap = tds[2].text;
-      final average = tds[3].text;
-      final pos = tds[4].text;
-      final tyreWear = tds[5].text;
-      final fuel = tds[6].text;
-      
-      info = {
-      'lap':lap,
-      'time':time,
-      'gap':gap,
-      'average': average,
-      'pos':pos,
-      'tyreWear':tyreWear,
-      'fuel':fuel,
-     };
-
-     }
-
-     results.add(info);
-     }
-  
-     return results;
-
-
-}
-
-
-// Function to get tyre code from name
-String getTyreCode(String tyreName) {
-  // Map of tyre names to their corresponding codes
-  final tyreMap = {
-    // English
-    'Full wet tyres': 'W',
-    'Intermediate wet tyres': 'I',
-    'Hard tyres': 'H',
-    'Medium tyres': 'M',
-    'Soft tyres': 'S',
-    'Super soft tyres': 'SS',
-    
-    // Italian
-    'Pneumatici da bagnato': 'W',
-    'Pneumatici intermedi': 'I',
-    'Pneumatici duri': 'H',
-    'Pneumatici medi': 'M',
-    'Pneumatici morbidi': 'S',
-    'Pneumatici super morbidi': 'SS',
-    
-    // Spanish
-    'Neumáticos de Lluvia': 'W',
-    'Neumáticos Intermedios': 'I',
-    'Neumáticos Duros': 'H',
-    'Neumáticos Medios': 'M',
-    'Neumáticos Blandos': 'S',
-    'Neumáticos Súper Blandos': 'SS',
-    
-    // German
-    'Vollregen-Reifen': 'W',
-    'Intermediate Reifen': 'I',
-    'Hart Reifen': 'H',
-    'Medium Reifen': 'M',
-    'Soft Reifen': 'S',
-    'Super Soft Reifen': 'SS',
-    
-    // Portuguese
-    'Pneus de chuva': 'W',
-    'Pneus intermediários': 'I',
-    'Pneus duros': 'H',
-    'Pneus médios': 'M',
-    'Pneus macios': 'S',
-    'Pneus super macios': 'SS',
-    
-    // Russian
-    'Дождевые шины': 'W',
-    'Промежуточные шины': 'I',
-    'Твердые шины': 'H',
-    'Средние шины': 'M',
-    'Мягкие шины': 'S',
-    'Супермягкие шины': 'SS',
-    
-    // French
-    'Pneus pluie': 'W',
-    'Pneus intermédiaires humides': 'I',
-    'Pneus durs': 'H',
-    'Pneus moyens': 'M',
-    'Pneus tendres': 'S',
-    'Pneus super tendres': 'SS',
-  };
-  
-  // Return the tyre code, defaulting to 'M' if not found
-  return tyreMap[tyreName] ?? 'M';
-}
-/// Function to get the asset path for a given tyre code.
-String getTyreAssetPath(String tyreCode) {
-  // Assuming tyre images are named like '_S.png', '_M.png' etc. in assets/tyres/
-  // and the tyreCode is already the single letter code (S, M, H, I, W, SS)
-  final validTyreCodes = ['S', 'M', 'H', 'I', 'W', 'SS'];
-  if (validTyreCodes.contains(tyreCode)) {
-    return 'assets/tyres/_$tyreCode.png';
-  }
-  // Return a default or placeholder path if the code is not recognized
-  return 'assets/tyres/_M.png'; // Default to Medium tyre asset
 }
 
 bool isChecked(String htmlString) {
