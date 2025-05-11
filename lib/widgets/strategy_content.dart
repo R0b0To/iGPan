@@ -443,7 +443,6 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 value: widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStartTyre'] ?? availableTyres.first,
                                 items: availableTyres.map((String tyre) {
                                   return DropdownMenuItem<String>(
-                                    
                                     value: tyre,
                                     child: Row(
                                       children: [
@@ -518,7 +517,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                             children: [
                               Text('Use:'),
                               DropdownButton<String>(
-                                       icon: SizedBox.shrink(), // Remove the default arrow icon
+                                icon: SizedBox.shrink(), // Remove the default arrow icon
                                 underline: SizedBox.shrink(),
                                 value: widget.account.raceData?['vars']?['d${widget.carIndex+1}RainStopTyre'] ?? availableTyres.first,
                                 items: availableTyres.map((String tyre) {

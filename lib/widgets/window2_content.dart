@@ -93,7 +93,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
               children: [
                
                 SetupContent(account: widget.account, carIndex: carIndex, onAccountChanged: _setHasChanges),
-                Center(child: Text('Practice Content Placeholder')),
+                PracticeContent(account: widget.account, carIndex: carIndex), // Added PracticeContent
                 StrategyContent(account: widget.account, carIndex: carIndex, onAccountChanged: _setHasChanges),
 
               ],
@@ -500,60 +500,149 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
     
   }
 
-  // Helper to build info buttons
-  Widget _buildInfoButton(BuildContext context, String text, VoidCallback onPressed) {
+  // Helper function to build info buttons
+  Widget _buildInfoButton(BuildContext context, String? text, VoidCallback onPressed) {
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 0, vertical: 4), // Adjust padding
-        textStyle: Theme.of(context).textTheme.bodyMedium, // Use smaller text
-        minimumSize: Size(60, 30), // Ensure minimum size
-      ),
       onPressed: onPressed,
-      child: Text(text, textAlign: TextAlign.center),
+      style: ElevatedButton.styleFrom(
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Adjust padding
+        textStyle: Theme.of(context).textTheme.bodySmall, // Use smaller text
+      ),
+      child: Text(text ?? 'N/A'),
     );
   }
 
-  // Helper to build setup rows consistently
+  // Helper function to build setup rows
   Widget _buildSetupRow(BuildContext context, {required String label, required Widget control, Widget? control2}) {
-
-
-   return  Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Space out elements
-        children: [
-          Expanded(flex: 1, child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
-          Expanded(flex: 1, child: control),
-          if (control2 != null) Expanded(flex: 1, child: Padding(padding: const EdgeInsets.only(left: 8.0), child: control2)),
-          if (control2 == null) Spacer(flex: 1), // Add spacer if no second control
-        ],
-      );
-  
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          flex: 2, // Give label more space
+          child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+        ),
+        Expanded(
+          flex: 3, // Give control more space
+          child: control,
+        ),
+        if (control2 != null) // Conditionally add the second control
+          Expanded(
+            flex: 2, // Give control2 less space
+            child: control2,
+          ),
+      ],
+    );
   }
 
+  // Helper function to build text fields
+  Widget _buildTextField(
+    TextEditingController controller,
+    TextInputType keyboardType, {
+    String? hintText,
+    List<TextInputFormatter>? inputFormatters,
+    ValueChanged<String>? onChanged,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        hintText: hintText,
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 12), // Adjust padding
+      ),
+      style: Theme.of(context).textTheme.bodySmall, // Smaller text
+    );
+  }
+}
 
-  // Helper to build text fields consistently
-  Widget _buildTextField(TextEditingController controller, TextInputType keyboardType, {String? hintText, List<TextInputFormatter>? inputFormatters, ValueChanged<String>? onChanged}) {
-    return SizedBox(
-      height: 35, // Constrain height
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        textAlign: TextAlign.center,
-        inputFormatters: inputFormatters, // Added input formatters
-        onChanged: onChanged, // Added onChanged callback
-        decoration: InputDecoration(
-          border: OutlineInputBorder(),
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          hintText: hintText, // Added hint text
-        ),
-        style: Theme.of(context).textTheme.bodyMedium, // Adjust style
-        // TODO: Add onChanged or onSubmitted to save value
+// --- PracticeContent Widget ---
+
+class PracticeContent extends StatefulWidget {
+  final Account account;
+  final int carIndex;
+
+  const PracticeContent({super.key, required this.account, required this.carIndex});
+
+  @override
+  _PracticeContentState createState() => _PracticeContentState();
+}
+
+class _PracticeContentState extends State<PracticeContent> {
+  String? _selectedTyre;
+  List<String> _practiceResults = [];
+
+  final List<String> availableTyres = ['SS', 'S', 'M', 'H', 'I', 'W'];
+
+  void _generatePracticeResults() {
+    // This is a placeholder. Replace with actual logic to generate practice results
+    setState(() {
+      _practiceResults = List.generate(5, (index) => 'Result ${index + 1} for ${_selectedTyre ?? "selected tyre"}');
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              DropdownButton<String>(
+                icon: SizedBox.shrink(), // Remove the default arrow icon
+                underline: SizedBox.shrink(),
+                hint: Text('Select Tyre'),
+                value: _selectedTyre,
+                items: availableTyres.map((String tyre) {
+                  return DropdownMenuItem<String>(
+                    value: tyre,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/tyres/_$tyre.png',
+                        width: 40, // Adjust size as needed
+                        height: 40, // Adjust size as needed
+                        errorBuilder: (c, e, s) => Container(
+                          width: 40, height: 40,
+                          color: Colors.grey[300],
+                          child: Icon(Icons.tire_repair, size: 12, color: Colors.grey[600]),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _selectedTyre = newValue;
+                  });
+                },
+              ),
+              SizedBox(width: 16), // Space between dropdown and button
+              ElevatedButton(
+                onPressed: _selectedTyre != null ? _generatePracticeResults : null,
+                child: Text('Generate Practice'),
+              ),
+            ],
+          ),
+          SizedBox(height: 16), // Space between row and list
+          Expanded(
+            child: ListView.builder(
+              itemCount: _practiceResults.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(_practiceResults[index]),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-// Custom InputFormatter to limit numerical range
+// Helper class for numerical range formatting
 class NumericalRangeFormatter extends TextInputFormatter {
   final double min;
   final double max;
@@ -566,33 +655,30 @@ class NumericalRangeFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     if (newValue.text.isEmpty) {
-      return newValue;
+      return TextEditingValue();
     }
-
     final double? value = double.tryParse(newValue.text);
-
-    if (value == null) {
-      // If not a valid number, keep the old value
-      return oldValue;
+    if (value != null) {
+      if (value < min) {
+        return TextEditingValue(text: min.toStringAsFixed(0));
+      } else if (value > max) {
+        return TextEditingValue(text: max.toStringAsFixed(0));
+      }
     }
-
-    if (value < min) {
-      // If the value is less than the minimum, set it to the minimum
-      return TextEditingValue(
-        text: min.toString(),
-        selection: TextSelection.collapsed(offset: min.toString().length),
-      );
-    } else if (value > max) {
-      // If the value is greater than the maximum, set it to the maximum
-      return TextEditingValue(
-        text: max.toString(),
-        selection: TextSelection.collapsed(offset: max.toString().length),
-      );
-    }
-
-    // If the value is within the range, return the new value
     return newValue;
   }
 }
 
+// Placeholder for CarSetup - replace with actual implementation
+class CarSetup {
+  final String trackId;
+  final double height;
+  final int tier;
+
+  CarSetup(this.trackId, this.height, this.tier);
+
+  int get ride => 50; // Placeholder
+  int get wing => 50; // Placeholder
+  int get suspension => 1; // Placeholder
+}
 
