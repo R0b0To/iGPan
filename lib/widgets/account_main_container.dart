@@ -124,6 +124,7 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
             children:[
             Padding( // Add some padding around the Row
               padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              
               child: Row(
                 children: [
                   Expanded( // Make text take available space
@@ -144,7 +145,6 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
                 ],
               ),
             ),
-
             _buildInternalWindows(context), // Call helper method from state
           ],)
         ),

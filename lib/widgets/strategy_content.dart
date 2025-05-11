@@ -190,7 +190,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           decoration: BoxDecoration(
             border: Border.all(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5), // Border color
-              width: 0.8, // Border width
+              width: 0.5, // Border width
             ),
             borderRadius: BorderRadius.zero, // Square corners
           ),

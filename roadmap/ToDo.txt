@@ -1,0 +1,40 @@
+ToDo:
+    buttons:
+        add weather label for race
+            add button for advanced weather?
+        race name opens reports of that race
+        driver contract
+        buy money
+        change engine supplier or manage own engine
+        change fuel supplier
+        change tyre supplier
+        driver
+        restore stamina
+        
+    tabs:
+        team tab
+            driver
+            staff
+            market?
+        practice
+        setup
+            add suggestion after practice laps?
+            implement ideal setup if raining
+    misc:
+        menu bar functions:
+            daily
+            repair
+            setup
+            strategy
+                how? first available strategy? pre-selected?
+            save
+        add more stints
+            only visual, make it clear
+    screens:
+        strategy save load style
+            layout shouldn't change if no strategies are stored
+            load should be the preview container   
+            save button should be container with preview
+        advanced strategy
+            changing push level from here should overwrite the stints pushes (update the fuel in the main container or add another label here)
+            styling needed to look better

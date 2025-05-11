@@ -1,6 +1,5 @@
 import 'package:igpan/widgets/research_dialog_content.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-
 import '../utils/helpers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for input formatters

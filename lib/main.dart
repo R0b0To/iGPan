@@ -263,6 +263,7 @@ class _MyHomePageState extends State<MyHomePage> {
            });
          },
          selectedIndex: _bottomNavIndex,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
          destinations: const <Widget>[
            NavigationDestination(
              selectedIcon: Icon(Icons.home),

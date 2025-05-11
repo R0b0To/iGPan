@@ -1,6 +1,5 @@
 import '../screens/race_report_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart' show parse; // Import the parse function
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
@@ -131,9 +130,6 @@ class _Window1ContentState extends State<Window1Content>
            SizedBox( // Wrap button for size control
              child: ElevatedButton(
                onPressed: () {},
-               style: ElevatedButton.styleFrom(
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
-               ),
                child: Row(
                  mainAxisSize: MainAxisSize.min,
                  children: [
@@ -180,18 +176,16 @@ class _Window1ContentState extends State<Window1Content>
                            }
                          : null, // Disable button if reward not available
                        style: ElevatedButton.styleFrom(
-                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                     
                      ),
                      icon: _rewardStatus ? Icon(MdiIcons.gift, size: 26,color: Colors.red,) : Icon(MdiIcons.giftOpen, size: 26,color: Colors.green,), // Gift icon
                    ));
                  },
                ),
 
-           Column( // Keep sponsor buttons in a column, but make them square
+           Column( // Keep sponsor buttons in a column
              children: [
                SizedBox(
-                height: 15, 
+                height: 20, 
                  child: ElevatedButton(
                    onPressed: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? null : () async { // Make async
                      final result = await Navigator.push( // Await the navigation result
@@ -208,7 +202,7 @@ class _Window1ContentState extends State<Window1Content>
                    },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(8.0), topRight: Radius.circular(8.0))),
                      backgroundColor: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? const Color.fromARGB(255, 57, 117, 59) : const Color.fromARGB(255, 161, 48, 40),
                      disabledBackgroundColor: (widget.account.fireUpData?['sponsor']?['s1']?['status'] ?? false) ? const Color.fromARGB(255, 36, 85, 37) : null,
                      
@@ -218,7 +212,7 @@ class _Window1ContentState extends State<Window1Content>
                ),
 
                SizedBox(
-                 height: 15, 
+                 height: 20, 
                  child: ElevatedButton(
                    onPressed: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? null : () async { // Make async
                       final result = await Navigator.push( // Await the navigation result
@@ -235,7 +229,7 @@ class _Window1ContentState extends State<Window1Content>
                    },
                    style: ElevatedButton.styleFrom(
                      padding: EdgeInsets.zero,
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(bottomLeft: Radius.circular(8.0), bottomRight: Radius.circular(8.0))),
                      backgroundColor: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? const Color.fromARGB(255, 63, 104, 64) : const Color.fromARGB(255, 161, 48, 40),
                      disabledBackgroundColor: (widget.account.fireUpData?['sponsor']?['s2']?['status'] ?? false) ? const Color.fromARGB(255, 36, 85, 37) : null,
                      
@@ -278,8 +272,8 @@ class _Window1ContentState extends State<Window1Content>
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
                                style: ElevatedButton.styleFrom(
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                                 padding: EdgeInsets.zero,
+                                
+                              
                                ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -295,16 +289,12 @@ class _Window1ContentState extends State<Window1Content>
                            Expanded(
                              child: ElevatedButton(
                                onPressed: _showBuyEnginesDialog,
-                               style: ElevatedButton.styleFrom(
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                                 padding: EdgeInsets.zero
-                               ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(MdiIcons.engine, size: 16), // Engine icon
+                                    Icon(MdiIcons.engine, size: 16, color: _totalEnginesText == '0' ? Colors.red : null),
                                     SizedBox(width: 2), // Space between icon and text
-                                    Text(_totalEnginesText), // Use the state variable
+                                    Text(_totalEnginesText, style: TextStyle(color: _totalEnginesText == '0' ? Colors.red : null)), 
                                   ],
                                 ),
                               ),
@@ -330,27 +320,21 @@ class _Window1ContentState extends State<Window1Content>
                             Expanded(
                               child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
-                               style: ElevatedButton.styleFrom(
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                               ),
+                               
                                child: Text('Eng'),
                              ),
                            ),
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
-                               style: ElevatedButton.styleFrom(
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                               ),
+                            
                                child: Text('Fuel'),
                              ),
                            ),
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
-                               style: ElevatedButton.styleFrom(
-                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                               ),
+
                                child: Text('Tyres'),
                              ),
                            ),
