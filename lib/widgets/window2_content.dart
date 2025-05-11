@@ -8,6 +8,9 @@ import '../igp_client.dart'; // Import Account and other necessary definitions
 import 'strategy_content.dart';
 
 
+import '../services/practice_service.dart';
+
+
 class Window2Content extends StatefulWidget {
   final double minWindowHeight;
   final Account account; // Use the specific Account type
@@ -570,16 +573,46 @@ class PracticeContent extends StatefulWidget {
 }
 
 class _PracticeContentState extends State<PracticeContent> {
+  final PracticeService _practiceService = PracticeService(); // Instantiate PracticeService
   String? _selectedTyre;
   List<String> _practiceResults = [];
 
   final List<String> availableTyres = ['SS', 'S', 'M', 'H', 'I', 'W'];
 
-  void _generatePracticeResults() {
-    // This is a placeholder. Replace with actual logic to generate practice results
+  void _generatePracticeResults() async { // Make the method async
+    if (_selectedTyre == null) {
+      // Handle case where no tyre is selected
+      debugPrint('No tyre selected for practice.');
+      return;
+    }
+
     setState(() {
-      _practiceResults = List.generate(5, (index) => 'Result ${index + 1} for ${_selectedTyre ?? "selected tyre"}');
+      _practiceResults = ['Simulating practice lap...']; // Provide feedback to the user
     });
+
+    try {
+      final lapData = await _practiceService.simulatePracticeLap(widget.account, widget.carIndex, _selectedTyre!);
+
+      // Format the results and update the list
+      final lapTyre = lapData['lapTyre'];
+      final lapFuel = lapData['lapFuel'];
+      final lapTime = lapData['lapTime'];
+      final comments = lapData['comments']; // Assuming 'comments' is the suggestion text
+
+      setState(() {
+        _practiceResults = [
+          'Wear: $lapTyre',
+          'Fuel: $lapFuel',
+          'Time: $lapTime',
+          'Suggestions: $comments',
+        ];
+      });
+    } catch (e) {
+      debugPrint('Error during practice simulation: $e');
+      setState(() {
+        _practiceResults = ['Error simulating practice lap: ${e.toString()}'];
+      });
+    }
   }
 
   @override
@@ -590,34 +623,59 @@ class _PracticeContentState extends State<PracticeContent> {
         children: [
           Row(
             children: [
-              DropdownButton<String>(
-                icon: SizedBox.shrink(), // Remove the default arrow icon
-                underline: SizedBox.shrink(),
-                hint: Text('Select Tyre'),
-                value: _selectedTyre,
-                items: availableTyres.map((String tyre) {
-                  return DropdownMenuItem<String>(
-                    value: tyre,
-                    child: Center(
-                      child: Image.asset(
-                        'assets/tyres/_$tyre.png',
-                        width: 40, // Adjust size as needed
-                        height: 40, // Adjust size as needed
-                        errorBuilder: (c, e, s) => Container(
-                          width: 40, height: 40,
-                          color: Colors.grey[300],
-                          child: Icon(Icons.tire_repair, size: 12, color: Colors.grey[600]),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    _selectedTyre = newValue;
-                  });
-                },
-              ),
+            DropdownButton<String>(
+  icon: const SizedBox.shrink(),
+  underline: const SizedBox.shrink(),
+  isDense: true,
+  value: _selectedTyre,
+  hint: const Text('Select Tyre'),
+  selectedItemBuilder: (BuildContext context) {
+    return availableTyres.map((String tyre) {
+      return SizedBox(
+        width: 85, // Match the total width you want the dropdown button to take
+        height: 50,
+        child: Align(
+          alignment: Alignment.center,
+          child: Image.asset(
+            'assets/tyres/_$tyre.png',
+            width: 40,
+            height: 40,
+            errorBuilder: (c, e, s) => Container(
+              width: 40,
+              height: 40,
+              color: Colors.grey[300],
+              child: Icon(Icons.tire_repair, size: 12, color: Colors.grey[600]),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  },
+  items: availableTyres.map((String tyre) {
+    return DropdownMenuItem<String>(
+      value: tyre,
+      child: Center(
+        child: Image.asset(
+          'assets/tyres/_$tyre.png',
+          width: 40,
+          height: 40,
+          errorBuilder: (c, e, s) => Container(
+            width: 40,
+            height: 40,
+            color: Colors.grey[300],
+            child: Icon(Icons.tire_repair, size: 12, color: Colors.grey[600]),
+          ),
+        ),
+      ),
+    );
+  }).toList(),
+  onChanged: (String? newValue) {
+    setState(() {
+      _selectedTyre = newValue;
+    });
+  },
+),
+      
               SizedBox(width: 16), // Space between dropdown and button
               ElevatedButton(
                 onPressed: _selectedTyre != null ? _generatePracticeResults : null,
@@ -668,17 +726,3 @@ class NumericalRangeFormatter extends TextInputFormatter {
     return newValue;
   }
 }
-
-// Placeholder for CarSetup - replace with actual implementation
-class CarSetup {
-  final String trackId;
-  final double height;
-  final int tier;
-
-  CarSetup(this.trackId, this.height, this.tier);
-
-  int get ride => 50; // Placeholder
-  int get wing => 50; // Placeholder
-  int get suspension => 1; // Placeholder
-}
-
