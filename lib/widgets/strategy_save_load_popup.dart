@@ -656,11 +656,11 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
                     itemBuilder: (BuildContext context) => <PopupMenuEntry<_PopupMenuOptions>>[
                       const PopupMenuItem<_PopupMenuOptions>(
                         value: _PopupMenuOptions.importSave,
-                        child: ListTile(leading: Icon(Icons.file_upload), title: Text('Import Saves')),
+                        child: ListTile(leading: Icon(Icons.file_download), title: Text('Import Saves')),
                       ),
                       const PopupMenuItem<_PopupMenuOptions>(
                         value: _PopupMenuOptions.exportSave,
-                        child: ListTile(leading: Icon(Icons.file_download), title: Text('Export Saves')),
+                        child: ListTile(leading: Icon(Icons.file_upload), title: Text('Export Saves')),
                       ),
                     ],
                   ),

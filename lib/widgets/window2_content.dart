@@ -171,9 +171,9 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                 }
               },
               style: ElevatedButton.styleFrom(
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero), // Square corners
+              
                ),
-              icon:  Icon(MdiIcons.flaskEmptyPlus,size: 26,), // Use icon instead of text for repair action
+              icon:  Icon(MdiIcons.flaskEmptyPlus,size: 30,color:Colors.blueAccent,), // Use icon instead of text for repair action
             ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,7 +201,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
                 
                  backgroundColor: _hasChanges ?  const Color.fromARGB(255, 172, 47, 38) : const Color.fromARGB(255, 23, 109, 23), // Highlight if changes exist
                ),
-              icon: const Icon(Icons.save,size: 26,), // Use icon instead of text for save action
+              icon: const Icon(Icons.save,size: 30,), // Use icon instead of text for save action
             ),
           ],
         ),
@@ -434,7 +434,7 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                  textStyle: Theme.of(context).textTheme.bodyLarge, // Use smaller text
 
                ),
-              child: Icon(MdiIcons.headLightbulbOutline, size: 30), // Or MdiIcons.thumbUpOutline
+              child: Icon(MdiIcons.headLightbulbOutline, size: 30,color: Colors.yellowAccent,), // Or MdiIcons.thumbUpOutline
             ),
           ),
           SizedBox(height: 8),

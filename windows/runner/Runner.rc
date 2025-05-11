@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "igp_app" "\0"
+            VALUE "CompanyName", "com.r0b0to" "\0"
+            VALUE "FileDescription", "igpan" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "igp_app" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "igp_app.exe" "\0"
-            VALUE "ProductName", "igp_app" "\0"
+            VALUE "InternalName", "igpan" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2025 com.r0b0to. All rights reserved." "\0"
+            VALUE "OriginalFilename", "igpan.exe" "\0"
+            VALUE "ProductName", "igpan" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

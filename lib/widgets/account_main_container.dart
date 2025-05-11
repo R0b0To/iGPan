@@ -168,6 +168,19 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
           children: [
             Expanded(
               child: Container(
+                margin: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.all(4.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(8.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color:Colors.lightGreenAccent.shade700,
+                      blurRadius: 2,
+                     
+                    ),
+                  ],
+                ),
                 child: window1Content,
               ),
             ),
@@ -175,6 +188,19 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
               const SizedBox(width: 8.0),
               Expanded(
                 child: Container(
+                  margin: const EdgeInsets.all(4.0),
+                  padding: const EdgeInsets.all(4.0),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(8.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blueAccent.shade700,
+                        blurRadius: 2,
+                       
+                      ),
+                    ],
+                  ),
                   child: window2Content,
                 ),
               ),
@@ -187,10 +213,35 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
            mainAxisSize: MainAxisSize.min,
            children: [
             Container(
+              margin: const EdgeInsets.all(4.0),
+              padding: const EdgeInsets.all(4.0),
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.circular(8.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.lightGreenAccent.shade700,
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
               child: window1Content,
             ),
             if (window2Content != null) ...[
               Container(
+                margin: const EdgeInsets.all(4.0),
+                padding: const EdgeInsets.all(4.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(8.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blueAccent.shade700,
+                      blurRadius: 2,
+                    
+                    ),
+                  ],
+                ),
                 child: window2Content,
               ),
             ]

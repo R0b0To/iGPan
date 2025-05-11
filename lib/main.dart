@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:path_provider/path_provider.dart'; // Import path_provider
-
 import 'accounts_screen.dart';
 import 'igp_client.dart';
 import 'widgets/account_main_container.dart'; // Import the extracted widget

@@ -1,6 +1,6 @@
 {
-    "name": "igp_app",
-    "short_name": "igp_app",
+    "name": "igpan",
+    "short_name": "igpan",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

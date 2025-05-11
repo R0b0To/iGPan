@@ -114,10 +114,10 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       children: [
         
         // Button to the left of the Spinbox
-        Padding(
-          padding: const EdgeInsets.only(right:8.0), // Add some spacing to the right
+        SizedBox(
+
           child: SizedBox(
-          height: 30, // Match the height of the SpinBox
+          height: 40, // Match the height of the SpinBox
           child: ElevatedButton(
             onPressed: () async { // Make async to await dialog result
               final result = await showDialog<bool>(
@@ -145,15 +145,19 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 8.0), // Adjust padding
             ),
-            child: Icon(MdiIcons.contentSaveAll),
+            child: Icon(
+                  MdiIcons.contentSaveEdit,
+                    color: Colors.blueAccent, // or any other color
+                  size: 30.0, // increase this value to make it bigger
+                        ),
           ),
           ),
         ),
         // Spinbox for pits
         SizedBox(
           
-        width: 100.0, // Provide a fixed width
-        height: 30,
+        width: 120.0, // Provide a fixed width
+        height: 40,
         
         child: SpinBox(
         readOnly: true, 
@@ -168,7 +172,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
           
  
         ),
-        textStyle: TextStyle(fontSize: 12), // Adjust text size
+        textStyle: TextStyle(fontSize: 17), // Adjust text size
         onChanged: (value) {
           setState(() {
             _numberOfPits = value.toInt(); // Update state variable
@@ -350,7 +354,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
         
           child: SizedBox(
             width: 60,
-            height: 25,
+            height: 28,
             child:Transform.scale(
                scale: 0.8, 
               child: Switch(
@@ -672,7 +676,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                                 errorBuilder: (c, e, s) => Container(
                                   width: 30, height: 30,
                                   color: Colors.grey[300],
-                                  child: Icon(Icons.tire_repair, size: 15, color: Colors.grey[600]),
+                                  child: Icon(Icons.tire_repair, size: 30, color: Colors.grey[600]),
                                 ),
                               ),
                             ),
@@ -803,7 +807,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             width: 40, height: 40,
             color: Colors.red[200], // Indicate invalid data
             child: Center(
-              child: Icon(Icons.error_outline, size: 20, color: Colors.red[800]),
+              child: Icon(Icons.error_outline, size: 30, color: Colors.red[800]),
             ),
           ),
         ),

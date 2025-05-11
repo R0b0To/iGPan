@@ -4,9 +4,6 @@ import 'package:html/parser.dart' show parse; // Import the parse function
 import '../igp_client.dart'; // Import Account and other necessary definitions
 import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
-import '../services/history_service.dart'; // Import HistoryService
-import '../services/account_actions_service.dart'; // Import AccountActionsService
-import '../services/car_service.dart'; // Import CarService
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:country_flags/country_flags.dart'; // Import the country_flags package
 
@@ -123,7 +120,7 @@ class _Window1ContentState extends State<Window1Content>
   @override
   Widget build(BuildContext context) {
     final numCarsString = widget.account.fireUpData?['team']?['_numCars'];
-    final numCars = int.tryParse(numCarsString ?? '1') ?? 1;
+  final numCars = switch (numCarsString) {  int i => i,  String s => int.tryParse(s) ?? 1,  _ => 1,};
     
     return Column(
      mainAxisAlignment: MainAxisAlignment.start, // Align children to the top
