@@ -8,8 +8,6 @@ import '../igp_client.dart'; // Import Account and other necessary definitions
 import 'strategy_content.dart';
 
 
-import '../services/practice_service.dart';
-
 
 class Window2Content extends StatefulWidget {
   final double minWindowHeight;
@@ -22,8 +20,7 @@ class Window2Content extends StatefulWidget {
 }
 
 class _Window2ContentState extends State<Window2Content> with TickerProviderStateMixin {
-  final CarService _carService = CarService(); // Instantiate CarService
-  final RaceService _raceService = RaceService(); // Instantiate RaceService
+
 
   late TabController _tabController;
   final CarouselSliderController _carouselController = CarouselSliderController();
@@ -117,7 +114,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             IconButton(
               
               onPressed: () async {
-                final researchData = await _carService.requestResearch(widget.account); // Use service instance
+                final researchData = await widget.account.requestResearch(); // Use service instance
                 if (researchData != null) {
                   final GlobalKey<ResearchDialogContentState> researchDialogKey = GlobalKey<ResearchDialogContentState>();
 
@@ -147,7 +144,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
 
                            
                                // Call the save function from igp_client.dart with the correct types
-                               await _carService.saveDesign(widget.account, research, designList); // Use service instance
+                               await widget.account.saveDesign(research, designList); // Use service instance
 
                                // Close the dialog after saving
                                 Navigator.of(context).pop();
@@ -196,7 +193,7 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             ),
                        IconButton(
               onPressed: () async { // Make async to await saveStrategy
-                await _raceService.saveStrategy(widget.account); // Use service instance
+                await widget.account.saveStrategy(); // Use service instance
                 _setHasChanges(false); // Reset changes flag after saving
               }, 
               style: ElevatedButton.styleFrom(
@@ -573,7 +570,6 @@ class PracticeContent extends StatefulWidget {
 }
 
 class _PracticeContentState extends State<PracticeContent> {
-  final PracticeService _practiceService = PracticeService(); // Instantiate PracticeService
   String? _selectedTyre;
   List<String> _practiceResults = [];
 
@@ -591,7 +587,7 @@ class _PracticeContentState extends State<PracticeContent> {
     });
 
     try {
-      final lapData = await _practiceService.simulatePracticeLap(widget.account, widget.carIndex, _selectedTyre!);
+      final lapData = await widget.account.simulatePracticeLap(widget.carIndex, _selectedTyre!);
 
       // Format the results and update the list
       final lapTyre = lapData['lapTyre'];

@@ -249,7 +249,23 @@ class _MyHomePageState extends State<MyHomePage> {
                     // Index 1: Accounts View
                     const AccountsScreen(),
                       // Index 2: Actions View (Placeholder)
-                    const Center(child: Text('Actions Area (Not Implemented)')),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            // Iterate through accounts and call claimDailyReward for enabled ones
+                            for (var account in accountsNotifier.value) {
+                              if (account.enabled) {
+                                accountsNotifier.value = List.from(accounts);
+                                account.claimDailyReward();
+                              }
+                            }
+                          },
+                          child: const Text('Claim Daily Reward for Enabled Accounts'),
+                        ),
+                      ],
+                    ),
                     ],
                   );
               },

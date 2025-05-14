@@ -7,7 +7,6 @@ export 'services/api_client_core.dart'
     show 
         accounts, // Global list of accounts
         cookieJars, // Global map of cookie jars
-        dioClients, // Global map of Dio clients
         appDocumentPath, // Global app document path
         initializeAppDocumentPath, // Function to initialize the path
         loadAccounts, // Function to load accounts from storage
@@ -15,13 +14,8 @@ export 'services/api_client_core.dart'
         startClientSessionForAccount, // Function to start/validate a session
         login; // Function for full login
 
-// Export Service Classes
-export 'services/account_actions_service.dart';
-export 'services/race_service.dart';
-export 'services/sponsor_service.dart';
-export 'services/car_service.dart';
-export 'services/league_service.dart';
-export 'services/history_service.dart';
+
+
 
 // Export specific utility/parser functions if they are directly used by UI/other non-service logic.
 // Most parsers are now used internally by services. If any parser needs to be public, add it here.

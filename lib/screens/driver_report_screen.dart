@@ -3,7 +3,7 @@ import 'package:country_flags/country_flags.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart'; // Import MDI icons
 import '../igp_client.dart'; // Import the IGP client (for Account model)
 import '../utils/data_parsers.dart'; // Import data_parsers for tyre assets etc.
-import '../services/history_service.dart'; // Import the HistoryService
+
 
 class DriverReportScreen extends StatefulWidget {
   final Account account;
@@ -22,7 +22,6 @@ class DriverReportScreen extends StatefulWidget {
 }
 
 class _DriverReportScreenState extends State<DriverReportScreen> {
-  final HistoryService _historyService = HistoryService(); // Instantiate the service
   List<dynamic>? _driverReportData;
   bool _isLoading = true;
   String? _error;
@@ -39,7 +38,7 @@ class _DriverReportScreenState extends State<DriverReportScreen> {
       _error = null;
     });
     try {
-      final reportData = await _historyService.requestDriverReport(widget.account, widget.driverReportId); // Call method on service instance
+      final reportData = await widget.account.requestDriverReport(widget.driverReportId); // Call method on service instance
       setState(() {
         _driverReportData = reportData;
         _isLoading = false;

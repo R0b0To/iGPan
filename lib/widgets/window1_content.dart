@@ -19,9 +19,6 @@ class Window1Content extends StatefulWidget {
 class _Window1ContentState extends State<Window1Content>
     with SingleTickerProviderStateMixin { // Add mixin for TabController
 
-  final HistoryService _historyService = HistoryService(); // Instantiate HistoryService
-  final AccountActionsService _accountActionsService = AccountActionsService(); // Instantiate AccountActionsService
-  final CarService _carService = CarService(); // Instantiate CarService
 
   String _totalEnginesText = 'N/A'; // State variable to hold the text for total engines
   String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
@@ -90,10 +87,10 @@ class _Window1ContentState extends State<Window1Content>
     });
 
     try {
-      final newReports = await _historyService.requestHistoryReports(widget.account, start: _start, numResults: _numResults); // Use service instance
+      final newReports = await widget.account.requestHistoryReports(start: _start, numResults: _numResults); // Use service instance
       setState(() {
         _reports.addAll(newReports);
-        _start += newReports.length as int; // Increment start by the number of reports received, explicitly cast to int
+        _start += newReports.length; // Increment start by the number of reports received, explicitly cast to int
         _hasMoreReports = newReports.length == _numResults; // Assume more reports if we got the full batch
       });
     } catch (e) {
@@ -169,7 +166,7 @@ class _Window1ContentState extends State<Window1Content>
                    child: IconButton(
                      onPressed: _rewardStatus // Use the state variable
                         ? () async { // Make async
-                             await _accountActionsService.claimDailyReward(widget.account); // Use service instance
+                             await widget.account.claimDailyReward(); // Use service instance
                               setState(() {
                                 _rewardStatus = false; // Update the state variable to false after claiming
                                });
@@ -356,7 +353,7 @@ class _Window1ContentState extends State<Window1Content>
                                      label: widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}CarBtn'] ?? '',
                                      progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Condition'] ?? '0') ?? 0.0,
                                      onPressed: () async { // Make the callback async
-                                       final result = await _carService.repairCar(widget.account, i,'parts'); // Use service instance
+                                       final result = await widget.account.repairCar(i,'parts'); // Use service instance
                                        if (result != -1) {
                                          setState(() {
                                            _totalPartsText = result.toString(); // Update the state variable
@@ -368,7 +365,7 @@ class _Window1ContentState extends State<Window1Content>
                                      label: 'Engine',
                                      progress: double.tryParse(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['c${i}Engine'] ?? '0') ?? 0.0,
                                      onPressed: () async { // Make the callback async
-                                       final result = await _carService.repairCar(widget.account, i,'engine'); // Use service instance
+                                       final result = await widget.account.repairCar(i,'engine'); // Use service instance
                                        if (result != -1) {
                                          setState(() {
                                            _totalEnginesText = result.toString(); // Update the state variable
@@ -515,7 +512,7 @@ class _Window1ContentState extends State<Window1Content>
     if (confirmed == true) {
       try {
 
-        var result = await _carService.buyEnginesWithTokens(widget.account, tokenCost); // Use service instance
+        var result = await widget.account.buyEnginesWithTokens(tokenCost); // Use service instance
         setState(() {
           _totalEnginesText = result['engines'] ?? 'N/A'; // Handle potential null
           _totalTokens = result['tokens'] ?? 'N/A'; // Handle potential null

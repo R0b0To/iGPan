@@ -1,8 +1,7 @@
 import 'dart:convert';
+import 'package:dio/dio.dart'; // Import Dio
 import 'package:flutter/material.dart'; // Keep if used by fireUpData/raceData, otherwise remove
-
-// Consider moving fireUpData and raceData to a more specific model if they have a defined structure
-// For now, keeping them as Map<String, dynamic>
+import '../utils/data_parsers.dart';
 
 class Account {
   final String email;
@@ -12,6 +11,7 @@ class Account {
 
   Map<String, dynamic>? fireUpData; // To store fireUp response data
   Map<String, dynamic>? raceData; // To store race data
+  Dio? dioClient; // Add Dio client property
 
   Account({
     required this.email,
@@ -20,8 +20,8 @@ class Account {
     this.fireUpData,
     this.raceData,
     this.enabled = true, // Initialize enabled to true
+    this.dioClient, // Add dioClient to constructor
   });
-
   // Factory constructor to create an Account from a JSON map
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
@@ -31,9 +31,9 @@ class Account {
       fireUpData: null, // fireUpData is not stored in JSON
       raceData: null,   // raceData is not stored in JSON
       enabled: json['enabled'] ?? true, // Load enabled state, default to true if not present
+      dioClient: null, // Dio client is not stored in JSON
     );
   }
-
   // Method to convert an Account object to a JSON map for storage
   Map<String, dynamic> toJson() {
     return {
@@ -43,5 +43,619 @@ class Account {
       // fireUpData and raceData are runtime data, not typically stored with account credentials
       'enabled': enabled, // Include enabled state in JSON
     };
+  }
+  Future<void> claimDailyReward() async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot claim daily reward.');
+    }
+
+    final url = Uri.parse('https://igpmanager.com/content/misc/igp/ajax/dailyReward.php');
+    debugPrint('Attempting to claim daily reward for ${email} at $url');
+
+    try {
+      final response = await dio.get(url.toString());
+      debugPrint('Daily reward response for ${email}: ${response.statusCode}');
+      debugPrint('Response data: ${response.data}');
+
+      // Assuming a successful response means the reward was claimed
+      // Remove the nDailyReward key from the account's fireUpData
+      if (fireUpData != null &&
+          fireUpData!.containsKey('notify') &&
+          fireUpData!['notify'] != null &&
+          fireUpData!['notify'] is Map && // Ensure 'notify' is a Map
+          (fireUpData!['notify'] as Map).containsKey('page') &&
+          fireUpData!['notify']['page'] != null &&
+          fireUpData!['notify']['page'] is Map && // Ensure 'page' is a Map
+          (fireUpData!['notify']['page'] as Map).containsKey('nDailyReward')) {
+        (fireUpData!['notify']['page'] as Map).remove('nDailyReward');
+        debugPrint('Removed nDailyReward key for ${email}');
+      }
+    } catch (e) {
+      debugPrint('Error claiming daily reward for ${email}: $e');
+      rethrow; // Re-throw the error for the caller to handle
+    }
+  }
+  Future<List<Map<String, dynamic>>> requestHistoryReports({int start = 0, int numResults = 10}) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot request history reports.');
+    }
+
+    try {
+      final reportsUrl = "https://igpmanager.com/index.php?action=send&type=history&start=$start&numResults=$numResults&jsReply=scrollLoader&el=history&csrfName=&csrfToken=";
+      final response = await dio.get(reportsUrl);
+      final jsonData = jsonDecode(response.data);
+      
+      if (jsonData != null && jsonData['src'] != null) {
+        return parseRaces(jsonData['src'].toString());
+      } else {
+        debugPrint('Failed to parse history reports or "src" key missing for ${email}');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('Error requesting history reports for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<Map<dynamic, dynamic>> requestRaceReport(String raceId) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot request race report.');
+    }
+
+    try {
+      final reportUrl = "https://igpmanager.com/index.php?action=fetch&d=result&id=$raceId&tab=race&csrfName=&csrfToken=";
+      final response = await dio.get(reportUrl);
+      final jsonData = jsonDecode(response.data);
+
+      if (jsonData != null && jsonData['vars'] != null) {
+         return parseRaceReport(jsonData['vars'] as Map<String, dynamic>);
+      } else {
+        debugPrint('Failed to parse race report or "vars" key missing for race ID $raceId, account ${email}');
+        return {};
+      }
+    } catch (e) {
+      debugPrint('Error requesting race report for race ID $raceId, account ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<List<dynamic>> requestDriverReport(String raceId) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot request driver report.');
+    }
+
+    try {
+      final reportUrl = "https://igpmanager.com/index.php?action=fetch&d=resultDetail&id=$raceId&csrfName=&csrfToken=";
+      final response = await dio.get(reportUrl);
+      final jsonData = jsonDecode(response.data);
+
+      if (jsonData != null && jsonData['vars']?['results'] != null) {
+        return parseDriverResult(jsonData['vars']['results'].toString());
+      } else {
+        debugPrint('Failed to parse driver report or "results" key missing for race ID $raceId, account ${email}');
+        return [];
+      }
+    } catch (e) {
+      debugPrint('Error requesting driver report for race ID $raceId, account ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<Map<String, dynamic>?> requestLeagueInfo() async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot request league info.');
+    }
+
+    final leagueId = fireUpData?['team']?['_league'];
+    if (leagueId == null || leagueId == '0') {
+      debugPrint('Account ${email} is not in a league or league ID is invalid.');
+      return null; // Not in a league or ID missing
+    }
+
+    try {
+      final leagueUrl = "https://igpmanager.com/index.php?action=fetch&p=league&id=$leagueId&csrfName=&csrfToken=";
+      final response = await dio.get(leagueUrl);
+      final jsonData = jsonDecode(response.data);
+      
+      if (jsonData != null && jsonData['vars'] != null) {
+        fireUpData?['league'] = jsonData['vars'];
+        debugPrint('League info fetched for ${email}, league ID: $leagueId');
+        return jsonData['vars'] as Map<String, dynamic>;
+      } else {
+        debugPrint('Failed to parse league info or "vars" key missing for ${email}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('Error requesting league info for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<int> repairCar(int carNumber, String repairType) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot repair car.');
+    }
+
+    int totalRemaining = -1;
+    final carIdKey = 'c${carNumber}Id';
+    final carId = fireUpData?['preCache']?['p=cars']?['vars']?[carIdKey];
+
+    if (carId == null) {
+      debugPrint('Error: Car ID not found for car number $carNumber for account ${email}');
+      return totalRemaining; // Or throw an error
+    }
+
+    try {
+      if (repairType == 'parts') {
+        final totalParts = int.tryParse(fireUpData?['preCache']?['p=cars']?['vars']?['totalParts']?.toString() ?? '0') ?? 0;
+        final repairCost = int.tryParse(fireUpData?['preCache']?['p=cars']?['vars']?['c${carNumber}CarBtn']?.toString() ?? '0') ?? 0;
+        final carCondition = int.tryParse(fireUpData?['preCache']?['p=cars']?['vars']?['c${carNumber}Condition']?.toString() ?? '100') ?? 100;
+
+        if (repairCost <= totalParts && carCondition < 100) {
+          final repairUrl = "https://igpmanager.com/index.php?action=send&type=fix&car=$carId&btn=c${carNumber}PartSwap&jsReply=fix&csrfName=&csrfToken=";
+          final response = await dio.get(repairUrl);
+          // final jsonData = jsonDecode(response.data); // Assuming response might be useful
+          totalRemaining = totalParts - repairCost;
+          fireUpData?['preCache']?['p=cars']?['vars']?['totalParts'] = totalRemaining.toString();
+          fireUpData?['preCache']?['p=cars']?['vars']?['c${carNumber}Condition'] = "100";
+           debugPrint('Car parts repaired for c$carNumber, ${email}. Parts remaining: $totalRemaining');
+        } else {
+          debugPrint('Repairing car parts not possible for c$carNumber, ${email}. Cost: $repairCost, Has: $totalParts, Condition: $carCondition');
+          return totalRemaining; // Indicate no repair was made or current parts count
+        }
+      } else if (repairType == 'engine') {
+        final totalEngines = int.tryParse(fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']?.toString() ?? '0') ?? 0;
+        final engineConditionKey = 'c${carNumber}Engine';
+        final currentEngineCondition = int.tryParse(fireUpData?['preCache']?['p=cars']?['vars']?[engineConditionKey]?.toString() ?? '100') ?? 100;
+
+        if (totalEngines > 0 && currentEngineCondition < 100) {
+          final repairUrl = "https://igpmanager.com/index.php?action=send&type=engine&car=$carId&btn=c${carNumber}EngSwap&jsReply=fix&csrfName=&csrfToken=";
+          final response = await dio.get(repairUrl);
+          // final jsonData = jsonDecode(response.data); // Assuming response might be useful
+          totalRemaining = totalEngines - 1;
+          fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] = totalRemaining.toString();
+          fireUpData?['preCache']?['p=cars']?['vars']?[engineConditionKey] = "100";
+          debugPrint('Car engine replaced for c$carNumber, ${email}. Engines remaining: $totalRemaining');
+        } else {
+          debugPrint('Replacing engine not possible for c$carNumber, ${email}. Has: $totalEngines, Condition: $currentEngineCondition');
+           return totalRemaining; // Indicate no repair or current engine count
+        }
+      }
+      return totalRemaining;
+    } catch (e) {
+      debugPrint('Error repairing car $carNumber (${repairType}) for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<Map<String, dynamic>> requestResearch() async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot request research data.');
+    }
+
+    try {
+      final researchCarUrl = "https://igpmanager.com/index.php?action=fetch&d=research&csrfName=&csrfToken=";
+      final designCarUrl = 'https://igpmanager.com/index.php?action=fetch&d=design&csrfName=&csrfToken=';
+      
+      final responses = await Future.wait([
+        dio.get(researchCarUrl),
+        dio.get(designCarUrl),
+      ]);
+
+      final jsonDataResearch = jsonDecode(responses[0].data);
+      final jsonDataDesign = jsonDecode(responses[1].data);
+      final researchResponseVars = jsonDataResearch['vars'];
+      final designResponseVars = jsonDataDesign['vars'];
+
+      final double researchMaxEffect = (researchResponseVars['researchMaxEffect'] as num?)?.toDouble() ?? 0.0;
+      final int? designPoints = int.tryParse(designResponseVars['designPts']?.toString() ?? '');
+      final int dMax = (researchResponseVars['dMax'] as num?)?.toInt() ?? 0;
+      final int tierFactor = (dMax == 300) ? 3 : 2; // Example logic, adjust as needed
+
+      List<String> attributesRatingKeys = ['accelerationRating', 'brakingRating', 'coolingRating', 'downforceRating', 'fuel_economyRating', 'handlingRating', 'reliabilityRating', 'tyre_economyRating'];
+      List<String> checksKeys = ['accelerationCheck', 'brakingCheck', 'coolingCheck', 'downforceCheck', 'fuel_economyCheck', 'handlingCheck', 'reliabilityCheck', 'tyre_economyCheck'];
+      List<String> attributesKeys = ['acceleration', 'braking', 'cooling', 'downforce', 'fuel_economy', 'handling', 'reliability', 'tyre_economy'];
+      List<String> attributesBonusKeys = ['accelerationBonus', 'brakingBonus', 'coolingBonus', 'downforceBonus', 'fuel_economyBonus', 'handlingBonus', 'reliabilityBonus', 'tyre_economyBonus'];
+
+      final bonusCarAttributes = attributesBonusKeys.map((key) => designResponseVars[key]?.toString() ?? '0').toList(); // Assuming bonus is string like "0.0"
+      final realCarAttributes = attributesKeys.map((key) => int.tryParse(designResponseVars[key]?.toString() ?? '0') ?? 0).toList();
+      
+      List<int> teamsDesign = attributesRatingKeys.map((key) {
+        // Use the parseBest function from data_parsers.dart
+        final htmlString = researchResponseVars[key]?.toString() ?? '';
+        return parseBest(htmlString, tierFactor);
+      }).toList();
+
+      List<bool> checkedDesign = checksKeys.map((key) {
+        // Simplified parser for 'checked' status (can be moved to data_parsers.dart if needed elsewhere)
+        return (researchResponseVars[key]?.toString() ?? '').contains('checked');
+      }).toList();
+      
+      return {
+        "myCar": realCarAttributes,
+        "bonus": bonusCarAttributes,
+        "best": teamsDesign,
+        "checks": checkedDesign,
+        "points": designPoints,
+        "maxDp": dMax,
+        "maxResearch": researchMaxEffect
+      };
+    } catch (e) {
+      debugPrint('Error in research request for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<void> saveDesign(Map<String, dynamic> researchSettings, List<String> designParams) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot save design.');
+    }
+
+    // researchSettings expected to have 'attributes' (List<String>) and 'maxDp' (dynamic)
+    List<String> attributesToSaveQuery = (researchSettings['attributes'] as List<dynamic>? ?? [])
+        .map((attr) => '&c%5B%5D=${Uri.encodeComponent(attr.toString())}')
+        .toList();
+    
+    final String researchMaxEffectParam = researchSettings['maxDp']?.toString() ?? '';
+
+    try {
+      final researchCarUrl = "https://igpmanager.com/index.php?action=send&addon=igp&type=research&jsReply=research&ajax=1&researchMaxEffect=$researchMaxEffectParam${attributesToSaveQuery.join('')}&csrfName=&csrfToken=";
+      final designCarUrl = 'https://igpmanager.com/index.php?action=send&addon=igp&type=design&jsReply=design&ajax=1${designParams.join('')}&csrfName=&csrfToken=';
+
+      await Future.wait([
+        dio.get(researchCarUrl),
+        dio.get(designCarUrl),
+      ]);
+      // final jsonDataResearch = jsonDecode(responses[0].data); // If response data is needed
+      debugPrint('Design and research saved for ${email}');
+    } catch (e) {
+      debugPrint('Error saving design for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<Map<String, String>> buyEnginesWithTokens(int tokenCost) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot buy engines.');
+    }
+
+    Map<int, int> costToAmountMap = {3: 1, 4: 3, 5: 5}; // tokenCost to engineAmount
+    final int enginesToBuy = costToAmountMap[tokenCost] ?? 0;
+
+    if (enginesToBuy == 0) {
+      debugPrint('Invalid token cost for buying engines: $tokenCost for ${email}');
+      return {
+        'tokens': fireUpData?['manager']?['tokens']?.toString() ?? '0',
+        'engines': fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']?.toString() ?? '0'
+      };
+    }
+
+    final currentTokens = int.tryParse(fireUpData?['manager']?['tokens']?.toString() ?? '0') ?? 0;
+    final currentEngines = int.tryParse(fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines']?.toString() ?? '0') ?? 0;
+    
+    Map<String, String> result = {'tokens': currentTokens.toString(), 'engines': currentEngines.toString()};
+
+    if (currentTokens >= tokenCost) {
+      try {
+        final buyEnginesUrl = "https://igpmanager.com/index.php?action=send&type=shop&item=engines&amount=$enginesToBuy&jsReply=shop&csrfName=&csrfToken=";
+        final response = await dio.get(buyEnginesUrl);
+        // final jsonData = jsonDecode(response.data); // If response data is needed
+
+        result['engines'] = (currentEngines + enginesToBuy).toString();
+        result['tokens'] = (currentTokens - tokenCost).toString();
+        
+        fireUpData?['preCache']?['p=cars']?['vars']?['totalEngines'] = result['engines'];
+        fireUpData?['manager']?['tokens'] = result['tokens'];
+        
+        debugPrint('Engines bought for ${email}. New totals - Engines: ${result['engines']}, Tokens: ${result['tokens']}');
+        return result;
+      } catch (e) {
+        debugPrint('Error buying engines for ${email}: $e');
+        rethrow;
+      }
+    } else {
+      debugPrint('Not enough tokens to buy engines for ${email}. Has: $currentTokens, Needs: $tokenCost');
+      return result; // Return current state if not enough tokens
+    }
+  }
+  Future<Map<String, dynamic>> simulatePracticeLap(int carIndex, String tyre) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot simulate practice lap.');
+    }
+
+    String skey = 'd${carIndex + 1}Suspension';
+    String rkey = 'd${carIndex + 1}Ride';
+    String akey = 'd${carIndex + 1}Aerodynamics';
+
+    final url = "https://igpmanager.com/index.php?action=send&addon=igp&type=setup&dNum=${carIndex+1}&ajax=1&race=${raceData?['vars']['raceId']}&suspension=${raceData?['vars']?[skey]}&ride=${raceData?['vars']?[rkey]}&aerodynamics=${raceData?['vars']?[akey]}&practiceTyre=$tyre&csrfName=&csrfToken=";
+
+    debugPrint('Simulating practice lap for ${email}, car ${carIndex + 1}, tyre $tyre. URL: $url');
+
+    try {
+      final response = await dio.get(url);
+      debugPrint('Practice lap simulation response for ${email}: ${response.data}');
+
+      final responseData = jsonDecode(response.data);
+      final lapId = responseData['lapId'];
+
+      if (lapId != null) {
+        // Wait for 3 seconds
+        await Future.delayed(Duration(seconds: 3));
+
+        final practiceLapUrl = "https://igpmanager.com/index.php?action=fetch&type=lapTime&lapId=$lapId&dNum=${carIndex + 1}&addon=igp&ajax=1&jsReply=lapTime&csrfName=&csrfToken=";
+
+        debugPrint('Fetching practice lap time for ${email}, lapId $lapId. URL: $practiceLapUrl');
+
+        final practiceLapResponse = await dio.get(practiceLapUrl);
+        debugPrint('Practice lap time response for ${email}: ${practiceLapResponse.data}');
+
+        final lapData = jsonDecode(practiceLapResponse.data);
+
+        // Extract the required data
+        final lapTyre = lapData['lapTyre'];
+        final lapFuel = lapData['lapFuel'];
+        final hasMoreLaps = lapData['hasMoreLaps'];
+        final comments = lapData['comments'];
+        final lapTime = lapData['lapTime'];
+
+        // Return the extracted data
+        return {
+          'lapTyre': lapTyre,
+          'lapFuel': lapFuel,
+          'hasMoreLaps': hasMoreLaps,
+          'comments': comments,
+          'lapTime': lapTime,
+        };
+      } else {
+        debugPrint('lapId not found in the first response for ${email}');
+        return {}; // Return empty map if lapId is not found
+      }
+    } catch (e) {
+      debugPrint('Error simulating practice lap for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<void> fetchRaceData() async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot fetch race data.');
+    }
+
+    final url = Uri.parse('https://igpmanager.com/index.php?action=fetch&p=race&csrfName=&csrfToken=');
+
+    try {
+      final response = await dio.get(url.toString());
+      final raceDataJson = jsonDecode(response.data);
+
+      if (fireUpData?['team']?['_numCars'] == '2') {
+        raceDataJson['vars']['d2IgnoreAdvanced'] = raceDataJson['vars']['d2IgnoreAdvanced'] == '0' ? true : false;
+        final selectedPushD2 = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d2PushLevel'])?.group(1) ?? '60';
+        raceDataJson['vars']['d2PushLevel'] = selectedPushD2;
+        raceDataJson['vars']['d2RainStartDepth'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2RainStartDepth'])?.group(1) ?? '0';
+        raceDataJson['vars']['d2RainStopLap'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2RainStopLap'])?.group(1) ?? '0';
+        raceDataJson['vars']['d2AdvancedFuel'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2AdvancedFuel'])?.group(1) ?? '0';
+      }
+      raceDataJson['vars']['d1IgnoreAdvanced'] = raceDataJson['vars']['d1IgnoreAdvanced'] == '0' ? true : false;
+      final selectedPushD1 = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d1PushLevel'])?.group(1) ?? '60';
+      raceDataJson['vars']['d1PushLevel'] = selectedPushD1;
+      raceDataJson['vars']['d1RainStartDepth'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStartDepth'])?.group(1) ?? '0';
+      raceDataJson['vars']['d1RainStopLap'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStopLap'])?.group(1) ?? '0';
+      raceDataJson['vars']['d1AdvancedFuel'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1AdvancedFuel'])?.group(1) ?? '0';
+
+      raceDataJson['parsedStrategy'] = extractStrategyData(
+          raceDataJson['vars'],
+          raceDataJson['vars']['d1PushLevel'],
+          fireUpData?['team']?['_numCars'] == '2' ? raceDataJson['vars']['d2PushLevel'] : null
+      );
+      if (raceDataJson['vars']['rulesJson'] is String) {
+        raceDataJson['vars']['rulesJson'] = jsonDecode(raceDataJson['vars']['rulesJson']);
+      }
+      raceData = raceDataJson;
+      debugPrint('Race data fetched for ${email}');
+    } catch (e) {
+      debugPrint('Error fetching race data for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<void> saveStrategy() async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for  Cannot save strategy.');
+    }
+
+    final url = Uri.parse('https://igpmanager.com/index.php?action=send&type=saveAll&addon=igp&ajax=1&jsReply=saveAll&csrfName=&csrfName=&csrfToken=&csrfToken=&pageId=race');
+    
+    Map<String, dynamic> d1Strategy = {
+      'd1setup': {
+        'race': raceData?['vars']['raceId'],
+        'suspension': raceData?['vars']['d1Suspension'],
+        'ride': raceData?['vars']['d1Ride'],
+        'aerodynamics': raceData?['vars']['d1Aerodynamics'],
+        'practiceTyre': 'SS' // Assuming 'SS' is a default or common value
+      },
+      'd1strategy': {
+        "race": raceData?['vars']['raceId'],
+        "dNum": "1",
+        "numPits": raceData?['vars']['d1Pits'],
+        "tyre1": raceData?['parsedStrategy']?[0]?[0]?[0],
+        "laps1": raceData?['parsedStrategy']?[0]?[0]?[1],
+        "fuel1": raceData?['parsedStrategy']?[0]?[0]?[2],
+        "tyre2": raceData?['parsedStrategy']?[0]?[1]?[0],
+        "laps2": raceData?['parsedStrategy']?[0]?[1]?[1],
+        "fuel2": raceData?['parsedStrategy']?[0]?[1]?[2],
+        "tyre3": raceData?['parsedStrategy']?[0]?[2]?[0],
+        "laps3": raceData?['parsedStrategy']?[0]?[2]?[1],
+        "fuel3": raceData?['parsedStrategy']?[0]?[2]?[2],
+        "tyre4": raceData?['parsedStrategy']?[0]?[3]?[0],
+        "laps4": raceData?['parsedStrategy']?[0]?[3]?[1],
+        "fuel4": raceData?['parsedStrategy']?[0]?[3]?[2],
+        "tyre5": raceData?['parsedStrategy']?[0]?[4]?[0],
+        "laps5": raceData?['parsedStrategy']?[0]?[4]?[1],
+        "fuel5": raceData?['parsedStrategy']?[0]?[4]?[2],
+      },
+      "d1strategyAdvanced": {
+        "pushLevel": "${raceData?['vars']['d1PushLevel']}",
+        "d1SavedStrategy": "1", // Assuming "1" means saved
+        "ignoreAdvancedStrategy": "${raceData?['vars']['d1IgnoreAdvanced'] == true ? '0' : '1'}",
+        "advancedFuel": "${raceData?['vars']['d1AdvancedFuel']}",
+        "rainStartTyre": "${raceData?['vars']['d1RainStartTyre']}",
+        "rainStartDepth": "${raceData?['vars']['d1RainStartDepth']}",
+        "rainStopTyre": "${raceData?['vars']['d1RainStopTyre']}",
+        "rainStopLap": "${raceData?['vars']['d1RainStopLap']}",
+      }
+    };
+
+    Map<String, dynamic> d2Strategy = {};
+    if (raceData?['vars']['d2Pits'] != 0 && raceData?['parsedStrategy'] != null && raceData!['parsedStrategy'].length > 1) {
+      d2Strategy = {
+        'd2setup': {
+          'race': raceData?['vars']['raceId'],
+          'suspension': raceData?['vars']['d2Suspension'],
+          'ride': raceData?['vars']['d2Ride'],
+          'aerodynamics': raceData?['vars']['d2Aerodynamics'],
+          'practiceTyre': 'SS'
+        },
+        'd2strategy': {
+          "race": raceData?['vars']['raceId'],
+          "dNum": "2",
+          "numPits": raceData?['vars']['d2Pits'],
+          "tyre1": raceData?['parsedStrategy']?[1]?[0]?[0],
+          "laps1": raceData?['parsedStrategy']?[1]?[0]?[1],
+          "fuel1": raceData?['parsedStrategy']?[1]?[0]?[2],
+          "tyre2": raceData?['parsedStrategy']?[1]?[1]?[0],
+          "laps2": raceData?['parsedStrategy']?[1]?[1]?[1],
+          "fuel2": raceData?['parsedStrategy']?[1]?[1]?[2],
+          "tyre3": raceData?['parsedStrategy']?[1]?[2]?[0],
+          "laps3": raceData?['parsedStrategy']?[1]?[2]?[1],
+          "fuel3": raceData?['parsedStrategy']?[1]?[2]?[2],
+          "tyre4": raceData?['parsedStrategy']?[1]?[3]?[0],
+          "laps4": raceData?['parsedStrategy']?[1]?[3]?[1],
+          "fuel4": raceData?['parsedStrategy']?[1]?[3]?[2],
+          "tyre5": raceData?['parsedStrategy']?[1]?[4]?[0],
+          "laps5": raceData?['parsedStrategy']?[1]?[4]?[1],
+          "fuel5": raceData?['parsedStrategy']?[1]?[4]?[2],
+        },
+        "d2strategyAdvanced": {
+          "pushLevel": "${raceData?['vars']['d2PushLevel']}",
+          "d2SavedStrategy": "1",
+          "ignoreAdvancedStrategy": "${raceData?['vars']['d2IgnoreAdvanced'] == true ? '0' : '1'}",
+          "rainStartTyre": "${raceData?['vars']['d2RainStartTyre']}",
+          "rainStartDepth": "${raceData?['vars']['d2RainStartDepth']}",
+          "rainStopTyre": "${raceData?['vars']['d2RainStopTyre']}",
+          "rainStopLap": "${raceData?['vars']['d2RainStopLap']}",
+        }
+      };
+    } else {
+      // Default d2 strategy if not 2 cars or data missing
+      d2Strategy = {
+        'd2setup': {
+          'race': raceData?['vars']['raceId'],
+          'suspension': '1', 'ride': '0', 'aerodynamics': '0', 'practiceTyre': 'SS'
+        },
+        'd2strategy': {"race": raceData?['vars']['raceId'], "dNum": "2", "numPits": "0"},
+        'd2strategyAdvanced': {"d2SavedStrategy": "0", "ignoreAdvancedStrategy": "1"}
+      };
+    }
+    
+    if (raceData?['vars']['rulesJson']?['refuelling'] == '0') {
+      d1Strategy['d1strategyAdvanced']['advancedFuel'] = "${raceData?['vars']['d1AdvancedFuel']}";
+      if (d2Strategy.containsKey('d2strategyAdvanced')) {
+         d2Strategy['d2strategyAdvanced']['advancedFuel'] = "${raceData?['vars']['d2AdvancedFuel'] ?? '0'}";
+      }
+    }
+
+    Map<String, dynamic> saveData = {
+      ...d1Strategy,
+      ...d2Strategy,
+      // CSRF tokens are typically handled by Dio interceptors or added here if needed
+    };
+
+    try {
+      final response = await dio.post(url.toString(), data: jsonEncode(saveData));
+      debugPrint('Save strategy response for ${email}: ${response.data}');
+      // Potentially update local state based on response if necessary
+    } catch (e) {
+      debugPrint('Error saving strategy for ${email}: $e');
+      rethrow;
+    }
+}
+  Map<String, dynamic> getSponsors(Map<String, dynamic> jsonSponsorResponse) {
+    final jsonData = jsonSponsorResponse['vars'];
+    final emptySponsors = {'income': '0', 'bonus': '0', 'expire': '0', 'status': false};
+    final sponsorsMap = {
+      's1': Map<String, dynamic>.from(emptySponsors),
+      's2': Map<String, dynamic>.from(emptySponsors)
+    };
+
+    final sponsorsData = parseSponsorsFromHtml(jsonData['sponsors']);
+
+    for (final sponsor in sponsorsData) {
+      if (sponsor['number'] == 1) { // Primary sponsor
+        sponsorsMap['s1']?['income'] = sponsor['Income'];
+        sponsorsMap['s1']?['bonus'] = sponsor['Bonus'];
+        sponsorsMap['s1']?['expire'] = sponsor['Contract'];
+        sponsorsMap['s1']?['status'] = jsonData['s1Name'] != null && jsonData['s1Name'].toString().isNotEmpty;
+      } else if (sponsor['number'] == 2) { // Secondary sponsor
+        sponsorsMap['s2']?['income'] = sponsor['Income'];
+        sponsorsMap['s2']?['bonus'] = sponsor['Bonus'];
+        sponsorsMap['s2']?['expire'] = sponsor['Contract'];
+        sponsorsMap['s2']?['status'] = jsonData['s2Name'] != null && jsonData['s2Name'].toString().isNotEmpty;
+      }
+    }
+
+    if (sponsorsMap['s1']?['status'] == false) {
+      debugPrint('Primary sponsor expired for ${email}');
+    }
+    if (sponsorsMap['s2']?['status'] == false) {
+      debugPrint('Secondary sponsor expired for ${email}');
+    }
+    return sponsorsMap;
+  }
+  Future<Map<String, List<String>>> pickSponsor(int number) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for account. Cannot fetch pickSponsor data.');
+    }
+
+    final url = Uri.parse('https://igpmanager.com/index.php?action=fetch&d=sponsor&location=$number&csrfName=&csrfToken=');
+
+    try {
+      final response = await dio.get(url.toString());
+      final jsonData = jsonDecode(response.data);
+      return parsePickSponsorData(jsonData, number);
+    } catch (e) {
+      debugPrint('Error fetching pickSponsor data for ${email}: $e');
+      rethrow;
+    }
+  }
+  Future<dynamic> saveSponsor(int number, String id, String income, String bonus) async {
+    Dio? dio = dioClient;
+    if (dio == null) {
+      throw Exception('Dio client not initialized for account. Cannot save sponsor.');
+    }
+
+    try {
+      final signSponsorUrl = "https://igpmanager.com/index.php?action=send&type=contract&enact=sign&eType=5&eId=$id&location=$number&jsReply=contract&csrfName=&csrfToken=";
+      final response = await dio.get(signSponsorUrl);
+      final jsonData = jsonDecode(response.data);
+
+      // Update local account fireUpData
+      final sponsorKey = 's$number';
+      if (fireUpData?['sponsor'] != null && fireUpData!['sponsor'][sponsorKey] != null) {
+        fireUpData!['sponsor'][sponsorKey]['income'] = income;
+        fireUpData!['sponsor'][sponsorKey]['bonus'] = bonus;
+        fireUpData!['sponsor'][sponsorKey]['expire'] = '10 race(s)'; // Assuming default expiry
+        fireUpData!['sponsor'][sponsorKey]['status'] = true;
+      } else {
+        debugPrint("Warning: fireUpData['sponsor'] or specific sponsor key not found for ${email}");
+      }
+      return jsonData;
+    } catch (e) {
+      debugPrint('Error saving sponsor for ${email}: $e');
+      rethrow;
+    }
   }
 }

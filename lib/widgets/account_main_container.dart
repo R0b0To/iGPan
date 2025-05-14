@@ -34,7 +34,7 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
 
     if (value == 'browser') {
       final Uri url = Uri.parse('https://igpmanager.com/app/');
-      final dio = dioClients[widget.account.email]; // Get the Dio instance for this account
+      final dio = widget.account.dioClient; // Get the Dio instance for this account
 
       if (dio == null) {
          print('Error: Dio client not found for ${widget.account.email}');

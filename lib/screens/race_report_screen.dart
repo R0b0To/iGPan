@@ -14,7 +14,6 @@ class RaceReportScreen extends StatefulWidget {
 }
 
 class _RaceReportScreenState extends State<RaceReportScreen> {
-  final HistoryService _historyService = HistoryService(); // Instantiate the service
   Map<dynamic, dynamic>? _reportInfo;
   bool _isLoading = true;
   late Account _account;
@@ -27,7 +26,7 @@ class _RaceReportScreenState extends State<RaceReportScreen> {
 
   Future<void> _fetchRaceReport() async {
     try {
-      final reportData = await _historyService.requestRaceReport(_account, widget.report['id']); // Call method on service instance
+      final reportData = await _account.requestRaceReport(widget.report['id']); // Call method on service instance
       setState(() {
         _reportInfo = reportData;
         _isLoading = false;

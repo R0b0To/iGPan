@@ -9,8 +9,7 @@ import 'package:path_provider/path_provider.dart'; // For appDocumentPath initia
 import '../models/account.dart';
 import '../utils/data_parsers.dart'; // For parseDriversFromHtml
 import '../utils/helpers.dart'; // For parseFireUpData
-import 'race_service.dart';
-import 'sponsor_service.dart'; // Import the new SponsorService
+
 
 // Global state related to API client - consider managing this with a state management solution or DI later
 List<Account> accounts = [];
@@ -18,7 +17,6 @@ final _storage = const FlutterSecureStorage();
 const String _accountsKey = 'accounts';
 
 final Map<String, CookieJar> cookieJars = {};
-final Map<String, Dio> dioClients = {};
 String? appDocumentPath;
 
 // Initialize appDocumentPath once
@@ -81,11 +79,11 @@ Future<bool> startClientSessionForAccount(Account account, {VoidCallback? onSucc
 
 
     if (cookieJar != null) {
-      Dio dio = dioClients.putIfAbsent(account.email, () {
-        Dio newDio = Dio();
-        newDio.interceptors.add(CookieManager(cookieJar!));
-        return newDio;
-      });
+      if (account.dioClient == null) {
+        account.dioClient = Dio();
+        account.dioClient!.interceptors.add(CookieManager(cookieJar!));
+      }
+      Dio dio = account.dioClient!;
 
       final fireUpUrl = Uri.parse('https://igpmanager.com/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false&csrfName=&csrfToken=');
       final fireUpResponse = await dio.get(fireUpUrl.toString());
@@ -104,7 +102,7 @@ Future<bool> startClientSessionForAccount(Account account, {VoidCallback? onSucc
           final sponsorResponse = await dio.get(sponsorUrl.toString());
           final jsonSponsorResponse = jsonDecode(sponsorResponse.data);
           // Use SponsorService to get sponsors
-          fireUpJson['sponsor'] = SponsorService().getSponsors(jsonSponsorResponse, account);
+          fireUpJson['sponsor'] = account.getSponsors(jsonSponsorResponse);
         } catch (e) {
           debugPrint('Error fetching sponsors for ${account.email}: $e');
         }
@@ -113,7 +111,7 @@ Future<bool> startClientSessionForAccount(Account account, {VoidCallback? onSucc
             account.fireUpData!['team'] != null &&
             account.fireUpData!['team']['_league'] != '0') {
           // Use RaceService to fetch race data
-          await RaceService().fetchRaceData(account);
+          await account.fetchRaceData();
         } else {
           debugPrint('Account ${account.email} is not in a league. Skipping race data fetch.');
         }
@@ -150,11 +148,11 @@ Future<bool> login(Account account, {VoidCallback? onSuccess}) async {
     cookieJars[account.email] = cookieJar;
   }
 
-  Dio dio = dioClients.putIfAbsent(account.email, () {
-    Dio newDio = Dio();
-    newDio.interceptors.add(CookieManager(cookieJar!));
-    return newDio;
-  });
+  if (account.dioClient == null) {
+    account.dioClient = Dio();
+    account.dioClient!.interceptors.add(CookieManager(cookieJar!));
+  }
+  Dio dio = account.dioClient!;
 
   final url = Uri.parse('https://igpmanager.com/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1');
   final loginData = {
