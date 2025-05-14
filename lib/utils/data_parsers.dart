@@ -184,30 +184,6 @@ Map<String, List<String>> parsePickSponsorData(Map<String, dynamic> jsonData, in
   };
 }
 
-// Placeholder for parseRaces - definition not found in original igp_client.dart
-// List<dynamic> parseRaces(String htmlSrc) {
-//   // Implementation would go here
-//   return [];
-// }
-
-// Placeholder for parseRaceReport - definition not found in original igp_client.dart
-// Map<String, dynamic> parseRaceReport(Map<String, dynamic> vars) {
-//   // Implementation would go here
-//   return {};
-// }
-
-// Placeholder for parseDriverResult - definition not found in original igp_client.dart
-// List<dynamic> parseDriverResult(String htmlResults) {
-//   // Implementation would go here
-//   return [];
-// }
-
-// Placeholder for parseBest - definition not found in original igp_client.dart
-// int parseBest(String ratingHtml, int tierFactor) {
-//   // Implementation would go here
-//   return 0;
-// }
-
 int parseBest(String htmlString, int tierFactor) {
   final document = html_parser.parse(htmlString);
   final svg = document.querySelector('svg');
@@ -224,11 +200,6 @@ int parseBest(String htmlString, int tierFactor) {
   return 0;
 }
 
-// Placeholder for isChecked - definition not found in original igp_client.dart
-// bool isChecked(String checkHtml) {
-//   // Implementation would go here
-//   return false;
-// }
 String extractDate(String text) {
   // Remove any hidden spans and links
   final strippedText = text.replaceAll(RegExp(r'<[^>]*>'), '');

@@ -249,7 +249,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     // Index 1: Accounts View
                     const AccountsScreen(),
                       // Index 2: Actions View (Placeholder)
-                      const Center(child: Text('Actions Area (Not Implemented)')),
+                    const Center(child: Text('Actions Area (Not Implemented)')),
                     ],
                   );
               },

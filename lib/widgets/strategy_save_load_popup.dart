@@ -692,7 +692,7 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
       return Expanded(child: Center(child: Text(_error!, style: TextStyle(color: Colors.red))));
     }
     if (_savedStrategies.isEmpty) {
-      return const Expanded(child: Center(child: Text('No saved strategies for this track.')));
+      return const SizedBox(child: Center(child: Text('No saved strategies for this track.')));
     }
 
     return SizedBox(
@@ -710,26 +710,22 @@ class _StrategySaveLoadPopupState extends State<StrategySaveLoadPopup> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                    IconButton(
-                  onPressed: _isLoading ? null : () => _loadStrategy(hash), 
-                  icon: Icon(Icons.upload, color: const Color.fromARGB(255, 44, 94, 32)),
-                  
-                ),
-              
-                SizedBox(width: 4), 
                 Expanded(
-                   child: Container( 
-                      height: 35, 
-                      alignment: Alignment.center, 
-                      child: _buildSavedStrategyPreview(strategyData),
-                    ),
+                   child: InkWell(
+                      onTap: _isLoading ? null : () => _loadStrategy(hash),
+                      child: Container(
+                         height: 35,
+                         alignment: Alignment.center,
+                         child: _buildSavedStrategyPreview(strategyData),
+                       ),
+                   ),
                 ),
                   IconButton(
                   icon: Icon(Icons.delete_outline, color: Colors.redAccent),
-                  iconSize: 20, 
-                  constraints: BoxConstraints(), 
-                  padding: EdgeInsets.all(4), 
-                  onPressed: _isLoading ? null : () => _deleteStrategy(hash), 
+                  iconSize: 20,
+                  constraints: BoxConstraints(),
+                  padding: EdgeInsets.all(4),
+                  onPressed: _isLoading ? null : () => _deleteStrategy(hash),
                 ),
             
                 
