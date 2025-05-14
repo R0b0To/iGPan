@@ -309,17 +309,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
   @override
   void initState() {
     super.initState();
-    String skey = 'd${widget.carIndex + 1}Suspension';
-    String rkey = 'd${widget.carIndex + 1}Ride';
-    String akey = 'd${widget.carIndex + 1}Aerodynamics';
 
-    initialSuspension = suspensionMap[widget.account.raceData?['vars']?[skey]] ?? 'neutral'; // Default to neutral
-    _rideController = TextEditingController(text: widget.account.raceData?['vars']?[rkey]?.toString() ?? '0');
-    _aeroController = TextEditingController(text: widget.account.raceData?['vars']?[akey]?.toString() ?? '0');
-    _rideOffsetController = TextEditingController(text: ''); // Initialize offset controllers
-    _aeroOffsetController = TextEditingController(text: '');
 
-    // TODO: Add listeners to controllers if needed to save changes
   }
 
    @override
@@ -334,6 +325,13 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
 
   @override
   Widget build(BuildContext context) {
+
+    initialSuspension = suspensionMap[widget.account.raceData?['vars']?['d${widget.carIndex + 1}Suspension']] ?? 'neutral'; // Default to neutral
+    _rideController = TextEditingController(text: widget.account.raceData?['vars']?['d${widget.carIndex + 1}Ride']?.toString() ?? '0');
+    _aeroController = TextEditingController(text: widget.account.raceData?['vars']?['d${widget.carIndex + 1}Aerodynamics']?.toString() ?? '0');
+    _rideOffsetController = TextEditingController(text: ''); // Initialize offset controllers
+    _aeroOffsetController = TextEditingController(text: '');
+    
     // Ensure driver data exists before accessing it
     final driver = (widget.account.fireUpData != null &&
                     widget.account.fireUpData!['drivers'] != null &&

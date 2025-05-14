@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart'; // Import path_provider
 import 'accounts_screen.dart';
 import 'igp_client.dart';
 import 'widgets/account_main_container.dart'; // Import the extracted widget
+import 'screens/actions_screen.dart'; // Import the new ActionsScreen
 // Removed utils/helpers.dart import as it's not directly used here anymore
 
 // Define a ValueNotifier to hold the list of accounts
@@ -248,24 +249,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     // Index 1: Accounts View
                     const AccountsScreen(),
-                      // Index 2: Actions View (Placeholder)
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        ElevatedButton(
-                          onPressed: () {
-                            // Iterate through accounts and call claimDailyReward for enabled ones
-                            for (var account in accountsNotifier.value) {
-                              if (account.enabled) {
-                                accountsNotifier.value = List.from(accounts);
-                                account.claimDailyReward();
-                              }
-                            }
-                          },
-                          child: const Text('Claim Daily Reward for Enabled Accounts'),
-                        ),
-                      ],
-                    ),
+                      // Index 2: Actions View
+                    const ActionsScreen(),
                     ],
                   );
               },
