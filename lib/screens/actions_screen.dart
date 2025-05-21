@@ -79,6 +79,19 @@ class _ActionsScreenState extends State<ActionsScreen> {
             },
             child: const Text('Perform Car Setup for Enabled Accounts'),
           ),
+                    ElevatedButton(
+            onPressed: () {
+              // Iterate through accounts and call claimDailyReward for enabled ones
+              for (var account in accountsNotifier.value) {
+                if (account.enabled) {
+                  account.saveStrategy();
+                }
+              }
+              // Notify listeners that the accounts list might have been updated (e.g., nDailyReward removed)
+              accountsNotifier.value = List.from(accountsNotifier.value);
+            },
+            child: const Text('Save Strategy for Enabled Accounts'),
+          ),
         ],
       ),
     );
