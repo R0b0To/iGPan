@@ -378,8 +378,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 if (newValue != null) {
                   setState(() {
                     initialSuspension = newValue;
-                    String skey = 'd${widget.carIndex + 1}Suspension';
-                    widget.account.raceData?['vars']?[skey] = suspensionMapRev[newValue];
+                    String suspensionKey = 'd${widget.carIndex + 1}Suspension';
+                    widget.account.raceData?['vars']?[suspensionKey] = suspensionMapRev[newValue];
                     widget.onAccountChanged(true); // Notify parent of change
                   });
                 }
@@ -414,12 +414,12 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                         _rideController.text = suggestedRide.toString();
                         _aeroController.text = suggestedWing.toString();
                         // Update the underlying raceData as well
-                        String skey = 'd${widget.carIndex + 1}Suspension';
-                        String rkey = 'd${widget.carIndex + 1}Ride';
-                        String akey = 'd${widget.carIndex + 1}Aerodynamics';
-                        widget.account.raceData?['vars']?[skey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
-                        widget.account.raceData?['vars']?[rkey] = suggestedRide;
-                        widget.account.raceData?['vars']?[akey] = suggestedWing;
+                        String suspensionKey = 'd${widget.carIndex + 1}Suspension';
+                        String rideHeightKey = 'd${widget.carIndex + 1}Ride';
+                        String aerodynamicsKey = 'd${widget.carIndex + 1}Aerodynamics';
+                        widget.account.raceData?['vars']?[suspensionKey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
+                        widget.account.raceData?['vars']?[rideHeightKey] = suggestedRide;
+                        widget.account.raceData?['vars']?[aerodynamicsKey] = suggestedWing;
                       });
                     }
                   }
@@ -448,8 +448,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 NumericalRangeFormatter(min: 0, max: 100),
               ],
               onChanged: (newValue) {
-                String rkey = 'd${widget.carIndex + 1}Ride';
-                widget.account.raceData?['vars']?[rkey] = int.tryParse(newValue) ?? 0;
+                String rideHeightKey = 'd${widget.carIndex + 1}Ride';
+                widget.account.raceData?['vars']?[rideHeightKey] = int.tryParse(newValue) ?? 0;
                  widget.onAccountChanged(true);
               },
             ),
@@ -475,8 +475,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 NumericalRangeFormatter(min: 1, max: 100),
               ],
               onChanged: (newValue) {
-                String akey = 'd${widget.carIndex + 1}Aerodynamics';
-                widget.account.raceData?['vars']?[akey] = int.tryParse(newValue) ?? 0;
+                String aerodynamicsKey = 'd${widget.carIndex + 1}Aerodynamics';
+                widget.account.raceData?['vars']?[aerodynamicsKey] = int.tryParse(newValue) ?? 0;
                  widget.onAccountChanged(true);
               },
             ),

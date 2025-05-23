@@ -45,9 +45,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   bool _isLoading = true;
-  int _currentPageIndex = 0; // State for horizontal page index (wide screen)
-  int _bottomNavIndex = 0; // State for BottomNavigationBar
-  int _currentNarrowCarouselIndex = 0; // State for narrow screen carousel
+  int _currentPageIndex = 0; // Tracks the current page index for the wide-screen horizontal CarouselSlider.
+  int _bottomNavIndex = 0; // Tracks the selected index of the BottomNavigationBar, determining which main view (Home, Accounts, Actions) is active.
+  int _currentNarrowCarouselIndex = 0; // Tracks the current account card index for the narrow-screen horizontal CarouselSlider.
   final PageController _pageController = PageController();
 
   @override
@@ -63,6 +63,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
+  // Asynchronously loads account data from storage when the widget is initialized.
+  // It also sets the global `appDocumentPath` and updates `accountsNotifier`.
   Future<void> _loadAccounts() async {
     final directory = await getApplicationDocumentsDirectory();
     appDocumentPath = directory.path; // Set the appDocumentPath
@@ -114,20 +116,26 @@ class _MyHomePageState extends State<MyHomePage> {
                             ),
                           );
                         } else {
-                          // Accounts exist, use LayoutBuilder for enabledAccounts
+                          // Accounts exist, use LayoutBuilder to determine layout based on available screen width.
                           return LayoutBuilder(
                             builder: (context, constraints) {
-                              // Define minimum size for sub-windows
+                              // Define minimum size for individual account display containers.
                               const double minWindowWidth = 400;
                               const double minWindowHeight = 240;
 
-                              // Check if there's enough horizontal space for two windows side-by-side
+                              // Condition for switching layouts:
+                              // If the screen width can accommodate at least two 'minWindowWidth' containers side-by-side,
+                              // use the wide-screen layout. Otherwise, use the narrow-screen layout.
                               bool canStackWindowsHorizontally = constraints.maxWidth >= (minWindowWidth * 2);
 
                               if (canStackWindowsHorizontally) {
-                                // Wide screen: Paginated Vertical Stack (Horizontal PageView)
-                                const double estimatedItemHeight = minWindowHeight + 70; // Estimate height + padding
-                                final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, enabledAccounts.length.clamp(1, enabledAccounts.length)); // Ensure at least 1, handle empty enabledAccounts
+                                // Wide-screen layout:
+                                // Displays accounts in a paginated vertical stack. Each page is horizontally scrollable
+                                // using a CarouselSlider. This allows multiple accounts to be visible at once if vertical space permits.
+                                const double estimatedItemHeight = minWindowHeight + 70; // Estimate height per item + padding.
+                                // Calculate how many items can fit vertically per page.
+                                final itemsPerPage = (constraints.maxHeight / estimatedItemHeight).floor().clamp(1, enabledAccounts.length.clamp(1, enabledAccounts.length));
+                                // Calculate the total number of horizontal pages needed.
                                 final pageCount = (enabledAccounts.length / itemsPerPage).ceil();
 
                                 if (enabledAccounts.isEmpty) {
@@ -190,7 +198,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                   ],
                                 );
                               } else {
-                                // Narrow screen: Horizontal PageView for individual accounts
+                                // Narrow-screen layout:
+                                // Displays one account card at a time in a horizontally scrolling CarouselSlider.
+                                // This is suitable for smaller screens where side-by-side display isn't feasible.
                                 if (enabledAccounts.isEmpty) {
                                   return const Center(child: Text('No enabled accounts to display. Manage accounts in the \'Accounts\' tab.'));
                                 }
