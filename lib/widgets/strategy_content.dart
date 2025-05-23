@@ -376,23 +376,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                         insetPadding: EdgeInsets.zero,
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Text('Advanced: '),
-                                Switch(
-                                  value: isAdvancedEnabled,
-                                  onChanged: (bool value) {
-                                    setState(() {
-                                      isAdvancedEnabled = value;
-                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
-                                       widget.onAccountChanged(true);
-                                      // No need to update parent state here, will be done on dialog close
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
+                          children: [                       
                             if (widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0')
                               Row(children: [
                                 Text('Fuel:'),
@@ -580,11 +564,34 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                           ], // Closing the children list for the Column
                         ), // Closing the Column
                         actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text('Close'),
+                          SizedBox(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text('Advanced: '),
+                                    Switch(
+                                      value: isAdvancedEnabled,
+                                      onChanged: (bool value) {
+                                        setState(() {
+                                          isAdvancedEnabled = value;
+                                          widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
+                                           widget.onAccountChanged(true);
+                                          // No need to update parent state here, will be done on dialog close
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Close'),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       );

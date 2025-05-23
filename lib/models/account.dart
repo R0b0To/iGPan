@@ -511,7 +511,12 @@ class Account {
       if (raceDataJson['vars']['rulesJson'] is String) {
         raceDataJson['vars']['rulesJson'] = jsonDecode(raceDataJson['vars']['rulesJson']);
       }
-
+      
+      final raceNameHtml = raceDataJson?['vars']?['raceName'] as String?;
+                        final RegExp regExp = RegExp(r'class="[^"]*f-([a-z]{2})[^"]*"');
+                        final Match? match = regExp.firstMatch(raceNameHtml ?? '');
+                        final String countryCode = match?.group(1)?.toUpperCase() ?? '';
+      raceDataJson['trackCode'] = countryCode; // Extracted country code
       // Store the processed race data in the account instance.
       raceData = raceDataJson;
       debugPrint('Race data fetched for ${email}');
