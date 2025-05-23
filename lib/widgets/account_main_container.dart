@@ -27,6 +27,40 @@ class AccountMainContainer extends StatefulWidget { // Changed to StatefulWidget
 }
 
 class _AccountMainContainerState extends State<AccountMainContainer> { // State class
+  bool _isLoadingData = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.account.fireUpData == null) {
+      _isLoadingData = true;
+      _fetchAccountData();
+    }
+  }
+
+  Future<void> _fetchAccountData() async {
+    await startClientSessionForAccount(widget.account, onSuccess: () {
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
+      // Assuming accountsNotifier and accounts are globally accessible or passed differently
+      // For now, using the provided accountsNotifier directly.
+      accountsNotifier.value = List.from(accountsNotifier.value);
+      debugPrint('Account data loaded for ${widget.account.email}');
+    });
+    // If startClientSessionForAccount itself can fail or not call onSuccess,
+    // ensure _isLoadingData is set to false in such error cases too.
+    // For simplicity, assuming onSuccess is always called on completion for now.
+    // If not, add error handling here and set _isLoadingData = false.
+    if (mounted && widget.account.fireUpData == null) { // Handle case where data is still null after attempt
+        setState(() {
+            _isLoadingData = false; // Stop loading, but data might still be null
+        });
+        debugPrint('Failed to load account data for ${widget.account.email}');
+    }
+  }
 
   // Handles menu item selections
   void _handleMenuSelection(String value) async { // Make async for launchUrl
@@ -84,17 +118,7 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
 
   @override
   Widget build(BuildContext context) {
-    // Access properties using widget.
-    if (widget.account.fireUpData == null) {
-      startClientSessionForAccount(widget.account, onSuccess: () {
-          debugPrint('layout loaded from account_main_container.dart');
-          if (mounted) { // Check if the state is still mounted
-             setState(() {}); // Basic way to trigger rebuild, refine if needed
-          }
-          accountsNotifier.value = List.from(accountsNotifier.value); // Assuming this handles state elsewhere
-        });
-
-      // Provide a more informative placeholder or loading state
+    if (_isLoadingData) {
       return Card(
         margin: const EdgeInsets.all(8.0),
         child: Container(
@@ -116,7 +140,31 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
       );
     }
 
-
+    if (widget.account.fireUpData == null && !_isLoadingData) {
+      // Handle case where loading finished but data is still null (e.g., error)
+      return Card(
+        margin: const EdgeInsets.all(8.0),
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          height: widget.canStackWindowsHorizontally ? widget.minWindowHeight + 50 : (widget.minWindowHeight * 2) + 60,
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(widget.account.nickname ?? widget.account.email ?? 'Unnamed Account', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 10),
+                const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                const SizedBox(height: 10),
+                const Text('Failed to load account data.'),
+                ElevatedButton(onPressed: _fetchAccountData, child: const Text('Retry'))
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Data is loaded and available
     double fontSize = widget.minWindowWidth > 100 ? 24 : 18; // <<< Change font size based on width
     return Card(
         child: SafeArea(
