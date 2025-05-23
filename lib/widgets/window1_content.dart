@@ -19,12 +19,71 @@ class Window1Content extends StatefulWidget {
 class _Window1ContentState extends State<Window1Content>
     with SingleTickerProviderStateMixin { // Add mixin for TabController
 
+  // Define the fuel and tyres maps
+  final Map<String, Map<String, int>> _fuelMap = {
+    '11': {'fuel_economy':5,'acceleration':-3},
+    '7': {'fuel_economy':3,'acceleration':-1},
+    '8': {'fuel_economy':-1,'acceleration':3},
+    '9': {'fuel_economy':-2,'acceleration':4},
+    '10': {'fuel_economy':2},
+  };
+
+  final Map<String, Map<String, int>> _tyreMap = {
+    '12': {'handling':5,'tyre_economy':-3},
+    '13': {'braking':5,'tyre_economy':-3},
+    '14': {'tyre_economy':5,'handling':-1},
+    '15': {'acceleration':3,'tyre_economy':-3},
+    '16': {'tyre_economy':3},
+  };
+
+    final Map<String, Map<String, int>> _engineMap = {
+    '3': {'fuel_economy':-6,'acceleration':10},
+    '1': {'tyre_economy':5},
+    '2': {'braking':10,'fuel_economy':-6},
+    '4': {'fuel_economy':-6,'handling':10},
+    '5': {'downforce':10,'acceleration':-5},
+    '6': {'fuel_economy':10,'acceleration':-4},
+  };
 
   String _totalEnginesText = 'N/A'; // State variable to hold the text for total engines
   String _totalPartsText = 'N/A'; // State variable to hold the text for total parts
   String _totalTokens = 'N/A';
   bool _rewardStatus = false; // State variable for reward status
   TabController? _tabController; // Controller for the tabs
+
+  final List<IconData> attributeIcons = [
+    MdiIcons.gauge, // acceleration
+    MdiIcons.carBrakeLowPressure, // braking
+    MdiIcons.thermometer, // cooling
+    MdiIcons.arrowDown, // downforce
+    MdiIcons.gasStation, // fuel_economy
+    MdiIcons.steering, // handling
+    MdiIcons.wrench, // reliability
+    MdiIcons.tire, // tyre_economy
+  ];
+
+  IconData _getIconForAttribute(String attribute) {
+    switch (attribute) {
+      case 'acceleration':
+        return attributeIcons[0];
+      case 'braking':
+        return attributeIcons[1];
+      case 'cooling':
+        return attributeIcons[2];
+      case 'downforce':
+        return attributeIcons[3];
+      case 'fuel_economy':
+        return attributeIcons[4];
+      case 'handling':
+        return attributeIcons[5];
+      case 'reliability':
+        return attributeIcons[6];
+      case 'tyre_economy':
+        return attributeIcons[7];
+      default:
+        return Icons.help_outline; // Default icon for unknown attributes
+    }
+  }
 
   // Reports tab state
   final ScrollController _scrollController = ScrollController();
@@ -318,21 +377,107 @@ class _Window1ContentState extends State<Window1Content>
                               child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
                                
-                               child: Text('Eng'),
+                               child: Column(
+                                 mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    widget
+                                        .account
+                                        .fireUpData?['preCache']?['p=cars']?['vars']?['engineSupply'],
+                                  ),
+                                  if (widget
+                                          .account
+                                          .fireUpData?['preCache']?['p=cars']?['vars']?['engineId'] !=
+                                      null && _engineMap[widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['engineId']]?.entries!=null)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children:
+                                          _engineMap[widget
+                                                  .account
+                                                  .fireUpData!['preCache']!['p=cars']!['vars']!['engineId']]!
+                                              .entries
+                                              .map((entry) {
+                                                return Row(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      _getIconForAttribute(
+                                                        entry.key,
+                                                      ),
+                                                      size: 16,
+                                                    ),
+                                                    SizedBox(width: 2),
+                                                    Text('${entry.value}'),
+                                                    SizedBox(
+                                                      width: 8,
+                                                    ), // space between attributes
+                                                  ],
+                                                );
+                                              })
+                                              .toList(),
+                                    ),
+                                ],
+                              ),
                              ),
                            ),
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
                             
-                               child: Text('Fuel'),
+                               child: Column(
+                                 mainAxisSize: MainAxisSize.min,
+                                 children: [
+                                   Text(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['fuelSupply']),
+                                 if (widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['fuelId'] != null)
+  Row(
+    mainAxisSize: MainAxisSize.min,
+    children: _fuelMap[widget.account.fireUpData!['preCache']!['p=cars']!['vars']!['fuelId']]!
+        .entries
+        .map((entry) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_getIconForAttribute(entry.key), size: 16),
+              SizedBox(width: 2),
+              Text('${entry.value}'),
+              SizedBox(width: 8), // space between attributes
+            ],
+          );
+        }).toList(),
+  ),
+
+                                 ],
+                               ),
                              ),
                            ),
                            Expanded(
                              child: ElevatedButton(
                                onPressed: () {}, // Add functionality later
 
-                               child: Text('Tyres'),
+                               child: Column(
+                                 mainAxisSize: MainAxisSize.min,
+                                 children: [
+                                  Text(widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['tyreSupply']),
+                                   if (widget.account.fireUpData?['preCache']?['p=cars']?['vars']?['tyreId'] != null)
+  Row(
+    mainAxisSize: MainAxisSize.min,
+    children: _tyreMap[widget.account.fireUpData!['preCache']!['p=cars']!['vars']!['tyreId']]!
+        .entries
+        .map((entry) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(_getIconForAttribute(entry.key), size: 16),
+              SizedBox(width: 2),
+              Text('${entry.value}'),
+              SizedBox(width: 8), // spacing between entry widgets
+            ],
+          );
+        }).toList(),
+  ),
+                                 ],
+                               ),
                              ),
                            ),
                          ],
