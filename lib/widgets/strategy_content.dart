@@ -147,7 +147,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             ),
             child: Icon(
                   MdiIcons.contentSaveEdit,
-                    color: Colors.blueAccent, // or any other color
+                    color: Colors.blueGrey, // or any other color
                   size: 30.0, // increase this value to make it bigger
                         ),
           ),
@@ -334,6 +334,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        SizedBox(height: 4), // Spacing between top and button
         pitStopRow,
 
         SizedBox(height: 8), // Spacing between button and scroll view

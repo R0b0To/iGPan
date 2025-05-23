@@ -72,6 +72,19 @@ class _MyHomePageState extends State<MyHomePage> {
     await loadAccounts(); // Assuming loadAccounts populates the global 'accounts' list initially
     accountsNotifier.value = List.from(accounts); // Initialize the ValueNotifier with loaded accounts
 
+    // Trigger data loading for enabled accounts immediately
+    final enabledAccounts = accountsNotifier.value.where((account) => account.enabled).toList();
+    for (var account in enabledAccounts) {
+      // No need to await here, let them load concurrently
+      startClientSessionForAccount(account, onSuccess: () {
+        // Optionally update the UI if needed after each account loads
+        // For now, just debug print
+        debugPrint('Pre-loaded data for enabled account: ${account.email}');
+        // This might trigger a rebuild of AccountMainContainer if it's listening to changes
+        // accountsNotifier.value = List.from(accountsNotifier.value); // This would force a rebuild
+      });
+    }
+
     setState(() {
       _isLoading = false;
     });
