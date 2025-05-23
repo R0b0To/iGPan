@@ -17,23 +17,25 @@ ToDo:
             staff
             market?
         practice
+            improve layout
         setup
             add suggestion after practice laps?
             implement ideal setup if raining
     misc:
-        menu bar functions:
+        live race in progress
+            make layout red? disable buttons?
+        actions functions:
             daily
+                update labels after press
+                fix errors and handle if the daily was already claimed
             repair
-            setup
             strategy
                 how? first available strategy? pre-selected?
-            save
         add more stints
             only visual, make it clear
     screens:
         strategy save load style
             layout shouldn't change if no strategies are stored
-            load should be the preview container   
             save button should be container with preview
         advanced strategy
             changing push level from here should overwrite the stints pushes (update the fuel in the main container or add another label here)

@@ -147,7 +147,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
             ),
             child: Icon(
                   MdiIcons.contentSaveEdit,
-                    color: Colors.blueAccent, // or any other color
+                    color: Colors.blueGrey, // or any other color
                   size: 30.0, // increase this value to make it bigger
                         ),
           ),
@@ -334,6 +334,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        SizedBox(height: 4), // Spacing between top and button
         pitStopRow,
 
         SizedBox(height: 8), // Spacing between button and scroll view
@@ -375,23 +376,7 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                         insetPadding: EdgeInsets.zero,
                         content: Column(
                           mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                Text('Advanced: '),
-                                Switch(
-                                  value: isAdvancedEnabled,
-                                  onChanged: (bool value) {
-                                    setState(() {
-                                      isAdvancedEnabled = value;
-                                      widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
-                                       widget.onAccountChanged(true);
-                                      // No need to update parent state here, will be done on dialog close
-                                    });
-                                  },
-                                ),
-                              ],
-                            ),
+                          children: [                       
                             if (widget.account.raceData?['vars']?['rulesJson']?['refuelling'] == '0')
                               Row(children: [
                                 Text('Fuel:'),
@@ -579,11 +564,34 @@ class _StrategyContentState extends State<StrategyContent> with AutomaticKeepAli
                           ], // Closing the children list for the Column
                         ), // Closing the Column
                         actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: Text('Close'),
+                          SizedBox(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text('Advanced: '),
+                                    Switch(
+                                      value: isAdvancedEnabled,
+                                      onChanged: (bool value) {
+                                        setState(() {
+                                          isAdvancedEnabled = value;
+                                          widget.account.raceData?['vars']?['d${widget.carIndex+1}IgnoreAdvanced'] = value;
+                                           widget.onAccountChanged(true);
+                                          // No need to update parent state here, will be done on dialog close
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: Text('Close'),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       );

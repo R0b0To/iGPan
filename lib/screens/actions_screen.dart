@@ -60,12 +60,12 @@ class _ActionsScreenState extends State<ActionsScreen> {
                           final int suggestedSuspension = carSetup.suspension + 1;
 
                           // Update the underlying raceData as well
-                          String skey = 'd${carIndex + 1}Suspension';
-                          String rkey = 'd${carIndex + 1}Ride';
-                          String akey = 'd${carIndex + 1}Aerodynamics';
-                          account.raceData?['vars']?[skey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
-                          account.raceData?['vars']?[rkey] = suggestedRide;
-                          account.raceData?['vars']?[akey] = suggestedWing;
+                          String suspensionKey = 'd${carIndex + 1}Suspension';
+                          String rideHeightKey = 'd${carIndex + 1}Ride';
+                          String aerodynamicsKey = 'd${carIndex + 1}Aerodynamics';
+                          account.raceData?['vars']?[suspensionKey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
+                          account.raceData?['vars']?[rideHeightKey] = suggestedRide;
+                          account.raceData?['vars']?[aerodynamicsKey] = suggestedWing;
                        
                           print('Performed car setup for account: ${account.email}');
                         }

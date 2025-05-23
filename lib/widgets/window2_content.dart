@@ -1,3 +1,4 @@
+import 'package:country_flags/country_flags.dart';
 import 'package:igpan/widgets/research_dialog_content.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import '../utils/helpers.dart';
@@ -177,18 +178,50 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  // Extract the race name by removing the img tag
-                  (widget.account.raceData?['vars']?['raceName'] as String?)
-                      ?.replaceAll(RegExp(r'<img[^>]*>'), '')
-                      .trim() ?? 'No Race Data',
-                  style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Builder(
+                      builder: (BuildContext context) {
+                        final countryCode = widget.account.raceData?['trackCode'];
+                        if (countryCode.isNotEmpty) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: CountryFlag.fromCountryCode(
+                              shape: const RoundedRectangle(6),
+                              countryCode,
+                              height: 20, // Adjust size as needed
+                              width: 25, // Adjust size as needed
+                            ),
+                          );
+                        } else {
+                          return const SizedBox.shrink(); // No flag if code not found
+                        }
+                      },
+                    ),
+                    Text(
+                      // Extract the race name by removing the img tag
+                      (widget.account.raceData?['vars']?['raceName'] as String?)
+                          ?.replaceAll(RegExp(r'<img[^>]*>'), '')
+                          .trim() ?? 'No Race Data',
+                      style: Theme.of(context).textTheme.bodyMedium, // Adjust style as needed
+                    )
+                    
+                  ],
                 ),
                 SizedBox(height: 4), // Add some spacing
-                Text(
+                Row(
+                  children: [
+Text(
                   widget.account.raceData?['vars']?['raceTime'] ?? 'No Race Time',
                    style: Theme.of(context).textTheme.bodySmall, // Adjust style as needed
                 ),
+                if (widget.account.raceData?['vars']?['pWeather'] != null)
+                      _buildWeatherWeatherWidget(context, widget.account.raceData!['vars']!['pWeather'] as String),
+
+                  ],
+                ),
+                
               ],
             ),
                        IconButton(
@@ -265,6 +298,59 @@ class _Window2ContentState extends State<Window2Content> with TickerProviderStat
       ],
     );
   }
+}
+
+Widget _buildWeatherWeatherWidget(BuildContext context, String pWeather) {
+  // Regex to extract water level text
+  final waterLevelRegex = RegExp(r'<span class="waterLevelText weatherTemp">(.*?)<\/span>');
+  final waterLevelMatch = waterLevelRegex.firstMatch(pWeather);
+  final waterLevelText = waterLevelMatch?.group(1) ?? 'N/A';
+
+  // Regex to extract weather icon name
+  final iconRegex = RegExp(r'<icon size="32">(.*?)<\/icon>');
+  final iconMatch = iconRegex.firstMatch(pWeather);
+  final iconName = iconMatch?.group(1) ?? 'unknown';
+
+  // Regex to extract temperature (text after icon tag)
+  final tempRegex = RegExp(r'<\/icon>\s*(.*)');
+  final tempMatch = tempRegex.firstMatch(pWeather);
+  final temperature = tempMatch?.group(1)?.trim() ?? 'N/A';
+
+  // Map icon name to MdiIcons
+  IconData weatherIcon;
+  switch (iconName.toLowerCase()) {
+    case 'sun':
+      weatherIcon = MdiIcons.weatherSunny;
+      break;
+    case 'cloudy':
+      weatherIcon = MdiIcons.weatherCloudy;
+      break;
+    case 'cloudy1':
+      weatherIcon = MdiIcons.weatherPartlyCloudy;
+      break;
+    case 'rainy1':
+      weatherIcon = MdiIcons.weatherPouring;
+      break;
+    case 'storm':
+      weatherIcon = MdiIcons.weatherLightningRainy;
+      break;
+    // Add more cases as needed
+    default:
+      weatherIcon = MdiIcons.helpCircleOutline; // Default icon for unknown weather
+  }
+
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(MdiIcons.thermometerWater, size: 16), // Water level icon
+      SizedBox(width: 2),
+      Text(waterLevelText, style: Theme.of(context).textTheme.bodySmall), // Water level text
+      SizedBox(width: 8),
+      Icon(weatherIcon, size: 16), // Weather icon
+      SizedBox(width: 2),
+      Text(temperature, style: Theme.of(context).textTheme.bodySmall), // Temperature text
+    ],
+  );
 }
 
 
@@ -378,8 +464,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 if (newValue != null) {
                   setState(() {
                     initialSuspension = newValue;
-                    String skey = 'd${widget.carIndex + 1}Suspension';
-                    widget.account.raceData?['vars']?[skey] = suspensionMapRev[newValue];
+                    String suspensionKey = 'd${widget.carIndex + 1}Suspension';
+                    widget.account.raceData?['vars']?[suspensionKey] = suspensionMapRev[newValue];
                     widget.onAccountChanged(true); // Notify parent of change
                   });
                 }
@@ -414,12 +500,12 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                         _rideController.text = suggestedRide.toString();
                         _aeroController.text = suggestedWing.toString();
                         // Update the underlying raceData as well
-                        String skey = 'd${widget.carIndex + 1}Suspension';
-                        String rkey = 'd${widget.carIndex + 1}Ride';
-                        String akey = 'd${widget.carIndex + 1}Aerodynamics';
-                        widget.account.raceData?['vars']?[skey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
-                        widget.account.raceData?['vars']?[rkey] = suggestedRide;
-                        widget.account.raceData?['vars']?[akey] = suggestedWing;
+                        String suspensionKey = 'd${widget.carIndex + 1}Suspension';
+                        String rideHeightKey = 'd${widget.carIndex + 1}Ride';
+                        String aerodynamicsKey = 'd${widget.carIndex + 1}Aerodynamics';
+                        widget.account.raceData?['vars']?[suspensionKey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
+                        widget.account.raceData?['vars']?[rideHeightKey] = suggestedRide;
+                        widget.account.raceData?['vars']?[aerodynamicsKey] = suggestedWing;
                       });
                     }
                   }
@@ -448,8 +534,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 NumericalRangeFormatter(min: 0, max: 100),
               ],
               onChanged: (newValue) {
-                String rkey = 'd${widget.carIndex + 1}Ride';
-                widget.account.raceData?['vars']?[rkey] = int.tryParse(newValue) ?? 0;
+                String rideHeightKey = 'd${widget.carIndex + 1}Ride';
+                widget.account.raceData?['vars']?[rideHeightKey] = int.tryParse(newValue) ?? 0;
                  widget.onAccountChanged(true);
               },
             ),
@@ -475,8 +561,8 @@ class _SetupContentState extends State<SetupContent> with AutomaticKeepAliveClie
                 NumericalRangeFormatter(min: 1, max: 100),
               ],
               onChanged: (newValue) {
-                String akey = 'd${widget.carIndex + 1}Aerodynamics';
-                widget.account.raceData?['vars']?[akey] = int.tryParse(newValue) ?? 0;
+                String aerodynamicsKey = 'd${widget.carIndex + 1}Aerodynamics';
+                widget.account.raceData?['vars']?[aerodynamicsKey] = int.tryParse(newValue) ?? 0;
                  widget.onAccountChanged(true);
               },
             ),

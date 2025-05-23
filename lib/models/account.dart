@@ -1,17 +1,19 @@
 import 'dart:convert';
-import 'package:dio/dio.dart'; // Import Dio
-import 'package:flutter/material.dart'; // Keep if used by fireUpData/raceData, otherwise remove
-import '../utils/data_parsers.dart';
+import 'package:dio/dio.dart'; // Used for making HTTP requests.
+import 'package:flutter/material.dart'; // Used for `debugPrint`.
+import '../utils/data_parsers.dart'; // Utility functions for parsing data.
 
+// Represents a user account in the application.
+// Contains credentials, user-specific data, and methods for interacting with the game server.
 class Account {
-  final String email;
-  final String password;
-  final String? nickname;
-  bool enabled; // Add enabled field
+  final String email; // User's email address, used for login.
+  final String password; // User's password, used for login.
+  final String? nickname; // Optional user nickname.
+  bool enabled; // Flag to indicate if the account is active or disabled for automated actions.
 
-  Map<String, dynamic>? fireUpData; // To store fireUp response data
-  Map<String, dynamic>? raceData; // To store race data
-  Dio? dioClient; // Add Dio client property
+  Map<String, dynamic>? fireUpData; // Stores data received from the initial "fireUp" server request, containing game state.
+  Map<String, dynamic>? raceData; // Stores data related to the current or upcoming race.
+  Dio? dioClient; // Dio HTTP client instance for this account, configured with session cookies.
 
   Account({
     required this.email,
@@ -19,31 +21,35 @@ class Account {
     this.nickname,
     this.fireUpData,
     this.raceData,
-    this.enabled = true, // Initialize enabled to true
-    this.dioClient, // Add dioClient to constructor
+    this.enabled = true, // Accounts are enabled by default.
+    this.dioClient,
   });
-  // Factory constructor to create an Account from a JSON map
+
+  // Factory constructor to create an Account instance from a JSON map (e.g., when loading from storage).
   factory Account.fromJson(Map<String, dynamic> json) {
     return Account(
       email: json['email'],
       password: json['password'],
       nickname: json['nickname'],
-      fireUpData: null, // fireUpData is not stored in JSON
-      raceData: null,   // raceData is not stored in JSON
-      enabled: json['enabled'] ?? true, // Load enabled state, default to true if not present
-      dioClient: null, // Dio client is not stored in JSON
+      fireUpData: null, // Runtime data, not persisted in account JSON.
+      raceData: null,   // Runtime data, not persisted in account JSON.
+      enabled: json['enabled'] ?? true, // Load 'enabled' state, defaulting to true if not found.
+      dioClient: null, // Dio client is a runtime object, not persisted in account JSON.
     );
   }
-  // Method to convert an Account object to a JSON map for storage
+
+  // Converts an Account object into a JSON map, typically for storing in local preferences.
   Map<String, dynamic> toJson() {
     return {
       'email': email,
       'password': password,
       'nickname': nickname,
-      // fireUpData and raceData are runtime data, not typically stored with account credentials
-      'enabled': enabled, // Include enabled state in JSON
+      // fireUpData and raceData are runtime data and are not serialized.
+      'enabled': enabled, // Persist the 'enabled' state.
     };
   }
+
+  // Claims the daily reward for the account.
   Future<void> claimDailyReward() async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -73,9 +79,11 @@ class Account {
       }
     } catch (e) {
       debugPrint('Error claiming daily reward for ${email}: $e');
-      rethrow; // Re-throw the error for the caller to handle
+      rethrow;
     }
   }
+
+  // Requests a list of past race reports (history) for the account.
   Future<List<Map<String, dynamic>>> requestHistoryReports({int start = 0, int numResults = 10}) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -98,6 +106,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Requests a detailed report for a specific past race using its ID.
   Future<Map<dynamic, dynamic>> requestRaceReport(String raceId) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -120,6 +130,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Requests a detailed report for a specific driver's performance in a given race.
   Future<List<dynamic>> requestDriverReport(String raceId) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -142,6 +154,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Requests information about the league the account is currently in.
   Future<Map<String, dynamic>?> requestLeagueInfo() async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -172,6 +186,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Repairs a specified car (by number) for either parts or engine.
   Future<int> repairCar(int carNumber, String repairType) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -229,6 +245,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Requests current research and design data for the account's car.
   Future<Map<String, dynamic>> requestResearch() async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -287,6 +305,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Saves the car's research and design settings.
   Future<void> saveDesign(Map<String, dynamic> researchSettings, List<String> designParams) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -315,6 +335,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Buys a specified number of engines using account tokens.
   Future<Map<String, String>> buyEnginesWithTokens(int tokenCost) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -360,6 +382,8 @@ class Account {
       return result; // Return current state if not enough tokens
     }
   }
+
+  // Simulates a practice lap for a given car and tyre compound.
   Future<Map<String, dynamic>> simulatePracticeLap(int carIndex, String tyre) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -418,6 +442,16 @@ class Account {
       rethrow;
     }
   }
+
+  // Helper method to extract a value from an HTML string using a regex.
+  String _extractValueFromHtmlString(String? html, RegExp regex, String defaultValue) {
+    if (html == null || html.isEmpty) {
+      return defaultValue;
+    }
+    return regex.firstMatch(html)?.group(1) ?? defaultValue;
+  }
+
+  // Fetches the main race data, including setup, strategy, and rules.
   Future<void> fetchRaceData() async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -430,29 +464,60 @@ class Account {
       final response = await dio.get(url.toString());
       final raceDataJson = jsonDecode(response.data);
 
+      // Parse and normalize data for the second car (d2) if it exists.
       if (fireUpData?['team']?['_numCars'] == '2') {
+        // d2IgnoreAdvanced is '0' for true (ignore) and '1' for false (use). Convert to boolean.
         raceDataJson['vars']['d2IgnoreAdvanced'] = raceDataJson['vars']['d2IgnoreAdvanced'] == '0' ? true : false;
-        final selectedPushD2 = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d2PushLevel'])?.group(1) ?? '60';
-        raceDataJson['vars']['d2PushLevel'] = selectedPushD2;
-        raceDataJson['vars']['d2RainStartDepth'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2RainStartDepth'])?.group(1) ?? '0';
-        raceDataJson['vars']['d2RainStopLap'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2RainStopLap'])?.group(1) ?? '0';
-        raceDataJson['vars']['d2AdvancedFuel'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d2AdvancedFuel'])?.group(1) ?? '0';
+        // d2PushLevel is an HTML select. Regex extracts the 'value' of the 'selected' <option>.
+        raceDataJson['vars']['d2PushLevel'] = _extractValueFromHtmlString(
+            raceDataJson['vars']['d2PushLevel'], RegExp(r'<option\s+value="(\d+)"\s+selected>'), '60');
+        // d2RainStartDepth is an HTML input. Regex extracts the 'value' attribute.
+        raceDataJson['vars']['d2RainStartDepth'] = _extractValueFromHtmlString(
+            raceDataJson['vars']['d2RainStartDepth'], RegExp(r'value="([^"]*)"'), '0');
+        // d2RainStopLap is an HTML input. Regex extracts the 'value' attribute.
+        raceDataJson['vars']['d2RainStopLap'] = _extractValueFromHtmlString(
+            raceDataJson['vars']['d2RainStopLap'], RegExp(r'value="([^"]*)"'), '0');
+        // d2AdvancedFuel is an HTML input. Regex extracts the 'value' attribute.
+        raceDataJson['vars']['d2AdvancedFuel'] = _extractValueFromHtmlString(
+            raceDataJson['vars']['d2AdvancedFuel'], RegExp(r'value="([^"]*)"'), '0');
       }
-      raceDataJson['vars']['d1IgnoreAdvanced'] = raceDataJson['vars']['d1IgnoreAdvanced'] == '0' ? true : false;
-      final selectedPushD1 = RegExp(r'<option\s+value="(\d+)"\s+selected>').firstMatch(raceDataJson['vars']['d1PushLevel'])?.group(1) ?? '60';
-      raceDataJson['vars']['d1PushLevel'] = selectedPushD1;
-      raceDataJson['vars']['d1RainStartDepth'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStartDepth'])?.group(1) ?? '0';
-      raceDataJson['vars']['d1RainStopLap'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1RainStopLap'])?.group(1) ?? '0';
-      raceDataJson['vars']['d1AdvancedFuel'] = RegExp(r'value="([^"]*)"').firstMatch(raceDataJson['vars']['d1AdvancedFuel'])?.group(1) ?? '0';
 
+      // Parse and normalize data for the first car (d1).
+      // d1IgnoreAdvanced is '0' for true (ignore) and '1' for false (use). Convert to boolean.
+      raceDataJson['vars']['d1IgnoreAdvanced'] = raceDataJson['vars']['d1IgnoreAdvanced'] == '0' ? true : false;
+      // d1PushLevel is an HTML select. Regex extracts the 'value' of the 'selected' <option>.
+      raceDataJson['vars']['d1PushLevel'] = _extractValueFromHtmlString(
+          raceDataJson['vars']['d1PushLevel'], RegExp(r'<option\s+value="(\d+)"\s+selected>'), '60');
+      // d1RainStartDepth is an HTML input. Regex extracts the 'value' attribute.
+      raceDataJson['vars']['d1RainStartDepth'] = _extractValueFromHtmlString(
+          raceDataJson['vars']['d1RainStartDepth'], RegExp(r'value="([^"]*)"'), '0');
+      // d1RainStopLap is an HTML input. Regex extracts the 'value' attribute.
+      raceDataJson['vars']['d1RainStopLap'] = _extractValueFromHtmlString(
+          raceDataJson['vars']['d1RainStopLap'], RegExp(r'value="([^"]*)"'), '0');
+      // d1AdvancedFuel is an HTML input. Regex extracts the 'value' attribute.
+      raceDataJson['vars']['d1AdvancedFuel'] = _extractValueFromHtmlString(
+          raceDataJson['vars']['d1AdvancedFuel'], RegExp(r'value="([^"]*)"'), '0');
+
+      // Call `extractStrategyData` to parse tyre, laps, and fuel information for each stint
+      // from HTML embedded within `raceDataJson['vars']`. This makes strategy data more accessible.
       raceDataJson['parsedStrategy'] = extractStrategyData(
           raceDataJson['vars'],
-          raceDataJson['vars']['d1PushLevel'],
-          fireUpData?['team']?['_numCars'] == '2' ? raceDataJson['vars']['d2PushLevel'] : null
+          raceDataJson['vars']['d1PushLevel'], // Pass d1's push level.
+          fireUpData?['team']?['_numCars'] == '2' ? raceDataJson['vars']['d2PushLevel'] : null // Pass d2's push level if 2 cars.
       );
+
+      // The `rulesJson` field might come as a JSON string. If so, parse it into a Map.
+      // This contains race rules like refuelling allowance, tyre compounds, etc.
       if (raceDataJson['vars']['rulesJson'] is String) {
         raceDataJson['vars']['rulesJson'] = jsonDecode(raceDataJson['vars']['rulesJson']);
       }
+      
+      final raceNameHtml = raceDataJson?['vars']?['raceName'] as String?;
+                        final RegExp regExp = RegExp(r'class="[^"]*f-([a-z]{2})[^"]*"');
+                        final Match? match = regExp.firstMatch(raceNameHtml ?? '');
+                        final String countryCode = match?.group(1)?.toUpperCase() ?? '';
+      raceDataJson['trackCode'] = countryCode; // Extracted country code
+      // Store the processed race data in the account instance.
       raceData = raceDataJson;
       debugPrint('Race data fetched for ${email}');
     } catch (e) {
@@ -460,6 +525,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Saves the current race strategy (setup, stints, advanced options) to the server.
   Future<void> saveStrategy() async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -468,59 +535,72 @@ class Account {
 
     final url = Uri.parse('https://igpmanager.com/index.php?action=send&type=saveAll&addon=igp&ajax=1&jsReply=saveAll&csrfName=&csrfName=&csrfToken=&csrfToken=&pageId=race');
     
+    // Construct the payload for saving the strategy.
+    // This involves multiple parts for each car: setup, basic strategy (stints), and advanced strategy options.
+
+    // Strategy data for the first car (d1).
     Map<String, dynamic> d1Strategy = {
+      // 'd1setup': Contains car setup parameters like suspension, ride height, aerodynamics.
       'd1setup': {
-        'race': raceData?['vars']['raceId'],
-        'suspension': raceData?['vars']['d1Suspension'],
-        'ride': raceData?['vars']['d1Ride'],
-        'aerodynamics': raceData?['vars']['d1Aerodynamics'],
-        'practiceTyre': 'SS' // Assuming 'SS' is a default or common value
+        'race': raceData?['vars']['raceId'], // ID of the current race.
+        'suspension': raceData?['vars']['d1Suspension'], // Suspension setting.
+        'ride': raceData?['vars']['d1Ride'], // Ride height setting.
+        'aerodynamics': raceData?['vars']['d1Aerodynamics'], // Aerodynamics setting.
+        'practiceTyre': 'SS' // Default practice tyre, actual value may vary or not be critical for save.
       },
+      // 'd1strategy': Contains the basic stint plan: number of pits, and for each stint (1-5), the tyre, laps, and fuel.
       'd1strategy': {
-        "race": raceData?['vars']['raceId'],
-        "dNum": "1",
-        "numPits": raceData?['vars']['d1Pits'],
-        "tyre1": raceData?['parsedStrategy']?[0]?[0]?[0],
-        "laps1": raceData?['parsedStrategy']?[0]?[0]?[1],
-        "fuel1": raceData?['parsedStrategy']?[0]?[0]?[2],
-        "tyre2": raceData?['parsedStrategy']?[0]?[1]?[0],
-        "laps2": raceData?['parsedStrategy']?[0]?[1]?[1],
-        "fuel2": raceData?['parsedStrategy']?[0]?[1]?[2],
-        "tyre3": raceData?['parsedStrategy']?[0]?[2]?[0],
-        "laps3": raceData?['parsedStrategy']?[0]?[2]?[1],
-        "fuel3": raceData?['parsedStrategy']?[0]?[2]?[2],
-        "tyre4": raceData?['parsedStrategy']?[0]?[3]?[0],
-        "laps4": raceData?['parsedStrategy']?[0]?[3]?[1],
-        "fuel4": raceData?['parsedStrategy']?[0]?[3]?[2],
-        "tyre5": raceData?['parsedStrategy']?[0]?[4]?[0],
-        "laps5": raceData?['parsedStrategy']?[0]?[4]?[1],
-        "fuel5": raceData?['parsedStrategy']?[0]?[4]?[2],
+        "race": raceData?['vars']['raceId'], // Race ID.
+        "dNum": "1", // Driver number (1 for the first car).
+        "numPits": raceData?['vars']['d1Pits'], // Total number of pit stops.
+        "tyre1": raceData?['parsedStrategy']?[0]?[0]?[0], // Tyre for stint 1.
+        "laps1": raceData?['parsedStrategy']?[0]?[0]?[1], // Laps for stint 1.
+        "fuel1": raceData?['parsedStrategy']?[0]?[0]?[2], // Fuel for stint 1.
+        "tyre2": raceData?['parsedStrategy']?[0]?[1]?[0], // Tyre for stint 2.
+        "laps2": raceData?['parsedStrategy']?[0]?[1]?[1], // Laps for stint 2.
+        "fuel2": raceData?['parsedStrategy']?[0]?[1]?[2], // Fuel for stint 2.
+        "tyre3": raceData?['parsedStrategy']?[0]?[2]?[0], // Tyre for stint 3.
+        "laps3": raceData?['parsedStrategy']?[0]?[2]?[1], // Laps for stint 3.
+        "fuel3": raceData?['parsedStrategy']?[0]?[2]?[2], // Fuel for stint 3.
+        "tyre4": raceData?['parsedStrategy']?[0]?[3]?[0], // Tyre for stint 4.
+        "laps4": raceData?['parsedStrategy']?[0]?[3]?[1], // Laps for stint 4.
+        "fuel4": raceData?['parsedStrategy']?[0]?[3]?[2], // Fuel for stint 4.
+        "tyre5": raceData?['parsedStrategy']?[0]?[4]?[0], // Tyre for stint 5.
+        "laps5": raceData?['parsedStrategy']?[0]?[4]?[1], // Laps for stint 5.
+        "fuel5": raceData?['parsedStrategy']?[0]?[4]?[2], // Fuel for stint 5.
       },
+      // 'd1strategyAdvanced': Contains advanced options like push level, whether to ignore advanced settings,
+      // fuel for fixed refuelling races, and rain strategy parameters.
       "d1strategyAdvanced": {
-        "pushLevel": "${raceData?['vars']['d1PushLevel']}",
-        "d1SavedStrategy": "1", // Assuming "1" means saved
-        "ignoreAdvancedStrategy": "${raceData?['vars']['d1IgnoreAdvanced'] == true ? '0' : '1'}",
-        "advancedFuel": "${raceData?['vars']['d1AdvancedFuel']}",
-        "rainStartTyre": "${raceData?['vars']['d1RainStartTyre']}",
-        "rainStartDepth": "${raceData?['vars']['d1RainStartDepth']}",
-        "rainStopTyre": "${raceData?['vars']['d1RainStopTyre']}",
-        "rainStopLap": "${raceData?['vars']['d1RainStopLap']}",
+        "pushLevel": "${raceData?['vars']['d1PushLevel']}", // Driver's push level (aggression).
+        "d1SavedStrategy": "1", // Flag indicating a strategy is saved. "1" usually means true/saved.
+        "ignoreAdvancedStrategy": "${raceData?['vars']['d1IgnoreAdvanced'] == true ? '0' : '1'}", // '0' to ignore, '1' to use.
+        "advancedFuel": "${raceData?['vars']['d1AdvancedFuel']}", // Fuel amount for races with fixed refuelling.
+        "rainStartTyre": "${raceData?['vars']['d1RainStartTyre']}", // Tyre to switch to when rain starts.
+        "rainStartDepth": "${raceData?['vars']['d1RainStartDepth']}", // Water level (mm) to trigger change to rain tyres.
+        "rainStopTyre": "${raceData?['vars']['d1RainStopTyre']}", // Tyre to switch to when rain stops.
+        "rainStopLap": "${raceData?['vars']['d1RainStopLap']}", // Lap number to switch back from rain tyres if rain stops.
       }
     };
 
+    // Strategy data for the second car (d2), structured similarly to d1.
+    // This is only included if the team has two cars and relevant data is available.
     Map<String, dynamic> d2Strategy = {};
+    // Check if the second car has pit stops defined (d2Pits != 0) and if parsed strategy data exists for it.
     if (raceData?['vars']['d2Pits'] != 0 && raceData?['parsedStrategy'] != null && raceData!['parsedStrategy'].length > 1) {
       d2Strategy = {
+        // 'd2setup': Setup for the second car.
         'd2setup': {
           'race': raceData?['vars']['raceId'],
           'suspension': raceData?['vars']['d2Suspension'],
           'ride': raceData?['vars']['d2Ride'],
           'aerodynamics': raceData?['vars']['d2Aerodynamics'],
-          'practiceTyre': 'SS'
+          'practiceTyre': 'SS' // Default practice tyre.
         },
+        // 'd2strategy': Basic stint plan for the second car.
         'd2strategy': {
           "race": raceData?['vars']['raceId'],
-          "dNum": "2",
+          "dNum": "2", // Driver number 2.
           "numPits": raceData?['vars']['d2Pits'],
           "tyre1": raceData?['parsedStrategy']?[1]?[0]?[0],
           "laps1": raceData?['parsedStrategy']?[1]?[0]?[1],
@@ -538,9 +618,10 @@ class Account {
           "laps5": raceData?['parsedStrategy']?[1]?[4]?[1],
           "fuel5": raceData?['parsedStrategy']?[1]?[4]?[2],
         },
+        // 'd2strategyAdvanced': Advanced options for the second car.
         "d2strategyAdvanced": {
           "pushLevel": "${raceData?['vars']['d2PushLevel']}",
-          "d2SavedStrategy": "1",
+          "d2SavedStrategy": "1", // Flag indicating strategy is saved.
           "ignoreAdvancedStrategy": "${raceData?['vars']['d2IgnoreAdvanced'] == true ? '0' : '1'}",
           "rainStartTyre": "${raceData?['vars']['d2RainStartTyre']}",
           "rainStartDepth": "${raceData?['vars']['d2RainStartDepth']}",
@@ -549,24 +630,29 @@ class Account {
         }
       };
     } else {
-      // Default d2 strategy if not 2 cars or data missing
+      // If no second car or data is missing, provide a default minimal strategy for d2 to avoid errors.
+      // This usually indicates the car is not participating or has no strategy set.
       d2Strategy = {
         'd2setup': {
           'race': raceData?['vars']['raceId'],
-          'suspension': '1', 'ride': '0', 'aerodynamics': '0', 'practiceTyre': 'SS'
+          'suspension': '1', 'ride': '0', 'aerodynamics': '0', 'practiceTyre': 'SS' // Minimal default setup.
         },
-        'd2strategy': {"race": raceData?['vars']['raceId'], "dNum": "2", "numPits": "0"},
-        'd2strategyAdvanced': {"d2SavedStrategy": "0", "ignoreAdvancedStrategy": "1"}
+        'd2strategy': {"race": raceData?['vars']['raceId'], "dNum": "2", "numPits": "0"}, // No pit stops.
+        'd2strategyAdvanced': {"d2SavedStrategy": "0", "ignoreAdvancedStrategy": "1"} // Not saved, ignore advanced.
       };
     }
     
-    if (raceData?['vars']['rulesJson']?['refuelling'] == '0') {
+    // Conditional logic for refuelling: If refuelling is not allowed in the race rules ('0'),
+    // ensure the 'advancedFuel' parameter is included in the payload.
+    // Otherwise, it might be omitted or handled differently by the server.
+    if (raceData?['vars']['rulesJson']?['refuelling'] == '0') { // '0' means no refuelling allowed.
       d1Strategy['d1strategyAdvanced']['advancedFuel'] = "${raceData?['vars']['d1AdvancedFuel']}";
-      if (d2Strategy.containsKey('d2strategyAdvanced')) {
+      if (d2Strategy.containsKey('d2strategyAdvanced')) { // Check if d2 advanced strategy exists
          d2Strategy['d2strategyAdvanced']['advancedFuel'] = "${raceData?['vars']['d2AdvancedFuel'] ?? '0'}";
       }
     }
 
+    // Combine all parts into the final saveData payload.
     Map<String, dynamic> saveData = {
       ...d1Strategy,
       ...d2Strategy,
@@ -582,9 +668,11 @@ class Account {
       rethrow;
     }
 }
+
+  // Parses and returns sponsor information from a JSON response.
   Map<String, dynamic> getSponsors(Map<String, dynamic> jsonSponsorResponse) {
     final jsonData = jsonSponsorResponse['vars'];
-    final emptySponsors = {'income': '0', 'bonus': '0', 'expire': '0', 'status': false};
+    final emptySponsors = {'income': '0', 'bonus': '0', 'expire': '0', 'status': false}; // Default structure for a sponsor.
     final sponsorsMap = {
       's1': Map<String, dynamic>.from(emptySponsors),
       's2': Map<String, dynamic>.from(emptySponsors)
@@ -614,6 +702,8 @@ class Account {
     }
     return sponsorsMap;
   }
+
+  // Fetches available sponsor options for a given sponsor slot (primary or secondary).
   Future<Map<String, List<String>>> pickSponsor(int number) async {
     Dio? dio = dioClient;
     if (dio == null) {
@@ -631,6 +721,8 @@ class Account {
       rethrow;
     }
   }
+
+  // Saves the choice of a new sponsor for the specified slot.
   Future<dynamic> saveSponsor(int number, String id, String income, String bonus) async {
     Dio? dio = dioClient;
     if (dio == null) {
