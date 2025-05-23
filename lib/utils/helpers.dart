@@ -456,3 +456,42 @@ bool isChecked(String htmlString) {
   final input = document.querySelector('input');
   return input?.attributes.containsKey('checked') ?? false;
 }
+
+// Parses the weather HTML string to extract water level, weather icon, and temperature.
+Map<String, dynamic> parseWeatherHtml(String htmlString) {
+  final document = parse(htmlString);
+  String waterLevel = '';
+  String weatherIcon = '';
+  String temperature = '';
+
+  // Extract water level
+  final waterLevelTextElement = document.querySelector('.waterLevelText');
+  if (waterLevelTextElement != null) {
+    waterLevel = waterLevelTextElement.text.trim();
+  }
+
+  // Extract weather icon
+  final iconElement = document.querySelector('icon');
+  if (iconElement != null) {
+    weatherIcon = iconElement.text.trim();
+  }
+
+  // Extract temperature (assuming it's the last numeric part before the icon or at the end)
+  // This regex looks for a number followed by a degree symbol and 'C'
+  final tempMatch = RegExp(r'(\d+°C)').firstMatch(htmlString);
+  if (tempMatch != null) {
+    temperature = tempMatch.group(1)!;
+  } else {
+    // Fallback: if no degree symbol, try to find a number followed by 'C'
+    final simpleTempMatch = RegExp(r'(\d+C)').firstMatch(htmlString);
+    if (simpleTempMatch != null) {
+      temperature = simpleTempMatch.group(1)!;
+    }
+  }
+
+  return {
+    'waterLevel': waterLevel,
+    'weatherIcon': weatherIcon,
+    'temperature': temperature,
+  };
+}
