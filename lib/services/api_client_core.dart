@@ -94,6 +94,7 @@ Future<bool> startClientSessionForAccount(Account account, {VoidCallback? onSucc
       if (fireUpJson['guestAccount'] == false) {
         debugPrint('Session is valid for ${account.email} using saved cookies.');
         fireUpJson['drivers'] = parseDriversFromHtml(fireUpJson['preCache']['p=staff']['vars']['drivers']);
+        fireUpJson['staff'] = parseStaffFromHtml(fireUpJson['preCache']['p=staff']['vars']);
         account.fireUpData = fireUpJson;
         sessionValid = true;
 

@@ -598,3 +598,129 @@ String getTyreAssetPath(String tyreCode) {
   // This prevents errors if an unexpected tyre code is encountered and ensures some image is always shown.
   return 'assets/tyres/_M.png';
 }
+
+// Parses staff information from an HTML string.
+// Extracts details for Chief Designer (cd), Technical Director (td), Driver (dr), and Reserve staff.
+Map<String, dynamic> parseStaffFromHtml(Map<String, dynamic> staffData) {
+  final Map<String, dynamic> parsedStaff = {
+    'cd': {},
+    'td': {},
+    'dr': {},
+    'reserve': []
+  };
+
+  // Helper function to parse individual staff member HTML
+  Map<String, dynamic> _parseIndividualStaff(String? htmlString) {
+    if (htmlString == null || htmlString.isEmpty) {
+      return {};
+    }
+    final document = html_parser.parse(htmlString);
+    final nameElement = document.querySelector('.driverName');
+    final nameText = nameElement?.text.trim() ?? '';
+    final nameSpan = nameElement?.querySelector('.medium');
+
+    String firstName, lastName;
+    if (nameSpan != null) {
+      lastName = nameSpan.text.trim();
+      firstName = nameText.replaceAll(lastName, '').trim().replaceAll('\n', '').trim();
+    } else {
+      final parts = nameText.split('\n');
+      firstName = parts.isNotEmpty ? parts[0].trim() : '';
+      lastName = parts.length > 1 ? parts[1].trim() : '';
+    }
+    final fullName = '$firstName $lastName'.trim();
+
+    final contractElement = document.querySelector('[id^="nStaffC"], [id^="nDriverC"]');
+    final contract = contractElement?.text.trim() ?? '';
+
+    final idElement = document.querySelector('a[href*="&id="]');
+    final href = idElement?.attributes['href'] ?? '';
+    final idMatch = RegExp(r'id=(\d+)').firstMatch(href);
+    final id = idMatch?.group(1) ?? '';
+
+    return {
+      'name': fullName,
+      'contract': contract,
+      'id': id,
+    };
+  }
+
+  // Parse main staff members
+  parsedStaff['cd'] = _parseIndividualStaff(staffData['designInfo']);
+  parsedStaff['td'] = _parseIndividualStaff(staffData['engineerInfo']);
+  parsedStaff['dr'] = _parseIndividualStaff(staffData['trainInfo']);
+
+  // Parse reserve staff
+  final reserveStaffHtml = staffData['reserveStaff'] ?? '';
+  final reserveDriverHtml = staffData['reserveDrivers'] ?? '';
+  Map<String, dynamic> reserveStaff = {};
+   if (reserveDriverHtml.isNotEmpty) {
+    final document = html_parser.parse('<table><tbody>$reserveDriverHtml</tbody></table>');
+    final rows = document.querySelectorAll('tr');
+
+    for (final row in rows) {
+      final tds = row.querySelectorAll('td');
+      if (tds.isEmpty) continue;
+
+      {
+        // Parse Driver reserve staff
+        // Driver info is in the last few tds
+        final driverNameElement = row.querySelector('th');
+        final driverNameText = driverNameElement?.text.trim() ?? '';
+         final driverIdElement = driverNameElement?.querySelector('a[href*="&id="]');
+        final driverHref = driverIdElement?.attributes['href'] ?? '';
+        final driverIdMatch = RegExp(r'id=(\d+)').firstMatch(driverHref);
+        final driverId = driverIdMatch?.group(1) ?? '';
+
+        final driverContractElement = row.querySelector('[id^="nDriverC"]');
+        final driverContract = driverContractElement?.text.trim() ?? '';
+
+        reserveStaff = {
+          'type': 'Driver',
+          'name': driverNameText.replaceAll(RegExp(r'<[^>]*>'), '').trim(), // Remove potential HTML tags in name
+          'contract': driverContract,
+          'id': driverId,
+        };
+      }
+       if (reserveStaff.isNotEmpty) {
+         parsedStaff['reserve'].add(reserveStaff);
+       }
+    }
+  }
+  
+  if (reserveStaffHtml.isNotEmpty) {
+    final document = html_parser.parse('<table><tbody>$reserveStaffHtml</tbody></table>');
+    final rows = document.querySelectorAll('tr');
+
+    for (final row in rows) {
+      final tds = row.querySelectorAll('td');
+      if (tds.isEmpty) continue;
+
+      String staffType = tds[0].text.trim();
+    
+
+      if (true) {
+        // Parse CD, TD, DR reserve staff
+        final nameElement = row.querySelector('th');
+        final nameText = nameElement?.text.trim() ?? '';
+        final idElement = nameElement?.querySelector('a[href*="&id="]');
+        final href = idElement?.attributes['href'] ?? '';
+        final idMatch = RegExp(r'id=(\d+)').firstMatch(href);
+        final id = idMatch?.group(1) ?? '';
+
+        final contractElement = row.querySelector('[id^="nStaffC"]');
+        final contract = contractElement?.text.trim() ?? '';
+
+        reserveStaff = {
+          'type': staffType,
+          'name': nameText.replaceAll(RegExp(r'<[^>]*>'), '').trim(), // Remove potential HTML tags in name
+          'contract': contract,
+          'id': id,
+        };
+      } 
+    }
+  }
+
+  return parsedStaff;
+}
+      
