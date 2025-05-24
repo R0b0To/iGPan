@@ -527,7 +527,76 @@ class _Window1ContentState extends State<Window1Content>
                        ),
                      ],
                    ),
-                  Center(child: Text('Team Content Placeholder')),
+                  // Team Tab Content
+                  Padding( // Add padding for better visual spacing
+                    padding: const EdgeInsets.all(8.0),
+                    child: SingleChildScrollView( // Use SingleChildScrollView in case content overflows
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Main Staff (CD, TD, DR)
+                          Text('Main Staff', style: TextStyle(fontWeight: FontWeight.bold)),
+                          SizedBox(height: 8),
+                          if (widget.account.fireUpData?['staff']?['cd'] != null)
+                            Row(
+                              children: [
+                                Icon(MdiIcons.accountHardHat, size: 26), // Use doctor icon for DR
+                                Text(' ${widget.account.fireUpData!['staff']!['cd']!['name']}'),
+                                SizedBox(width: 8),
+                                Text('Contract: ${widget.account.fireUpData!['staff']!['cd']!['contract']}'),
+                              ],
+                            ),
+                          if (widget.account.fireUpData?['staff']?['td'] != null)
+                            Row(
+                              children: [
+                                Icon(MdiIcons.accountTie, size: 26), // Use doctor icon for DR
+                                Text(' ${widget.account.fireUpData!['staff']!['td']!['name']}'),
+                                SizedBox(width: 8),
+                                Text('Contract: ${widget.account.fireUpData!['staff']!['td']!['contract']}'),
+                              ],
+                            ),
+                          if (widget.account.fireUpData?['staff']?['dr'] != null)
+                            Row(
+                              children: [
+                                Icon(MdiIcons.doctor, size: 26), // Use doctor icon for DR
+                                SizedBox(width: 4), // Add some spacing between icon and text
+                                Text('${widget.account.fireUpData!['staff']!['dr']!['name']}'),
+                                SizedBox(width: 8),
+                                Text('Contract: ${widget.account.fireUpData!['staff']!['dr']!['contract']}'),
+                              ],
+                            ),
+                          SizedBox(height: 16), // Space before drivers
+                          Text('Drivers', style: TextStyle(fontWeight: FontWeight.bold)),
+                          SizedBox(height: 8),
+                          // Drivers
+                          if (widget.account.fireUpData?['drivers'] != null)
+                            for (var driver in widget.account.fireUpData!['drivers'])
+                              Row(
+                                children: [
+                                  Text('${driver.name}'),
+                                  SizedBox(width: 8),
+                                  Text('Contract: ${driver.contract}'),
+                                ],
+                              ),
+                          SizedBox(height: 16), // Space before separation
+                          Divider(), // Separation line
+                          SizedBox(height: 16), // Space after separation
+                          // Reserve Staff
+                          Text('Reserve Staff', style: TextStyle(fontWeight: FontWeight.bold)),
+                          SizedBox(height: 8),
+                          if (widget.account.fireUpData?['staff']?['reserve'] != null)
+                            for (var reserveStaff in widget.account.fireUpData!['staff']!['reserve'])
+                              Row(
+                                children: [
+                                  Text('${reserveStaff['name']}'),
+                                  SizedBox(width: 8),
+                                  Text('Contract: ${reserveStaff['contract']}'),
+                                ],
+                              ),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   // Reports Tab Content
                   ListView.builder(
