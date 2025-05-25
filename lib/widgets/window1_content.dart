@@ -135,6 +135,43 @@ class _Window1ContentState extends State<Window1Content>
     super.dispose();
   }
 
+  bool _hasExpiringContracts() {
+
+    final int minContractLength = 3; // Minimum contract length to consider
+    // Check Main Staff
+    if (widget.account.fireUpData?['staff']?['cd']?['contract'] != null &&
+        (int.tryParse(widget.account.fireUpData!['staff']!['cd']!['contract'].toString()) ?? 0) < minContractLength) {
+      return true;
+    }
+    if (widget.account.fireUpData?['staff']?['td']?['contract'] != null &&
+        (int.tryParse(widget.account.fireUpData!['staff']!['td']!['contract'].toString()) ?? 0) < minContractLength) {
+      return true;
+    }
+    if (widget.account.fireUpData?['staff']?['dr']?['contract'] != null &&
+        (int.tryParse(widget.account.fireUpData!['staff']!['dr']!['contract'].toString()) ?? 0) < minContractLength) {
+      return true;
+    }
+
+    // Check Drivers
+    if (widget.account.fireUpData?['drivers'] != null) {
+      for (var driver in widget.account.fireUpData!['drivers']) {
+        if (driver.contract != null && (int.tryParse(driver.contract.toString()) ?? 0) < minContractLength) {
+          return true;
+        }
+      }
+    }
+
+    // Check Reserve Staff
+    if (widget.account.fireUpData?['staff']?['reserve'] != null) {
+      for (var reserveStaff in widget.account.fireUpData!['staff']!['reserve']) {
+        if (reserveStaff['contract'] != null && (int.tryParse(reserveStaff['contract'].toString()) ?? 0) < minContractLength) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // Function to fetch reports
   Future<void> _fetchReports() async {
     if (_isLoading || !_hasMoreReports) return;
@@ -301,12 +338,19 @@ class _Window1ContentState extends State<Window1Content>
          children: [
            TabBar( // Pass the controller
              controller: _tabController,
-             tabs: const [
+             tabs: [
                Tab(
                  child: Text('Car', style: TextStyle(fontSize: 12)),
                ),
                Tab(
-                 child: Text('Team', style: TextStyle(fontSize: 12)),
+                 child: Container(
+                   decoration: BoxDecoration(
+                     color: _hasExpiringContracts() ? Colors.red.withOpacity(0.7) : null, // Highlight the whole tab with a red background
+                     borderRadius: BorderRadius.circular(8.0), // Rounded corners
+                   ),
+                   padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 8), // Add some padding for better visual
+                   child: Text('Team', style: TextStyle(fontSize: 12)),
+                 ),
                ),
                Tab(
                  child: Text('Reports', style: TextStyle(fontSize: 12))),
@@ -543,7 +587,12 @@ class _Window1ContentState extends State<Window1Content>
                                 Icon(MdiIcons.accountHardHat, size: 26), // Use doctor icon for DR
                                 Text(' ${widget.account.fireUpData!['staff']!['cd']!['name']}'),
                                 SizedBox(width: 8),
-                                Text('Contract: ${widget.account.fireUpData!['staff']!['cd']!['contract']}'),
+                                Text(
+                                  'Contract: ${widget.account.fireUpData!['staff']!['cd']!['contract']}',
+                                  style: (int.tryParse(widget.account.fireUpData!['staff']!['cd']!['contract'].toString()) ?? 0) < 3
+                                      ? TextStyle(color: Colors.red)
+                                      : null,
+                                ),
                               ],
                             ),
                           if (widget.account.fireUpData?['staff']?['td'] != null)
@@ -552,7 +601,12 @@ class _Window1ContentState extends State<Window1Content>
                                 Icon(MdiIcons.accountTie, size: 26), // Use doctor icon for DR
                                 Text(' ${widget.account.fireUpData!['staff']!['td']!['name']}'),
                                 SizedBox(width: 8),
-                                Text('Contract: ${widget.account.fireUpData!['staff']!['td']!['contract']}'),
+                                Text(
+                                  'Contract: ${widget.account.fireUpData!['staff']!['td']!['contract']}',
+                                  style: (int.tryParse(widget.account.fireUpData!['staff']!['td']!['contract'].toString()) ?? 0) < 3
+                                      ? TextStyle(color: Colors.red)
+                                      : null,
+                                ),
                               ],
                             ),
                           if (widget.account.fireUpData?['staff']?['dr'] != null)
@@ -562,7 +616,12 @@ class _Window1ContentState extends State<Window1Content>
                                 SizedBox(width: 4), // Add some spacing between icon and text
                                 Text('${widget.account.fireUpData!['staff']!['dr']!['name']}'),
                                 SizedBox(width: 8),
-                                Text('Contract: ${widget.account.fireUpData!['staff']!['dr']!['contract']}'),
+                                Text(
+                                  'Contract: ${widget.account.fireUpData!['staff']!['dr']!['contract']}',
+                                  style: (int.tryParse(widget.account.fireUpData!['staff']!['dr']!['contract'].toString()) ?? 0) < 3
+                                      ? TextStyle(color: Colors.red)
+                                      : null,
+                                ),
                               ],
                             ),
                           SizedBox(height: 16), // Space before drivers
@@ -575,7 +634,12 @@ class _Window1ContentState extends State<Window1Content>
                                 children: [
                                   Text('${driver.name}'),
                                   SizedBox(width: 8),
-                                  Text('Contract: ${driver.contract}'),
+                                  Text(
+                                    'Contract: ${driver.contract}',
+                                    style: (int.tryParse(driver.contract.toString()) ?? 0) < 3
+                                        ? TextStyle(color: Colors.red)
+                                        : null,
+                                  ),
                                 ],
                               ),
                           SizedBox(height: 16), // Space before separation
@@ -590,7 +654,12 @@ class _Window1ContentState extends State<Window1Content>
                                 children: [
                                   Text('${reserveStaff['name']}'),
                                   SizedBox(width: 8),
-                                  Text('Contract: ${reserveStaff['contract']}'),
+                                  Text(
+                                    'Contract: ${reserveStaff['contract']}',
+                                    style: (int.tryParse(reserveStaff['contract'].toString()) ?? 0) < 3
+                                        ? TextStyle(color: Colors.red)
+                                        : null,
+                                  ),
                                 ],
                               ),
                         ],

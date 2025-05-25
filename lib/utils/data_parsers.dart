@@ -59,7 +59,7 @@ List<Driver> parseDriversFromHtml(String htmlString) {
     }).toList();
 
     // Extract contract information from the corresponding <td> element.
-    final contract = contractTds[i].text.trim();
+    final contract = RegExp(r'\d+').firstMatch(contractTds[i].text.trim())?.group(0) ?? '';;
 
     drivers.add(Driver(
         name: fullName,
@@ -631,7 +631,7 @@ Map<String, dynamic> parseStaffFromHtml(Map<String, dynamic> staffData) {
     final fullName = '$firstName $lastName'.trim();
 
     final contractElement = document.querySelector('[id^="nStaffC"], [id^="nDriverC"]');
-    final contract = contractElement?.text.trim() ?? '';
+    final contract = RegExp(r'\d+').firstMatch(contractElement?.text.trim() ?? '')?.group(0) ?? '';
 
     final idElement = document.querySelector('a[href*="&id="]');
     final href = idElement?.attributes['href'] ?? '';
@@ -673,8 +673,7 @@ Map<String, dynamic> parseStaffFromHtml(Map<String, dynamic> staffData) {
         final driverId = driverIdMatch?.group(1) ?? '';
 
         final driverContractElement = row.querySelector('[id^="nDriverC"]');
-        final driverContract = driverContractElement?.text.trim() ?? '';
-
+        final driverContract =  RegExp(r'\d+').allMatches(driverContractElement?.text.trim() ?? '').map((m) => m.group(0)).lastWhere((e) => true, orElse: () => '');
         reserveStaff = {
           'type': 'Driver',
           'name': driverNameText.replaceAll(RegExp(r'<[^>]*>'), '').trim(), // Remove potential HTML tags in name
