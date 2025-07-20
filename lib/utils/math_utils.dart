@@ -173,27 +173,43 @@ Map<String, dynamic> generateDefaultStrategy(Account account) {
   const double maxWear = 60.0;
 
   
-  List<Map<String, dynamic>> bestStints = [];
-
+List<Map<String, dynamic>> bestStints = [];
 int lapsRemaining = raceLaps;
 int stintIndex = 0;
 
 while (lapsRemaining > 0) {
-  String tyre = (stintIndex == 0) ? 'S' : 'M';
-  double tyreWear = double.tryParse(calculatedWear[tyre] ?? '0.0') ?? 0.0;
-
+  String selectedTyre = 'S';
   int bestLapCount = 1;
-  for (int testLaps = 1; testLaps <= lapsRemaining; testLaps++) {
-    print(testLaps);
-    double wear = double.tryParse(stintWearCalc(tyreWear, testLaps, track)) ?? 0.0;
-    print(wear);
-    //if (wear > maxWear) break;
-    if (wear >= minWear) bestLapCount = testLaps; // update to longest valid
-    if (wear < minWear) break; // stop if wear exceeds min
+
+  if (stintIndex == 0) {
+    // First stint must use 'S'
+    double tyreWear = double.tryParse(calculatedWear['S'] ?? '0.0') ?? 0.0;
+    for (int testLaps = 1; testLaps <= lapsRemaining; testLaps++) {
+      double wear = double.tryParse(stintWearCalc(tyreWear, testLaps, track)) ?? 0.0;
+      //if (wear > maxWear) break;
+      if (wear >= minWear) bestLapCount = testLaps;
+    }
+  } else {
+    // Try both tyres after first stint
+    for (final tyre in ['S', 'M']) {
+      double tyreWear = double.tryParse(calculatedWear[tyre] ?? '0.0') ?? 0.0;
+      int maxValidLaps = 1;
+      for (int testLaps = 1; testLaps <= lapsRemaining; testLaps++) {
+        double wear = double.tryParse(stintWearCalc(tyreWear, testLaps, track)) ?? 0.0;
+        //if (wear > maxWear) break;
+        if (wear >= minWear) maxValidLaps = testLaps;
+      }
+
+      // Keep tyre if it gives more laps
+      if (maxValidLaps > bestLapCount) {
+        bestLapCount = maxValidLaps;
+        selectedTyre = tyre;
+      }
+    }
   }
 
   bestStints.add({
-    'tyre': tyre,
+    'tyre': selectedTyre,
     'laps': bestLapCount,
     'push': push,
   });
@@ -201,6 +217,7 @@ while (lapsRemaining > 0) {
   lapsRemaining -= bestLapCount;
   stintIndex++;
 }
+
   // Fallback if nothing worked
  
 
