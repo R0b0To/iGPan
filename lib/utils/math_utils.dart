@@ -1,4 +1,5 @@
 import 'dart:math';
+import '../models/account.dart';
 
 // Represents a race track with its specific characteristics and data.
 class Track {
@@ -138,4 +139,106 @@ double fuelCalc(double f) {
   } else {
     return (pow(0.6666 * f, -0.11) * 0.725);
   }
+}
+
+Map<String, dynamic> generateDefaultStrategy(Account account) {
+  final raceLaps = int.tryParse(account.raceData!['vars']!['raceLaps']!.toString()) ?? 0;
+  final track = Track(account.raceData?['vars']?['trackId']?.toString() ?? '1', raceLaps);
+
+  final carAttributes = account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes'];
+  final tyreEconomy = carAttributes?['tyre_economy']?.toDouble() ?? 0.0;
+  final calculatedWear = wearCalc(tyreEconomy, track); // e.g. { 'S': '6.3', 'M': '5.1' }
+
+  final fuelEconomy = account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
+  final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
+  final kmPerLiter = fuelCalc(fuelEconomy);
+  final fuelPerLap = ( kmPerLiter ) * trackLength;
+  final totalFuel = fuelPerLap * raceLaps;
+
+  if(account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
+    //to do: car 1 and car 2
+        account.raceData!['parsedStrategy'][0][0][2] = totalFuel.ceil();
+        account.raceData?['vars']['d${1}AdvancedFuel'] = totalFuel.ceil(); 
+        
+      }
+    // always enable advanced settings ??
+    String ignoreAdvancedKey = 'd${1}IgnoreAdvanced';
+    account.raceData!['vars']?[ignoreAdvancedKey] = true; // enable advanced
+ 
+  account.raceData?['kmPerLiter'] = kmPerLiter; 
+  account.raceData?['track'] = track; 
+
+  const int push = 3;
+  const double minWear = 44.0;
+  const double maxWear = 60.0;
+
+  
+  List<Map<String, dynamic>> bestStints = [];
+
+int lapsRemaining = raceLaps;
+int stintIndex = 0;
+
+while (lapsRemaining > 0) {
+  String tyre = (stintIndex == 0) ? 'S' : 'M';
+  double tyreWear = double.tryParse(calculatedWear[tyre] ?? '0.0') ?? 0.0;
+
+  int bestLapCount = 1;
+  for (int testLaps = 1; testLaps <= lapsRemaining; testLaps++) {
+    print(testLaps);
+    double wear = double.tryParse(stintWearCalc(tyreWear, testLaps, track)) ?? 0.0;
+    print(wear);
+    //if (wear > maxWear) break;
+    if (wear >= minWear) bestLapCount = testLaps; // update to longest valid
+    if (wear < minWear) break; // stop if wear exceeds min
+  }
+
+  bestStints.add({
+    'tyre': tyre,
+    'laps': bestLapCount,
+    'push': push,
+  });
+
+  lapsRemaining -= bestLapCount;
+  stintIndex++;
+}
+  // Fallback if nothing worked
+ 
+
+  // Create result map
+  Map<String, dynamic> stintsMap = {};
+  for (int i = 0; i < bestStints.length; i++) {
+    stintsMap[i.toString()] = {
+      'tyre': 'ts-${bestStints[i]['tyre']}',
+      'laps': bestStints[i]['laps'].toString(),
+      'push': bestStints[i]['push'],
+    };
+  }
+
+  return {
+    'track': track.info['trackCode'],
+    'length': track.length,
+    'laps': {'total': raceLaps, 'doing': raceLaps},
+    'stints': stintsMap,
+  };
+}
+
+List<List<int>> generateLapSplits(int total, int parts) {
+  List<List<int>> results = [];
+
+  void helper(List<int> current, int remaining, int depth) {
+    if (depth == parts) {
+      if (remaining == 0) results.add(List.from(current));
+      return;
+    }
+
+    // Allow each stint to be at least 1 lap
+    for (int i = 1; i <= remaining - (parts - depth - 1); i++) {
+      current.add(i);
+      helper(current, remaining - i, depth + 1);
+      current.removeLast();
+    }
+  }
+
+  helper([], total, 0);
+  return results;
 }

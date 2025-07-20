@@ -43,8 +43,7 @@ class _ActionsScreenState extends State<ActionsScreen> {
 
                     if (drivers != null && team != null && raceData != null) {
                       // Assuming carIndex 0 for simplicity, modify if needed
-                      for (int carIndex = 0; carIndex < drivers.length && carIndex < 2; carIndex++) {
-                        
+                      for (int carIndex = 0; carIndex < drivers.length && carIndex < 2; carIndex++) {                       
                         final driverAttributes = drivers[carIndex]?.attributes;
                         final tier = team['_tier'];
                         final raceNameHtml = raceData['vars']['raceName'];
@@ -80,6 +79,19 @@ class _ActionsScreenState extends State<ActionsScreen> {
             child: const Text('Perform Car Setup for Enabled Accounts'),
           ),
                     ElevatedButton(
+            onPressed: () async {
+              // Iterate through accounts and set default strategy for enabled ones
+              for (var account in accountsNotifier.value) {
+                if (account.enabled) {
+                  await account.setDefaultStrategy();
+                }
+              }
+              // Notify listeners that the accounts list might have been updated
+              accountsNotifier.value = List.from(accountsNotifier.value);
+            },
+            child: const Text('Set default strategy for Enabled Accounts'),
+          ),
+            ElevatedButton(
             onPressed: () {
               // Iterate through accounts and call claimDailyReward for enabled ones
               for (var account in accountsNotifier.value) {

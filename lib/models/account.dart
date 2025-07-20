@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart'; // Used for making HTTP requests.
 import 'package:flutter/material.dart'; // Used for `debugPrint`.
 import '../utils/data_parsers.dart'; // Utility functions for parsing data.
+import '../utils/math_utils.dart';
 
 // Represents a user account in the application.
 // Contains credentials, user-specific data, and methods for interacting with the game server.
@@ -749,5 +750,80 @@ class Account {
       debugPrint('Error saving sponsor for ${email}: $e');
       rethrow;
     }
+  }
+
+  Future<void> setDefaultStrategy() async {
+    if (raceData == null) {
+      debugPrint('Race data not available for ${email}. Cannot set default strategy.');
+      return;
+    }
+
+    final generatedStrategy = generateDefaultStrategy(this);
+    final drivers = fireUpData!['drivers'];
+    
+    for (int i = 0; i < drivers.length; i++) {
+      final loadedStints = generatedStrategy['stints'] as Map<String, dynamic>;
+      final numberOfPits = loadedStints.length - 1;
+      final pitKey = 'd${i + 1}Pits';
+      raceData!['vars'][pitKey] = numberOfPits.clamp(0, 4);
+
+      List<dynamic> newParsedStrategy = [];
+      final sortedKeys = loadedStints.keys.toList()
+        ..sort((a, b) => int.parse(a).compareTo(int.parse(b)));
+
+      final pushLevelFactorMap = {
+        '100': 0.02,
+        '80': 0.01,
+        '60': 0.0,
+        '40': -0.004,
+        '20': -0.007,
+      };
+
+      for (String key in sortedKeys) {
+        Map<String, dynamic> stint = loadedStints[key];
+        String? tyre = stint['tyre']?.toString().replaceFirst('ts-', '');
+        String laps = stint['laps']?.toString() ?? '0';
+        dynamic pushValue = stint['push'];
+        String push;
+        if (pushValue is int) {
+          Map<int, String> pushMap = {
+            1: '20',
+            2: '40',
+            3: '60',
+            4: '80',
+            5: '100',
+          };
+          push = pushMap[pushValue] ?? '60';
+        } else {
+          push = pushValue?.toString() ?? '60';
+        }
+
+        final pushFactor = pushLevelFactorMap[push] ?? 0.0;
+        final fuelPerLap = (raceData?['kmPerLiter'] + pushFactor) * raceData?['track'].info['length'];
+        double fuelEstimation = (fuelPerLap * (int.tryParse(laps) ?? 0));
+
+        newParsedStrategy.add([tyre, laps, fuelEstimation, push]);
+      }
+
+      double totalFuel = 0.0;
+      for (int j = 0; j < newParsedStrategy.length.clamp(0, 5); j++) {
+        totalFuel += newParsedStrategy[j][2];
+        if (raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
+          newParsedStrategy[j][2] = 0;
+        } else {
+          newParsedStrategy[j][2] = newParsedStrategy[j][2].ceil();
+        }
+        if (raceData!['parsedStrategy'][i] == null) {
+          raceData!['parsedStrategy'][i] = List.filled(5, null, growable: true);
+        }
+        raceData!['parsedStrategy'][i][j] = newParsedStrategy[j];
+      }
+
+      if (raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
+        raceData!['parsedStrategy'][i][0][2] = totalFuel.ceil();
+        raceData?['vars']['d${i + 1}AdvancedFuel'] = totalFuel.ceil();
+      }
+    }
+    debugPrint('Default strategy set for ${email}');
   }
 }
