@@ -141,6 +141,62 @@ double fuelCalc(double f) {
   }
 }
 
+// [Keep your existing class definitions for Account, Track, etc.]
+// [Keep your existing helper functions: wearCalc, fuelCalc, stintWearCalc]
+
+/// Generates all valid combinations of 'S' and 'M' tyres for a given number of stints.
+/// It excludes all-'S' and all-'M' combinations.
+List<List<String>> _generateTyreCombinations(int numStints) {
+  if (numStints <= 1) return [];
+  
+  final List<List<String>> combinations = [];
+  final int count = 1 << numStints; // Equivalent to 2^numStints
+
+  // Iterate from 1 to (2^n - 2) to skip all-'M' (0) and all-'S' (2^n - 1)
+  for (int i = 1; i < count - 1; i++) {
+    final List<String> currentCombo = [];
+    for (int j = 0; j < numStints; j++) {
+      // Check the j-th bit of i to decide between 'S' and 'M'
+      if ((i >> j) & 1 == 1) {
+        currentCombo.add('S');
+      } else {
+        currentCombo.add('M');
+      }
+    }
+    combinations.add(currentCombo);
+  }
+  return combinations;
+}
+
+/// Generates all possible ways to split a total number of laps into a specific number of parts (stints).
+List<List<int>> _generateLapSplits(int total, int parts) {
+  final List<List<int>> results = [];
+
+  void helper(List<int> current, int remaining, int depth) {
+    if (depth == parts -1) {
+      if (remaining > 0) {
+        current.add(remaining);
+        results.add(List.from(current));
+        current.removeLast();
+      }
+      return;
+    }
+
+    // Each stint must be at least 1 lap long
+    for (int i = 1; i <= remaining - (parts - depth - 1); i++) {
+      current.add(i);
+      helper(current, remaining - i, depth + 1);
+      current.removeLast();
+    }
+  }
+
+  if (total > 0 && parts > 0) {
+    helper([], total, 0);
+  }
+  return results;
+}
+
+
 Map<String, dynamic> generateDefaultStrategy(Account account) {
   final raceLaps = int.tryParse(account.raceData!['vars']!['raceLaps']!.toString()) ?? 0;
   final track = Track(account.raceData?['vars']?['trackId']?.toString() ?? '1', raceLaps);
@@ -149,85 +205,109 @@ Map<String, dynamic> generateDefaultStrategy(Account account) {
   final tyreEconomy = carAttributes?['tyre_economy']?.toDouble() ?? 0.0;
   final calculatedWear = wearCalc(tyreEconomy, track); // e.g. { 'S': '6.3', 'M': '5.1' }
 
+  // --- Fuel calculations (unchanged) ---
   final fuelEconomy = account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
   final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
   final kmPerLiter = fuelCalc(fuelEconomy);
-  final fuelPerLap = ( kmPerLiter ) * trackLength;
+  final fuelPerLap = (kmPerLiter) * trackLength;
   final totalFuel = fuelPerLap * raceLaps;
 
-  if(account.raceData?['vars']?['rulesJson']?['refuelling'] == '0'){
-    //to do: car 1 and car 2
-        account.raceData!['parsedStrategy'][0][0][2] = totalFuel.ceil();
-        account.raceData?['vars']['d${1}AdvancedFuel'] = totalFuel.ceil(); 
-        
-      }
-    // always enable advanced settings ??
-    String ignoreAdvancedKey = 'd${1}IgnoreAdvanced';
-    account.raceData!['vars']?[ignoreAdvancedKey] = true; // enable advanced
- 
-  account.raceData?['kmPerLiter'] = kmPerLiter; 
-  account.raceData?['track'] = track; 
+  if (account.raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
+    account.raceData!['parsedStrategy'][0][0][2] = totalFuel.ceil();
+    account.raceData?['vars']['d${1}AdvancedFuel'] = totalFuel.ceil();
+  }
+  account.raceData!['vars']?['d${1}IgnoreAdvanced'] = true;
+  account.raceData?['kmPerLiter'] = kmPerLiter;
+  account.raceData?['track'] = track;
 
+  // --- New Strategy Generation Logic ---
   const int push = 3;
-  const double minWear = 44.0;
-  const double maxWear = 60.0;
+  const double wearThreshold = 45.0; // Corresponds to 45% remaining health (100 - 45)
 
-  
-List<Map<String, dynamic>> bestStints = [];
-int lapsRemaining = raceLaps;
-int stintIndex = 0;
-
-while (lapsRemaining > 0) {
-  String selectedTyre = 'S';
-  int bestLapCount = 1;
-
-  if (stintIndex == 0) {
-    // First stint must use 'S'
-    double tyreWear = double.tryParse(calculatedWear['S'] ?? '0.0') ?? 0.0;
-    for (int testLaps = 1; testLaps <= lapsRemaining; testLaps++) {
-      double wear = double.tryParse(stintWearCalc(tyreWear, testLaps, track)) ?? 0.0;
-      //if (wear > maxWear) break;
-      if (wear >= minWear) bestLapCount = testLaps;
+  /// Calculates the max laps a tyre can do before wear exceeds the threshold.
+  int _findMaxLaps(String tyre) {
+    final double tyreWearPerLap = double.tryParse(calculatedWear[tyre] ?? '0.0') ?? 0.0;
+    if (tyreWearPerLap <= 0) {
+      return raceLaps; // Tyre doesn't wear, lasts the whole race.
     }
-  } else {
-    // Try both tyres after first stint
-    for (final tyre in ['S', 'M']) {
-      double tyreWear = double.tryParse(calculatedWear[tyre] ?? '0.0') ?? 0.0;
-      int maxValidLaps = 1;
-      for (int testLaps = 1; testLaps <= lapsRemaining; testLaps++) {
-        double wear = double.tryParse(stintWearCalc(tyreWear, testLaps, track)) ?? 0.0;
-        //if (wear > maxWear) break;
-        if (wear >= minWear) maxValidLaps = testLaps;
-      }
 
-      // Keep tyre if it gives more laps
-      if (maxValidLaps > bestLapCount) {
-        bestLapCount = maxValidLaps;
-        selectedTyre = tyre;
+    int maxValidLaps = 0;
+    // Check each lap count until the tyre health is too low. A limit of raceLaps is a safe upper bound.
+    for (int laps = 1; laps <= raceLaps; laps++) {
+      // Use your function to get the remaining health after a stint of `laps`.
+      final double remainingHealth = double.tryParse(stintWearCalc(tyreWearPerLap, laps, track)) ?? 0.0;
+      
+      if (remainingHealth >= wearThreshold) {
+        maxValidLaps = laps;
+      } else {
+        // As soon as health drops below the minimum, the previous lap count was the maximum possible.
+        break;
       }
+    }
+    return maxValidLaps;
+  }
+
+  final int maxLapsS = _findMaxLaps('S');
+  final int maxLapsM = _findMaxLaps('M');
+
+  List<Map<String, dynamic>> bestOverallStrategy = [];
+
+  // 1. Loop from min to max stints
+  for (int numStints = 2; numStints <= 5; numStints++) {
+    final List<List<Map<String, dynamic>>> validStrategies = [];
+    
+    // 2. Generate all lap and tyre combinations
+    final List<List<int>> lapSplits = _generateLapSplits(raceLaps, numStints);
+    final List<List<String>> tyreCombos = _generateTyreCombinations(numStints);
+
+    // 3. Validate each combination
+    for (final laps in lapSplits) {
+      for (final tyres in tyreCombos) {
+        bool isValid = true;
+        List<Map<String, dynamic>> currentStrategy = [];
+        for (int i = 0; i < numStints; i++) {
+          final lapCount = laps[i];
+          final tyreType = tyres[i];
+
+          // Check if the stint is possible on the assigned tyre
+          if ((tyreType == 'S' && lapCount > maxLapsS) || (tyreType == 'M' && lapCount > maxLapsM)) {
+            isValid = false;
+            break;
+          }
+          currentStrategy.add({'tyre': tyreType, 'laps': lapCount, 'push': push});
+        }
+        if (isValid) {
+          validStrategies.add(currentStrategy);
+        }
+      }
+    }
+
+    // 4. If we found any valid strategies, pick the best one and stop searching
+    if (validStrategies.isNotEmpty) {
+      // Find the strategy with the most 'S' laps from the list
+      validStrategies.sort((a, b) {
+        final int sLapsA = a.where((s) => s['tyre'] == 'S').fold(0, (prev, s) => prev + (s['laps'] as int));
+        final int sLapsB = b.where((s) => s['tyre'] == 'S').fold(0, (prev, s) => prev + (s['laps'] as int));
+        return sLapsB.compareTo(sLapsA); // Sort descending by S-laps
+      });
+      bestOverallStrategy = validStrategies.first;
+      break; // Exit loop since we found the solution with the minimum stints
     }
   }
 
-  bestStints.add({
-    'tyre': selectedTyre,
-    'laps': bestLapCount,
-    'push': push,
-  });
+  // Fallback if no strategy was found
+  if (bestOverallStrategy.isEmpty) {
+    print("Warning: No valid strategy could be generated with the given constraints.");
+    return {'error': 'No valid strategy found'};
+  }
 
-  lapsRemaining -= bestLapCount;
-  stintIndex++;
-}
-
-  // Fallback if nothing worked
- 
-
-  // Create result map
-  Map<String, dynamic> stintsMap = {};
-  for (int i = 0; i < bestStints.length; i++) {
+  // --- Format the final output ---
+  final Map<String, dynamic> stintsMap = {};
+  for (int i = 0; i < bestOverallStrategy.length; i++) {
     stintsMap[i.toString()] = {
-      'tyre': 'ts-${bestStints[i]['tyre']}',
-      'laps': bestStints[i]['laps'].toString(),
-      'push': bestStints[i]['push'],
+      'tyre': 'ts-${bestOverallStrategy[i]['tyre']}',
+      'laps': bestOverallStrategy[i]['laps'].toString(),
+      'push': bestOverallStrategy[i]['push'],
     };
   }
 
@@ -237,25 +317,4 @@ while (lapsRemaining > 0) {
     'laps': {'total': raceLaps, 'doing': raceLaps},
     'stints': stintsMap,
   };
-}
-
-List<List<int>> generateLapSplits(int total, int parts) {
-  List<List<int>> results = [];
-
-  void helper(List<int> current, int remaining, int depth) {
-    if (depth == parts) {
-      if (remaining == 0) results.add(List.from(current));
-      return;
-    }
-
-    // Allow each stint to be at least 1 lap
-    for (int i = 1; i <= remaining - (parts - depth - 1); i++) {
-      current.add(i);
-      helper(current, remaining - i, depth + 1);
-      current.removeLast();
-    }
-  }
-
-  helper([], total, 0);
-  return results;
 }
