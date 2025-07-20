@@ -43,8 +43,8 @@ class _ActionsScreenState extends State<ActionsScreen> {
 
                     if (drivers != null && team != null && raceData != null) {
                       // Assuming carIndex 0 for simplicity, modify if needed
-                      const int carIndex = 0;
-                      if (carIndex < drivers.length) {
+                      for (int carIndex = 0; carIndex < drivers.length && carIndex < 2; carIndex++) {
+                        
                         final driverAttributes = drivers[carIndex]?.attributes;
                         final tier = team['_tier'];
                         final raceNameHtml = raceData['vars']['raceName'];
