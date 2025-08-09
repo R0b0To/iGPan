@@ -17,113 +17,270 @@ class _ActionsScreenState extends State<ActionsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+
           ElevatedButton(
             onPressed: () {
-              // Iterate through accounts and call claimDailyReward for enabled ones
-              for (var account in accountsNotifier.value) {
-                if (account.enabled) {
-                  account.claimDailyReward();
-                }
-              }
-              // Notify listeners that the accounts list might have been updated (e.g., nDailyReward removed)
-              accountsNotifier.value = List.from(accountsNotifier.value);
+              _claimDailyReward();
             },
             child: const Text('1| Claim Daily Reward for Enabled Accounts'),
           ),
+          const SizedBox(height: 5), // Add some space
           ElevatedButton(
             onPressed: () {
-              // Iterate through accounts and perform car setup for enabled ones
-              for (var account in accountsNotifier.value) {
-                if (account.enabled) {
-                  final fireUpData = account.fireUpData;
-                  if (fireUpData != null) {
-                    final drivers = fireUpData['drivers'];
-                    final team = fireUpData['team'];
-                    final raceData = account.raceData;
-
-                    if (drivers != null && team != null && raceData != null) {
-                      // Assuming carIndex 0 for simplicity, modify if needed
-                      for (int carIndex = 0; carIndex < drivers.length && carIndex < 2; carIndex++) {                       
-                        final driverAttributes = drivers[carIndex]?.attributes;
-                        final tier = team['_tier'];
-                        final raceNameHtml = raceData['vars']['raceName'];
-
-                        if (driverAttributes != null && driverAttributes.length > 13 && tier != null && raceNameHtml != null) {
-                          final double height = driverAttributes[13];
-                          final int tierValue = int.tryParse(tier) ?? 1;
-
-                          // Assuming CarSetup class is accessible
-                          final CarSetup carSetup = CarSetup(account.raceData?['vars']['trackId'], height, tierValue);
-                          final int suggestedRide = carSetup.ride;
-                          final int suggestedWing = carSetup.wing;
-                          final int suggestedSuspension = carSetup.suspension + 1;
-
-                          // Update the underlying raceData as well
-                          String suspensionKey = 'd${carIndex + 1}Suspension';
-                          String rideHeightKey = 'd${carIndex + 1}Ride';
-                          String aerodynamicsKey = 'd${carIndex + 1}Aerodynamics';
-                          account.raceData?['vars']?[suspensionKey] = suggestedSuspension.toString(); // Store as string '1', '2', '3'
-                          account.raceData?['vars']?[rideHeightKey] = suggestedRide;
-                          account.raceData?['vars']?[aerodynamicsKey] = suggestedWing;
-                       
-                          print('Performed car setup for account: ${account.email}');
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              // Notify listeners that the accounts list (specifically raceData within accounts) has been updated
-              
+              _performCarSetup();
             },
             child: const Text('2| Perform Car Setup for Enabled Accounts'),
-          ),ElevatedButton(
+          ),
+          const SizedBox(height: 5), // Add some space
+          ElevatedButton(
             onPressed: () async {
-              for (var account in accountsNotifier.value) {
-                if (account.enabled) {
-                  final numCarsString = account.fireUpData?['team']?['_numCars'];
-                  final numCars = numCarsString is int ? numCarsString : (int.tryParse(numCarsString ?? '1') ?? 1);
-
-                  for (int i = 1; i <= numCars; i++) {
-                    await account.repairCar(i, 'parts');
-                    await account.repairCar(i, 'engine');
-                  }
-                }
-              }
-              accountsNotifier.value = List.from(accountsNotifier.value);
+              await _repairAllCars();
             },
             child: const Text('3| Repair All Cars for Enabled Accounts'),
           ),
-                    ElevatedButton(
+          const SizedBox(height: 5), // Add some space
+          ElevatedButton(
             onPressed: () async {
-              // Iterate through accounts and set default strategy for enabled ones
-              for (var account in accountsNotifier.value) {
-                if (account.enabled) {
-                  await account.setDefaultStrategy();
-                }
-              }
-              // Notify listeners that the accounts list might have been updated
-              accountsNotifier.value = List.from(accountsNotifier.value);
+              await _setDefaultStrategy();
             },
             child: const Text('4| Set default strategy for Enabled Accounts'),
           ),
-          
-            ElevatedButton(
-            onPressed: () {
-              // Iterate through accounts and call claimDailyReward for enabled ones
-              for (var account in accountsNotifier.value) {
-                if (account.enabled) {
-                  account.saveStrategy();
-                }
-              }
-              // Notify listeners that the accounts list might have been updated (e.g., nDailyReward removed)
-              accountsNotifier.value = List.from(accountsNotifier.value);
-            },
-            child: const Text('5| Save Strategy for Enabled Accounts'),
+          const SizedBox(height: 5), // Add some space
+          Tooltip(
+            message:
+                'Fills the smallest gap by priority, then picks the attribute with the highest research gain.',
+            child: ElevatedButton(
+              onPressed: () async {
+                await _distributeResearchPoints();
+              },
+              child: const Text(
+                  '5| Distribute Research Points for Enabled Accounts'),
+            ),
           ),
-          
+          const SizedBox(height: 5), // Add some space
+          ElevatedButton(
+            onPressed: () {
+              _saveStrategy();
+            },
+            child: const Text('6| Save Strategy for Enabled Accounts'),
+          ), 
+          const SizedBox(height: 30), // Add some space
+                    ElevatedButton(
+            onPressed: () async {
+              await _executeAllActions();
+            },
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(200, 80), // Make the button big
+              textStyle: const TextStyle(fontSize: 20), // Make the text big
+            ),
+            child: const Text('Execute All Actions'),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _claimDailyReward() async {
+    for (var account in accountsNotifier.value) {
+      if (account.enabled) {
+        account.claimDailyReward();
+      }
+    }
+    accountsNotifier.value = List.from(accountsNotifier.value);
+  }
+
+  Future<void> _performCarSetup() async {
+    for (var account in accountsNotifier.value) {
+      if (account.enabled) {
+        final fireUpData = account.fireUpData;
+        if (fireUpData != null) {
+          final drivers = fireUpData['drivers'];
+          final team = fireUpData['team'];
+          final raceData = account.raceData;
+
+          if (drivers != null && team != null && raceData != null) {
+            for (int carIndex = 0;
+                carIndex < drivers.length && carIndex < 2;
+                carIndex++) {
+              final driverAttributes = drivers[carIndex]?.attributes;
+              final tier = team['_tier'];
+              final raceNameHtml = raceData['vars']['raceName'];
+
+              if (driverAttributes != null &&
+                  driverAttributes.length > 13 &&
+                  tier != null &&
+                  raceNameHtml != null) {
+                final double height = driverAttributes[13];
+                final int tierValue = int.tryParse(tier) ?? 1;
+
+                final CarSetup carSetup = CarSetup(
+                    account.raceData?['vars']['trackId'], height, tierValue);
+                final int suggestedRide = carSetup.ride;
+                final int suggestedWing = carSetup.wing;
+                final int suggestedSuspension = carSetup.suspension + 1;
+
+                String suspensionKey = 'd${carIndex + 1}Suspension';
+                String rideHeightKey = 'd${carIndex + 1}Ride';
+                String aerodynamicsKey = 'd${carIndex + 1}Aerodynamics';
+                account.raceData?['vars']?[suspensionKey] =
+                    suggestedSuspension.toString();
+                account.raceData?['vars']?[rideHeightKey] = suggestedRide;
+                account.raceData?['vars']?[aerodynamicsKey] = suggestedWing;
+
+                print('Performed car setup for account: ${account.email}');
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _repairAllCars() async {
+    for (var account in accountsNotifier.value) {
+      if (account.enabled) {
+        final numCarsString = account.fireUpData?['team']?['_numCars'];
+        final numCars = numCarsString is int
+            ? numCarsString
+            : (int.tryParse(numCarsString ?? '1') ?? 1);
+
+        for (int i = 1; i <= numCars; i++) {
+          await account.repairCar(i, 'parts');
+          await account.repairCar(i, 'engine');
+        }
+      }
+    }
+    accountsNotifier.value = List.from(accountsNotifier.value);
+  }
+
+  Future<void> _setDefaultStrategy() async {
+    for (var account in accountsNotifier.value) {
+      if (account.enabled) {
+        await account.setDefaultStrategy();
+      }
+    }
+    accountsNotifier.value = List.from(accountsNotifier.value);
+  }
+
+  Future<void> _distributeResearchPoints() async {
+    for (var account in accountsNotifier.value) {
+      if (account.enabled) {
+        final researchData = await account.requestResearch();
+        if (researchData != null) {
+          List<int> myCarValues = List<int>.from(researchData['myCar']);
+          List<int> bestCarAttributes = List<int>.from(researchData['best']);
+          int remainingDesignPoints = researchData['points'] as int;
+          double originalMaxResearch = researchData['maxResearch'] as double;
+
+          List<String> attributeNames = [
+            'acceleration',
+            'braking',
+            'cooling',
+            'downforce',
+            'fuel_economy',
+            'handling',
+            'reliability',
+            'tyre_economy'
+          ];
+
+          List<int> priorityOrder = [0, 1, 3, 5, 4, 7];
+
+          int? bestAttributeIndex;
+          int smallestGap = 999999;
+
+          for (int i in [0, 1, 3, 5]) {
+            final gap = bestCarAttributes[i] - myCarValues[i];
+            if (gap > 0) {
+              if (gap < smallestGap) {
+                smallestGap = gap;
+                bestAttributeIndex = i;
+              }
+            }
+          }
+
+          if (bestAttributeIndex == null) {
+            for (int i in [4, 7]) {
+              final gap = bestCarAttributes[i] - myCarValues[i];
+              if (gap >= 0) {
+                if (gap < smallestGap) {
+                  smallestGap = gap;
+                  bestAttributeIndex = i;
+                }
+              }
+            }
+          }
+
+          if (bestAttributeIndex == null) {
+            if (bestCarAttributes[4] - myCarValues[4] == 0) {
+              bestAttributeIndex = 4;
+            } else if (bestCarAttributes[7] - myCarValues[7] == 0) {
+              bestAttributeIndex = 7;
+            }
+          }
+
+          if (bestAttributeIndex != null) {
+            myCarValues[bestAttributeIndex] += remainingDesignPoints;
+            remainingDesignPoints = 0;
+
+            final Map<String, dynamic> researchSettings = {
+              'maxDp': originalMaxResearch.toInt(),
+              'attributes': <String>[],
+            };
+
+            int? largestGapAttributeIndex;
+            int currentLargestGap = -1;
+
+            for (int i in priorityOrder) {
+              if (i == 2 || i == 6) continue;
+
+              final currentGap = bestCarAttributes[i] - myCarValues[i];
+              if (currentGap > currentLargestGap) {
+                currentLargestGap = currentGap;
+                largestGapAttributeIndex = i;
+              }
+            }
+
+            if (largestGapAttributeIndex != null) {
+              researchSettings['attributes']
+                  .add(attributeNames[largestGapAttributeIndex]);
+            }
+
+            List<String> designList = [];
+            for (int i = 0; i < attributeNames.length; i++) {
+              designList.add('&${attributeNames[i]}=${myCarValues[i]}');
+            }
+
+            await account.saveDesign(researchSettings, designList);
+          } else {
+            // Handle case where no suitable attribute is found
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text('Failed to fetch research data for ${account.email}')),
+          );
+        }
+      }
+    }
+    accountsNotifier.value = List.from(accountsNotifier.value);
+  }
+
+  Future<void> _saveStrategy() async {
+    for (var account in accountsNotifier.value) {
+      if (account.enabled) {
+        account.saveStrategy();
+      }
+    }
+    accountsNotifier.value = List.from(accountsNotifier.value);
+  }
+
+  Future<void> _executeAllActions() async {
+    await _claimDailyReward();
+    await _performCarSetup();
+    await _repairAllCars();
+    await _setDefaultStrategy();
+    await _distributeResearchPoints();
+    await _saveStrategy();
   }
 }
