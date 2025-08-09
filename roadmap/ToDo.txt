@@ -28,6 +28,8 @@ TODO:
                 better layout text
             implement ideal setup if raining
     misc:
+        improve account security. passwords must be encrypted
+        add app folder navigation or a way to sync or import/export accounts 
         live race in progress
             make layout red? disable buttons?
         actions functions:
