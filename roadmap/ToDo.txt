@@ -1,6 +1,9 @@
-ToDo:
+TODO:
+    bugs:
+        actions screen:
+            handle case when account is not in a league
     buttons:
-        add weather label for race
+        ~~add weather label for race~~
             add button for advanced weather?
         race name opens reports of that race
         driver contract
@@ -12,25 +15,29 @@ ToDo:
         restore stamina
         
     tabs:
-        team tab
-            driver
-            staff
+        ~~team tab~~
+            ~~driver~~
+                add button to edit/manage the driver?
+            ~~staff~~
+                add button to edit/manage the staff?
             market?
-        practice
+        ~~practice~~
             improve layout
         setup
-            add suggestion after practice laps?
+            ~~add suggestion after practice laps?~~
+                better layout text
             implement ideal setup if raining
     misc:
         live race in progress
             make layout red? disable buttons?
         actions functions:
-            daily
-                update labels after press
-                fix errors and handle if the daily was already claimed
-            repair
-            strategy
-                how? first available strategy? pre-selected?
+            ~~daily~~
+                ~~update labels after press~~
+                ~~fix errors and handle if the daily was already claimed~~
+            ~~repair~~
+            ~~strategy~~
+                ~~how? first available strategy? pre-selected?~~
+                improve function. it takes too long
         add more stints
             only visual, make it clear
     screens:
