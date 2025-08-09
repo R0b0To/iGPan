@@ -28,7 +28,7 @@ class _ActionsScreenState extends State<ActionsScreen> {
               // Notify listeners that the accounts list might have been updated (e.g., nDailyReward removed)
               accountsNotifier.value = List.from(accountsNotifier.value);
             },
-            child: const Text('Claim Daily Reward for Enabled Accounts'),
+            child: const Text('1| Claim Daily Reward for Enabled Accounts'),
           ),
           ElevatedButton(
             onPressed: () {
@@ -76,7 +76,23 @@ class _ActionsScreenState extends State<ActionsScreen> {
               // Notify listeners that the accounts list (specifically raceData within accounts) has been updated
               
             },
-            child: const Text('Perform Car Setup for Enabled Accounts'),
+            child: const Text('2| Perform Car Setup for Enabled Accounts'),
+          ),ElevatedButton(
+            onPressed: () async {
+              for (var account in accountsNotifier.value) {
+                if (account.enabled) {
+                  final numCarsString = account.fireUpData?['team']?['_numCars'];
+                  final numCars = numCarsString is int ? numCarsString : (int.tryParse(numCarsString ?? '1') ?? 1);
+
+                  for (int i = 1; i <= numCars; i++) {
+                    await account.repairCar(i, 'parts');
+                    await account.repairCar(i, 'engine');
+                  }
+                }
+              }
+              accountsNotifier.value = List.from(accountsNotifier.value);
+            },
+            child: const Text('3| Repair All Cars for Enabled Accounts'),
           ),
                     ElevatedButton(
             onPressed: () async {
@@ -89,8 +105,9 @@ class _ActionsScreenState extends State<ActionsScreen> {
               // Notify listeners that the accounts list might have been updated
               accountsNotifier.value = List.from(accountsNotifier.value);
             },
-            child: const Text('Set default strategy for Enabled Accounts'),
+            child: const Text('4| Set default strategy for Enabled Accounts'),
           ),
+          
             ElevatedButton(
             onPressed: () {
               // Iterate through accounts and call claimDailyReward for enabled ones
@@ -102,8 +119,9 @@ class _ActionsScreenState extends State<ActionsScreen> {
               // Notify listeners that the accounts list might have been updated (e.g., nDailyReward removed)
               accountsNotifier.value = List.from(accountsNotifier.value);
             },
-            child: const Text('Save Strategy for Enabled Accounts'),
+            child: const Text('5| Save Strategy for Enabled Accounts'),
           ),
+          
         ],
       ),
     );
