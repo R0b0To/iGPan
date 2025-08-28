@@ -11,13 +11,44 @@ class ActionsScreen extends StatefulWidget {
 }
 
 class _ActionsScreenState extends State<ActionsScreen> {
+  Future<void> _showLoadingDialog(String text) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 20),
+              Text(text),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _hideLoadingDialog() {
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _runWithLoadingDialog(
+      String message, Future<void> Function() action) async {
+    _showLoadingDialog(message);
+    try {
+      await action();
+    } finally {
+      _hideLoadingDialog();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-
           ElevatedButton(
             onPressed: () {
               _claimDailyReward();
@@ -63,9 +94,9 @@ class _ActionsScreenState extends State<ActionsScreen> {
               _saveStrategy();
             },
             child: const Text('6| Save Strategy for Enabled Accounts'),
-          ), 
+          ),
           const SizedBox(height: 30), // Add some space
-                    ElevatedButton(
+          ElevatedButton(
             onPressed: () async {
               await _executeAllActions();
             },
@@ -153,13 +184,18 @@ class _ActionsScreenState extends State<ActionsScreen> {
     accountsNotifier.value = List.from(accountsNotifier.value);
   }
 
-  Future<void> _setDefaultStrategy() async {
+  Future<void> _setDefaultStrategyInternal() async {
     for (var account in accountsNotifier.value) {
       if (account.enabled) {
         await account.setDefaultStrategy();
       }
     }
     accountsNotifier.value = List.from(accountsNotifier.value);
+  }
+
+  Future<void> _setDefaultStrategy() async {
+    await _runWithLoadingDialog(
+        "Setting default strategy...", _setDefaultStrategyInternal);
   }
 
   Future<void> _distributeResearchPoints() async {
@@ -301,11 +337,13 @@ class _ActionsScreenState extends State<ActionsScreen> {
   }
 
   Future<void> _executeAllActions() async {
-    await _claimDailyReward();
-    await _performCarSetup();
-    await _repairAllCars();
-    await _setDefaultStrategy();
-    await _distributeResearchPoints();
-    await _saveStrategy();
+    await _runWithLoadingDialog("Executing all actions...", () async {
+      await _claimDailyReward();
+      await _performCarSetup();
+      await _repairAllCars();
+      await _setDefaultStrategyInternal(); // Call internal to avoid nested dialogs
+      await _distributeResearchPoints();
+      await _saveStrategy();
+    });
   }
 }

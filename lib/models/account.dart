@@ -758,7 +758,33 @@ class Account {
       return;
     }
 
-    final generatedStrategy = generateDefaultStrategy(this);
+    // --- Start of Fuel Calculation Logic ---
+    final raceLaps = int.tryParse(raceData!['vars']!['raceLaps']!.toString()) ?? 0;
+    final trackId = raceData?['vars']?['trackId']?.toString() ?? '1';
+    final track = Track(trackId, raceLaps);
+
+    final carAttributes = fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes'];
+    final fuelEconomy = carAttributes?['fuel_economy']?.toDouble() ?? 0.0;
+    final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
+    final kmPerLiter = fuelCalc(fuelEconomy);
+    final fuelPerLap = (kmPerLiter) * trackLength;
+    final totalFuel = fuelPerLap * raceLaps;
+
+    if (raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
+      raceData!['parsedStrategy'][0][0][2] = totalFuel.ceil();
+      raceData?['vars']['d${1}AdvancedFuel'] = totalFuel.ceil();
+    }
+    raceData!['vars']?['d${1}IgnoreAdvanced'] = true;
+    raceData?['kmPerLiter'] = kmPerLiter;
+    raceData?['track'] = track;
+    // --- End of Fuel Calculation Logic ---
+
+    final generatedStrategy = await generateDefaultStrategyAsync(this);
+    if (generatedStrategy.containsKey('error')) {
+      debugPrint("Error generating strategy: ${generatedStrategy['error']}");
+      return;
+    }
+
     final drivers = fireUpData!['drivers'];
     
     for (int i = 0; i < drivers.length; i++) {
@@ -799,15 +825,15 @@ class Account {
         }
 
         final pushFactor = pushLevelFactorMap[push] ?? 0.0;
-        final fuelPerLap = (raceData?['kmPerLiter'] + pushFactor) * raceData?['track'].info['length'];
-        double fuelEstimation = (fuelPerLap * (int.tryParse(laps) ?? 0));
+        final fuelPerLapWithPush = (kmPerLiter + pushFactor) * trackLength;
+        double fuelEstimation = (fuelPerLapWithPush * (int.tryParse(laps) ?? 0));
 
         newParsedStrategy.add([tyre, laps, fuelEstimation, push]);
       }
 
-      double totalFuel = 0.0;
+      double totalCalculatedFuel = 0.0;
       for (int j = 0; j < newParsedStrategy.length.clamp(0, 5); j++) {
-        totalFuel += newParsedStrategy[j][2];
+        totalCalculatedFuel += newParsedStrategy[j][2];
         if (raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
           newParsedStrategy[j][2] = 0;
         } else {
@@ -820,8 +846,8 @@ class Account {
       }
 
       if (raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
-        raceData!['parsedStrategy'][i][0][2] = totalFuel.ceil();
-        raceData?['vars']['d${i + 1}AdvancedFuel'] = totalFuel.ceil();
+        raceData!['parsedStrategy'][i][0][2] = totalCalculatedFuel.ceil();
+        raceData?['vars']['d${i + 1}AdvancedFuel'] = totalCalculatedFuel.ceil();
       }
     }
     debugPrint('Default strategy set for ${email}');
