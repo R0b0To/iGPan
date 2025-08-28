@@ -219,8 +219,33 @@ class _ActionsScreenState extends State<ActionsScreen> {
           }
 
           if (bestAttributeIndex != null) {
-            myCarValues[bestAttributeIndex] += remainingDesignPoints;
-            remainingDesignPoints = 0;
+            final maxDp = researchData['maxDp'] as int;
+            List<Map<String, int>> gaps = [];
+            for (int i in priorityOrder) {
+              final gap = bestCarAttributes[i] - myCarValues[i];
+              if (gap > 0) {
+                gaps.add({'index': i, 'gap': gap});
+              }
+            }
+            gaps.sort((a, b) => a['gap']!.compareTo(b['gap']!));
+
+            for (var gapInfo in gaps) {
+              if (remainingDesignPoints <= 0) break;
+
+              final index = gapInfo['index']!;
+              final gap = gapInfo['gap']!;
+              final pointsToAdd =
+                  gap < remainingDesignPoints ? gap : remainingDesignPoints;
+
+              if (myCarValues[index] + pointsToAdd > maxDp) {
+                final maxPointsToAdd = maxDp - myCarValues[index];
+                myCarValues[index] += maxPointsToAdd;
+                remainingDesignPoints -= maxPointsToAdd;
+              } else {
+                myCarValues[index] += pointsToAdd;
+                remainingDesignPoints -= pointsToAdd;
+              }
+            }
 
             final Map<String, dynamic> researchSettings = {
               'maxDp': originalMaxResearch.toInt(),
