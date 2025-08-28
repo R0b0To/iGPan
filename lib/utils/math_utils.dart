@@ -1,5 +1,8 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
+
 import '../models/account.dart';
+import '../models/strategy_params.dart';
 
 // Represents a race track with its specific characteristics and data.
 class Track {
@@ -196,29 +199,27 @@ List<List<int>> _generateLapSplits(int total, int parts) {
   return results;
 }
 
-
-Map<String, dynamic> generateDefaultStrategy(Account account) {
+// This function will be called asynchronously to avoid blocking the UI.
+Future<Map<String, dynamic>> generateDefaultStrategyAsync(Account account) async {
   final raceLaps = int.tryParse(account.raceData!['vars']!['raceLaps']!.toString()) ?? 0;
-  final track = Track(account.raceData?['vars']?['trackId']?.toString() ?? '1', raceLaps);
-
+  final trackId = account.raceData?['vars']?['trackId']?.toString() ?? '1';
   final carAttributes = account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes'];
   final tyreEconomy = carAttributes?['tyre_economy']?.toDouble() ?? 0.0;
-  final calculatedWear = wearCalc(tyreEconomy, track); // e.g. { 'S': '6.3', 'M': '5.1' }
 
-  // --- Fuel calculations (unchanged) ---
-  final fuelEconomy = account.fireUpData?['preCache']?['p=cars']?['vars']?['carAttributes']?['fuel_economy']?.toDouble() ?? 0.0;
-  final trackLength = (track.info['length'] as num?)?.toDouble() ?? 0.0;
-  final kmPerLiter = fuelCalc(fuelEconomy);
-  final fuelPerLap = (kmPerLiter) * trackLength;
-  final totalFuel = fuelPerLap * raceLaps;
+  final params = StrategyGenerationParams(
+    raceLaps: raceLaps,
+    trackId: trackId,
+    tyreEconomy: tyreEconomy,
+  );
 
-  if (account.raceData?['vars']?['rulesJson']?['refuelling'] == '0') {
-    account.raceData!['parsedStrategy'][0][0][2] = totalFuel.ceil();
-    account.raceData?['vars']['d${1}AdvancedFuel'] = totalFuel.ceil();
-  }
-  account.raceData!['vars']?['d${1}IgnoreAdvanced'] = true;
-  account.raceData?['kmPerLiter'] = kmPerLiter;
-  account.raceData?['track'] = track;
+  // Use the 'compute' function to run the heavy computation in a separate isolate.
+  return await compute(_generateStrategyInIsolate, params);
+}
+
+Map<String, dynamic> _generateStrategyInIsolate(StrategyGenerationParams params) {
+  final raceLaps = params.raceLaps;
+  final track = Track(params.trackId, raceLaps);
+  final calculatedWear = wearCalc(params.tyreEconomy, track);
 
   // --- New Strategy Generation Logic ---
   const int push = 3;
