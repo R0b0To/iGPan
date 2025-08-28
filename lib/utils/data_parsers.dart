@@ -313,6 +313,8 @@ List<Map<String, dynamic>> parseRaces(String htmlString) {
       final league = leagueSpan?.text ?? '';
       // Remove league from the main text and trim whitespace to get the clean race name.
       final text = textNode?.text.trim().replaceAll(league, "").trim();
+      final positionTd = row.querySelector('td.center');
+      final position = positionTd?.text.trim() ?? '';
 
 
       final raceInfo = {
@@ -320,7 +322,8 @@ List<Map<String, dynamic>> parseRaces(String htmlString) {
         'date': extractDate(date), // Clean and format the extracted date string.
         'track': track,
         'league': league,
-        'text': text
+        'text': text,
+        'position': position
       };
       races.add(raceInfo);
     } catch (e) {

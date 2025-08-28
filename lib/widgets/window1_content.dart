@@ -5,7 +5,7 @@ import '../utils/helpers.dart'; // Import abbreviateNumber
 import '../screens/sponsor_list_screen.dart'; // Import the new sponsor list screen
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:country_flags/country_flags.dart'; // Import the country_flags package
-
+import 'package:auto_size_text/auto_size_text.dart';
 class Window1Content extends StatefulWidget {
   final double minWindowHeight;
   final Account account; // Use the specific Account type
@@ -676,28 +676,66 @@ class _Window1ContentState extends State<Window1Content>
                         final report = _reports[index];
                         return ListTile(
                           leading: CountryFlag.fromCountryCode(
-                            report['track'] ?? '', // Use report['track'] for country code, handle null
+                            report['track'] ?? '',
                             shape: const RoundedRectangle(6),
-                            width: 30, // Adjust size as needed
-                            height: 20, // Adjust size as needed
-                          ),
-                          title: Text('${report['text']}'),
-                          subtitle: Text('${report['date']}'),
-                          trailing: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: 100),
-                          child: Text(report['league'] ?? ''),
+                            width: 60,
+                            height: 40,
                             ),
-                          // You can add more details or customize the ListTile appearance
-                          onTap: () {
-                            // Navigate to a new screen and pass the report id
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => RaceReportScreen(report: report, account: widget.account),
-                              ),
-                            );
-                          },
-                        );
+                          title: Row(
+    children: [
+      Expanded(
+        flex: 2,
+        child: Text(
+          '${report['text']}',
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+      
+      Container(
+        width: 30,
+        height: 30,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color.fromARGB(255, 33, 96, 147), // background color of circle
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          '${report['position'] ?? ''}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      const SizedBox(width: 20),
+ConstrainedBox(
+  constraints: const BoxConstraints(maxWidth: 100),
+  child: AutoSizeText(
+    report['league'] ?? '',
+    style: const TextStyle(fontSize: 12), 
+    maxLines: 3,                           
+    minFontSize: 8,                        
+    overflow: TextOverflow.ellipsis,       
+  ),
+),
+    ],
+  ),
+  
+  subtitle: Text(
+                    '${report['date']}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            RaceReportScreen(report: report, account: widget.account),
+      ),
+    );
+  },
+);
+
                       } else {
                         // Show loading indicator at the end
                         return const Padding(
