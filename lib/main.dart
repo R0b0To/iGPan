@@ -279,7 +279,7 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
        bottomNavigationBar: NavigationBar(
-        height: 60,
+        height: 40,
          onDestinationSelected: (int index) {
            setState(() {
              _bottomNavIndex = index;
@@ -292,17 +292,17 @@ class _MyHomePageState extends State<MyHomePage> {
            NavigationDestination(
              selectedIcon: Icon(Icons.home),
              icon: Icon(Icons.home_outlined),
-             label: 'Home',
+             label: '',
            ),
            NavigationDestination(
              selectedIcon: Icon(Icons.people),
              icon: Icon(Icons.people_outline),
-             label: 'Accounts',
+             label: '',
            ),
            NavigationDestination(
              selectedIcon: Icon(Icons.play_circle_filled),
              icon: Icon(Icons.play_circle_outline),
-             label: 'Actions',
+             label: '',
            ),
          ],
        ),

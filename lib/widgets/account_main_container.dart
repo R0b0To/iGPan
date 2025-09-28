@@ -203,7 +203,7 @@ class _AccountMainContainerState extends State<AccountMainContainer> { // State 
   // Moved helper method into the state class
   Widget _buildInternalWindows(BuildContext context) {
     // Access properties using widget.
-    final window1Content = Window1Content(minWindowHeight: widget.minWindowHeight+50, account: widget.account);
+    final window1Content = Window1Content(minWindowHeight: widget.minWindowHeight, account: widget.account);
     final bool isInLeague = widget.account.fireUpData?['team']?['_league'] != null &&
                            widget.account.fireUpData!['team']['_league'] != '0';
     final window2Content = isInLeague ? Window2Content(minWindowHeight: widget.minWindowHeight-50, account: widget.account) : null;

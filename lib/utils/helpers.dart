@@ -187,7 +187,7 @@ class CircularProgressButton extends StatelessWidget {
     required this.progress,
     required this.label,
     required this.onPressed,
-    this.size = 50.0,
+    this.size = 40.0,
     this.backgroundColor = const Color.fromARGB(0, 255, 255, 255), // Default transparent background for the track.
   });
 
