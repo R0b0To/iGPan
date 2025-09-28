@@ -357,11 +357,12 @@ class _Window1ContentState extends State<Window1Content>
              ],
            ),
            SizedBox(
-             height: widget.minWindowHeight * 0.8, // 80% of minWindowHeight
+             height: widget.minWindowHeight * 0.7, // 80% of minWindowHeight
              child: TabBarView(
                controller: _tabController, // Pass the controller
                children: [
-                 Column(
+                 SingleChildScrollView(
+                   child: Column(
                    crossAxisAlignment: CrossAxisAlignment.stretch,
                      children: [
                        // First row: totalparts, totalengine buttons and restock races label
@@ -571,6 +572,7 @@ class _Window1ContentState extends State<Window1Content>
                        ),
                      ],
                    ),
+                 ), // Closing bracket for SingleChildScrollView
                   // Team Tab Content
                   Padding( // Add padding for better visual spacing
                     padding: const EdgeInsets.all(8.0),
