@@ -60,7 +60,22 @@ jobs:
           name: windows-build-zip
           path: iGPan_windows_${{ env.VERSION_NUMBER }}.zip
 
-      # Android specific steps
+          # Android specific steps
+      - name: Decode keystore
+        if: runner.os == 'Linux'
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/my-release-key.jks
+
+      - name: Create key.properties
+        if: runner.os == 'Linux'
+        run: |
+          cat <<EOF > android/key.properties
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=my-release-key.jks
+          EOF
+
       - name: Build Android APK
         if: runner.os == 'Linux'
         run: flutter build apk --release
@@ -75,6 +90,7 @@ jobs:
         with:
           name: android-build
           path: iGPan_${{ env.VERSION_NUMBER }}.apk
+
 
   release:
     name: Create Release
