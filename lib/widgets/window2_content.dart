@@ -22,7 +22,6 @@ class Window2Content extends StatefulWidget {
 
 class _Window2ContentState extends State<Window2Content> with TickerProviderStateMixin {
 
-
   late TabController _tabController;
   final CarouselSliderController _carouselController = CarouselSliderController();
   int _currentCarouselIndex = 0; // Renamed for clarity
