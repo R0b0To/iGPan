@@ -1,7 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.r0b0to.igpan">
- <uses-permission android:name="android.permission.INTERNET" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="iGPan"
+        android:label="igpan"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -1,0 +1,51 @@
+{
+  "d1setup": {
+    "race": "70204275",
+    "ride": "15",
+    "suspension": "30",
+    "rwing": "20",
+    "practiceTyre": "SS"
+  },
+  "d2setup": {
+    "race": "70204275"
+  },
+  "d1strategy": {
+    "race": "70204275",
+    "dNum": "1",
+    "numPits": "1",
+    "tyre1": "M",
+    "laps1": "6",
+    "fuel1": "6",
+    "tyre2": "M",
+    "laps2": "6",
+    "fuel2": "6",
+    "tyre3": "",
+    "laps3": "1",
+    "fuel3": "1",
+    "tyre4": "",
+    "laps4": "1",
+    "fuel4": "1",
+    "tyre5": "",
+    "laps5": "1",
+    "fuel5": "1"
+  },
+  "d2strategy": {
+    "race": "70204275",
+    "dNum": "2",
+    "numPits": "0"
+  },
+  "d1strategyAdvanced": {
+    "pushLevel": "60",
+    "d1SavedStrategy": "1",
+    "ignoreAdvancedStrategy": "0",
+    "rainStartDepth": "0",
+    "rainStartTyre": "I",
+    "rainStopLap": "0",
+    "rainStopTyre": "M",
+    "advancedFuel": "38"
+  },
+  "d2strategyAdvanced": {
+    "d2SavedStrategy": "0",
+    "ignoreAdvancedStrategy": "0"
+  }
+}
