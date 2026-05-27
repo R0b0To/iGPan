@@ -23,10 +23,13 @@ class CsrfInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // Inject CSRF headers on every POST if we have a token
-    if (options.method == 'POST' && _csrfName.isNotEmpty) {
+    final bool isActionGet = options.method == 'GET' && 
+                             options.path.contains('action=send');
+    if ((options.method == 'POST' || isActionGet) && _csrfName.isNotEmpty) {
       options.headers['X-CSRF-Name']  = _csrfName;
       options.headers['X-CSRF-Token'] = _csrfToken;
-      debugPrint('[CSRF] Injected ${_csrfName.substring(0, 8)}… into POST');
+      
+      debugPrint('[CSRF] Injected into ${options.method} request: ${options.path}');
     }
     handler.next(options);
   }

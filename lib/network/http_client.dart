@@ -49,7 +49,7 @@ class HttpClient {
  
     _dio.interceptors.addAll([
       _AccountCookieInterceptor(_jars, _cookieBasePath),
-      csrfInterceptor,                                    // ← CSRF before auth
+      csrfInterceptor,                                    
       if (AppConfig.enableDioLogging) LoggingInterceptor(),
       AuthInterceptor(),
       ErrorInterceptor(),
@@ -90,7 +90,10 @@ class HttpClient {
     Options? options,
   }) {
     final opts = _withAccount(options, accountEmail);
-    return _dio.get<T>(path, queryParameters: queryParameters, options: opts);
+    return _dio.get<T>(
+      path, 
+      queryParameters: queryParameters, 
+      options: opts);
   }
  
   Future<Response<T>> post<T>(
