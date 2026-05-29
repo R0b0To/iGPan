@@ -159,43 +159,50 @@ class RaceService {
 
     // ── Build stint map ─────────────────────────────────────
   // ── Build stint map ─────────────────────────────────────
-Map<String, String> _stintMap(
-    String dNum, int numPits, List<Map<String, dynamic>> stints, int advancedFuel) {
-  
-  final m = <String, String>{
-    'race':    raceId,
-    'dNum':    dNum,
-    'numPits': numPits.toString(),
-  };
+// ── Build stint map ─────────────────────────────────────
+  Map<String, String> _stintMap(
+      String dNum, int numPits, List<Map<String, dynamic>> stints, int advancedFuel) {
+    
+    final m = <String, String>{
+      'race':    raceId,
+      'dNum':    dNum,
+      'numPits': numPits.toString(),
+    };
 
-  for (var i = 0; i < 5; i++) {
-    final n = i + 1;
-    if (i < stints.length) {
-      final laps = stints[i]['laps'] as int? ?? 0;
-      final fuelPerLap = stints[i]['fuelPerLap'] as double? ?? 0.0;
-      
-      String fuelValue;
-      if (refuelling) {
-        // Normal refuelling: fuel = ceil(laps * fuelPerLap)
-        fuelValue = (laps * fuelPerLap).ceil().toString();
+    for (var i = 0; i < 5; i++) {
+      final n = i + 1;
+      if (i < stints.length) {
+        final laps = stints[i]['laps'] as int? ?? 0;
+        final fuelPerLap = stints[i]['fuelPerLap'] as double? ?? 0.0;
+        
+        String fuelValue;
+        if (refuelling) {
+          // FIX: Read the exact fuel value provided by the UI!
+          // Fall back to recalculation only if it's missing for some reason.
+          final explicitFuel = stints[i]['fuel'] as int?;
+          if (explicitFuel != null) {
+            fuelValue = explicitFuel.toString();
+          } else {
+            fuelValue = (laps * fuelPerLap).ceil().toString();
+          }
+        } else {
+          // NO REFUELLING: 
+          // Stint 1 gets the total fuel, all other stints get 0
+          fuelValue = (i == 0) ? advancedFuel.toString() : "0";
+        }
+
+        m['tyre$n'] = stints[i]['tyre']?.toString() ?? 'M';
+        m['laps$n'] = laps.toString();
+        m['fuel$n'] = fuelValue;
       } else {
-        // NO REFUELLING: 
-        // Stint 1 gets the total fuel, all other stints get 0
-        fuelValue = (i == 0) ? advancedFuel.toString() : "0";
+        // Unused stints
+        m['tyre$n'] = '';
+        m['laps$n'] = '1';
+        m['fuel$n'] = "0"; // Changed from '1' to '0' to match game
       }
-
-      m['tyre$n'] = stints[i]['tyre']?.toString() ?? 'M';
-      m['laps$n'] = laps.toString();
-      m['fuel$n'] = fuelValue;
-    } else {
-      // Unused stints
-      m['tyre$n'] = '';
-      m['laps$n'] = '1';
-      m['fuel$n'] = "0"; // Changed from '1' to '0' to match game
     }
+    return m;
   }
-  return m;
-}
     // ── Build advanced strategy map ─────────────────────────
     Map<String, String> _advancedMap({
       required String savedKey,

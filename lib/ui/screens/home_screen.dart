@@ -9,14 +9,14 @@ import '../../providers/accounts_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/ui_provider.dart';
 import '../../providers/game_provider.dart';
+import '../../services/game_service.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/account_pill.dart';
 import '../../ui/widgets/action_panel.dart';
 import '../../ui/widgets/batch_bar.dart';
 import '../screens/accounts_screen.dart';
 
-// Adjusted breakpoints
-const double _kMobileMaxWidth = 400.0;
+const double _kMobileMaxWidth = 550.0;
 const double _kDesktopColumnWidth = 400.0;
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -32,6 +32,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   double _currentItemWidth = 0.0;
   bool _isCentered = false;
   bool _isScrollingProgrammatically = false;
+  int _scrollAnimationId = 0; // Tracks latest animation to prevent fast-tap bugs
 
   @override
   void initState() {
@@ -66,18 +67,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  // Smooth scrolls the view when user taps a pill
-  void _scrollToIndex(int index) async {
-    if (_isCentered || !_horizontalScrollController.hasClients) return;
+  // Smooth scrolls the view when user taps a pill (handles fast continuous taps safely)
+  void _scrollToIndex(int index) {
+    if (_isCentered || !_horizontalScrollController.hasClients || _currentItemWidth == 0) return;
+    
+    final maxOffset = _horizontalScrollController.position.maxScrollExtent;
+    final targetOffset = (index * _currentItemWidth).clamp(0.0, maxOffset);
+
+    final currentId = ++_scrollAnimationId;
     _isScrollingProgrammatically = true;
     
-    await _horizontalScrollController.animateTo(
-      index * _currentItemWidth,
-      duration: const Duration(milliseconds: 350),
+    _horizontalScrollController.animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
-    );
+    ).then((_) {
+      // Only release the programmatic lock if THIS was the last requested animation
+      if (_scrollAnimationId == currentId) {
+        _isScrollingProgrammatically = false;
+      }
+    });
+  }
+
+  // Forces the scrollview to snap perfectly to a column if user releases drag midway
+  void _snapToNearestColumn() {
+    if (_isScrollingProgrammatically || !_horizontalScrollController.hasClients || _currentItemWidth == 0 || _isCentered) return;
     
-    _isScrollingProgrammatically = false;
+    final offset = _horizontalScrollController.offset;
+    final maxOffset = _horizontalScrollController.position.maxScrollExtent;
+    
+    // Don't snap if we are exactly at the boundaries
+    if (offset <= 0 || offset >= maxOffset) return;
+
+    final targetIndex = (offset / _currentItemWidth).round();
+    final targetOffset = (targetIndex * _currentItemWidth).clamp(0.0, maxOffset);
+
+    // If we are noticeably out of alignment, snap into place
+    if ((offset - targetOffset).abs() > 1.0) {
+      final currentId = ++_scrollAnimationId;
+      _isScrollingProgrammatically = true;
+      
+      _horizontalScrollController.animateTo(
+        targetOffset,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+      ).then((_) {
+        if (_scrollAnimationId == currentId) {
+          _isScrollingProgrammatically = false;
+        }
+      });
+    }
   }
 
   void _claimAll(WidgetRef ref, List<String> emails) {
@@ -92,12 +131,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final isBatchMode   = batchSelected.isNotEmpty;
     final batchState    = ref.watch(batchActionProvider);
 
+    // Listen to external selection changes (e.g. initial load or batch updates)
     ref.listen<String?>(selectedAccountProvider, (previous, next) {
       if (next != null && next != previous && !_isScrollingProgrammatically) {
         final enabled = ref.read(accountsProvider).valueOrNull?.where((a) => a.enabled).toList() ?? [];
         final index = enabled.indexWhere((a) => a.email == next);
-        if (index != -1) {
-          _scrollToIndex(index);
+        
+        if (index != -1 && _horizontalScrollController.hasClients) {
+          final targetOffset = index * _currentItemWidth;
+          final currentOffset = _horizontalScrollController.offset;
+          
+          // Only auto-scroll if it's currently out of view (prevents fighting with natural swipes)
+          if ((currentOffset - targetOffset).abs() > (_currentItemWidth / 2)) {
+            _scrollToIndex(index);
+          }
         }
       }
     });
@@ -144,6 +191,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 selectedEmail:   selected,
                 batchSelected:   batchSelected,
                 isBatchMode:     isBatchMode,
+                onPillTapped: (index, email) {
+                  if (isBatchMode) {
+                    ref.read(batchSelectionProvider.notifier).toggle(email);
+                  } else {
+                    ref.read(selectedAccountProvider.notifier).select(email);
+                    _scrollToIndex(index);
+                  }
+                },
               ),
               const Divider(height: 0),
 
@@ -168,14 +223,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     
                     _currentItemWidth = isDesktop ? _kDesktopColumnWidth : availableWidth;
                     
-                    // 1. Calculate how many whole columns can fit exactly
                     int fitCount = (availableWidth / _currentItemWidth).floor();
                     if (fitCount < 1) fitCount = 1;
                     
-                    // 2. Clamp it so we don't reserve space for cards that don't exist
                     final int displayCount = math.min(fitCount, enabled.length);
-                    
-                    // 3. This strict container width guarantees you NEVER see "half" a card resting at the edges
                     final double containerWidth = displayCount * _currentItemWidth;
                     
                     _isCentered = isDesktop && (enabled.length <= fitCount);
@@ -192,20 +243,31 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       }).toList(),
                     );
 
-                    Widget scrollableArea = ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context).copyWith(
-                        dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind.trackpad},
-                      ),
-                      child: SingleChildScrollView(
-                        controller: _horizontalScrollController,
-                        scrollDirection: Axis.horizontal,
-                        // Bouncing on desktop, swiping on mobile
-                        physics: isDesktop ? const BouncingScrollPhysics() : const PageScrollPhysics(),
-                        child: contentRow,
+                    Widget scrollableArea = NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        // Triggers when a user lifts their finger or momentum finishes
+                        if (notification is ScrollEndNotification) {
+                          if (!_isScrollingProgrammatically) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _snapToNearestColumn();
+                            });
+                          }
+                        }
+                        return false;
+                      },
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(
+                          dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind.trackpad},
+                        ),
+                        child: SingleChildScrollView(
+                          controller: _horizontalScrollController,
+                          scrollDirection: Axis.horizontal,
+                          physics: isDesktop ? const BouncingScrollPhysics() : const PageScrollPhysics(),
+                          child: contentRow,
+                        ),
                       ),
                     );
 
-                    // 4. Wrap the scroll view in a centered SizedBox using our exact calculated width
                     return Center(
                       child: SizedBox(
                         width: containerWidth,
@@ -232,7 +294,6 @@ class _DesktopAccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // The margins provide the visual spacing, while the wrapper guarantees it takes exactly 400 width
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
       decoration: BoxDecoration(
         color: AppTheme.surface, 
@@ -259,12 +320,14 @@ class _AccountPillRail extends ConsumerStatefulWidget {
   final String? selectedEmail;
   final Set<String> batchSelected;
   final bool isBatchMode;
+  final void Function(int index, String email) onPillTapped;
 
   const _AccountPillRail({
     required this.enabledAccounts,
     this.selectedEmail,
     required this.batchSelected,
     required this.isBatchMode,
+    required this.onPillTapped,
   });
 
   @override
@@ -381,13 +444,7 @@ class _AccountPillRailState extends ConsumerState<_AccountPillRail> {
                       isBatchSelected: widget.batchSelected.contains(account.email),
                       isSessionActive: sessionState?.isValid ?? false,
                       isBatchMode: widget.isBatchMode,
-                      onTap: () {
-                        if (widget.isBatchMode) {
-                          ref.read(batchSelectionProvider.notifier).toggle(account.email);
-                        } else {
-                          ref.read(selectedAccountProvider.notifier).select(account.email);
-                        }
-                      },
+                      onTap: () => widget.onPillTapped(index, account.email),
                       onLongPress: () => ref.read(batchSelectionProvider.notifier).toggle(account.email),
                     ),
                   );

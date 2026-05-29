@@ -1,6 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
- 
+
 import '../../models/account_data.dart';
 import '../../models/driver_data.dart';
 import '../../models/finance_data.dart';
@@ -12,12 +14,12 @@ import '../../providers/session_provider.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../models/car_data.dart';
 import 'car_research_sheet.dart';
- 
+
 /// Full-screen action panel for the currently selected account.
 class ActionPanel extends ConsumerWidget {
   final String accountEmail;
   const ActionPanel({super.key, required this.accountEmail});
- 
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sessionAsync = ref.watch(sessionStateProvider(accountEmail));
@@ -37,24 +39,23 @@ class ActionPanel extends ConsumerWidget {
     );
   }
 }
- 
+
 /// A "Ghost" widget that shows a loader and triggers re-login
 class _BackgroundReLoginTrigger extends ConsumerStatefulWidget {
   final String accountEmail;
   const _BackgroundReLoginTrigger({required this.accountEmail});
- 
+
   @override
   ConsumerState<_BackgroundReLoginTrigger> createState() => _BackgroundReLoginTriggerState();
 }
- 
+
 class _BackgroundReLoginTriggerState extends ConsumerState<_BackgroundReLoginTrigger> {
   @override
   void initState() {
     super.initState();
     _performAutoLogin();
   }
- 
-  // Handle case where user switches account while this is loading
+
   @override
   void didUpdateWidget(_BackgroundReLoginTrigger oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -62,7 +63,7 @@ class _BackgroundReLoginTriggerState extends ConsumerState<_BackgroundReLoginTri
       _performAutoLogin();
     }
   }
- 
+
   Future<void> _performAutoLogin() async {
     try {
       final auth = ref.read(authServiceProvider);
@@ -70,40 +71,28 @@ class _BackgroundReLoginTriggerState extends ConsumerState<_BackgroundReLoginTri
       
       final newSession = await auth.reLogin(widget.accountEmail);
       await sessionNotifier.onLoginSuccess(newSession, widget.accountEmail);
-      
-      // Once this completes, the sessionStateProvider updates, 
-      // and ActionPanel (the parent) will automatically rebuild 
-      // into the normal content.
     } catch (e) {
-      // If even the auto-login fails (e.g. password changed), 
-      // then we actually show an error message.
-      if (mounted) {
-        debugPrint('Auto-relogin error: $e');
-      }
+      if (mounted) debugPrint('Auto-relogin error: $e');
     }
   }
- 
+
   @override
-  Widget build(BuildContext context) {
-    // Show a loading screen while we silently fix the session
-    return const _LoadingPanel();
-  }
+  Widget build(BuildContext context) => const _LoadingPanel();
 }
- 
+
 class _PanelContent extends ConsumerWidget {
   final String      accountEmail;
   final AccountData accountData;
   const _PanelContent({required this.accountEmail, required this.accountData});
- 
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final financeAsync = ref.watch(financeDataProvider(accountEmail));
     final raceAsync    = ref.watch(raceDataProvider(accountEmail));
- 
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 24),
       children: [
-        // ── Compact overview ────────────────────────────────
         _CompactOverview(
           accountData:  accountData,
           financeAsync: financeAsync,
@@ -112,7 +101,6 @@ class _PanelContent extends ConsumerWidget {
         const SizedBox(height: 12),
         const _HDivider(),
         const SizedBox(height: 10),
-        // ── Actions ──────────────────────────────────────────
         _SectionLabel('Actions'),
         const SizedBox(height: 6),
         GridView.count(
@@ -138,7 +126,6 @@ class _PanelContent extends ConsumerWidget {
               ),
           ],
         ),
-        // ── Car condition ─────────────────────────────────────
         if (accountData.carData?.car1Condition != null) ...[
           const SizedBox(height: 10),
           _CarConditionCard(
@@ -150,7 +137,6 @@ class _PanelContent extends ConsumerWidget {
         const SizedBox(height: 12),
         const _HDivider(),
         const SizedBox(height: 10),
-        // ── Race card ─────────────────────────────────────────
         _SectionLabel('Next race'),
         const SizedBox(height: 6),
         raceAsync.when(
@@ -159,9 +145,6 @@ class _PanelContent extends ConsumerWidget {
           data:    (race) {
             if (race.raceId.isEmpty) return const _NoRaceCard();
             
-            // ADDED ValueKey HERE:
-            // This forces the StatefulWidget to reset its internal state (sliders/stints)
-            // whenever the account or the race changes.
             return _InlineRaceCard(
               key:          ValueKey('${accountEmail}_${race.raceId}'),
               race:         race,
@@ -173,7 +156,8 @@ class _PanelContent extends ConsumerWidget {
       ],
     );
   }
-void _openResearch(BuildContext context, CarData carData) {
+
+  void _openResearch(BuildContext context, CarData carData) {
     showModalBottomSheet(
       context:            context,
       isScrollControlled: true,
@@ -186,7 +170,7 @@ void _openResearch(BuildContext context, CarData carData) {
       ),
     );
   }
- 
+
   static String _researchSub(CarData carData) {
     final current = carData.currentResearch;
     if (current.isEmpty) return 'Not set';
@@ -196,20 +180,20 @@ void _openResearch(BuildContext context, CarData carData) {
     return '${current.length} attributes';
   }
 }
- 
+
 // ─── Compact overview card ────────────────────────────────────────────────────
- 
+
 class _CompactOverview extends ConsumerWidget {
   final AccountData             accountData;
   final AsyncValue<FinanceData> financeAsync;
   final String                  accountEmail;
- 
+
   const _CompactOverview({
     required this.accountData,
     required this.financeAsync,
     required this.accountEmail,
   });
- 
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
@@ -221,7 +205,6 @@ class _CompactOverview extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          // Row 1 — stats + claim button
           Row(
             children: [
               _MiniStat(label: 'Balance', value: accountData.formattedBalance),
@@ -233,7 +216,6 @@ class _CompactOverview extends ConsumerWidget {
               _ClaimButton(accountEmail: accountEmail,canClaim: accountData.canClaimDailyReward),
             ],
           ),
-          // Row 2 — sponsors
           financeAsync.maybeWhen(
             data: (finance) {
               if (finance.sponsors.isEmpty) return const SizedBox.shrink();
@@ -255,11 +237,11 @@ class _CompactOverview extends ConsumerWidget {
     );
   }
 }
- 
+
 class _MiniStat extends StatelessWidget {
   final String label, value;
   const _MiniStat({required this.label, required this.value});
- 
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -270,7 +252,7 @@ class _MiniStat extends StatelessWidget {
     ],
   );
 }
- 
+
 class _VDivider extends StatelessWidget {
   const _VDivider();
   @override
@@ -280,19 +262,19 @@ class _VDivider extends StatelessWidget {
     color: AppTheme.border,
   );
 }
- 
+
 class _ClaimButton extends ConsumerStatefulWidget {
   final String accountEmail;
   final bool   canClaim;
   const _ClaimButton({required this.accountEmail,required this.canClaim});
- 
+
   @override
   ConsumerState<_ClaimButton> createState() => _ClaimButtonState();
 }
- 
+
 class _ClaimButtonState extends ConsumerState<_ClaimButton> {
   bool _loading = false;
- 
+
   Future<void> _claim() async {
      if (_loading || !widget.canClaim) return;
     setState(() => _loading = true);
@@ -308,7 +290,7 @@ class _ClaimButtonState extends ConsumerState<_ClaimButton> {
       if (mounted) setState(() => _loading = false);
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     final claimed = !widget.canClaim;
@@ -347,11 +329,11 @@ class _ClaimButtonState extends ConsumerState<_ClaimButton> {
     ));
   }
 }
- 
+
 class _SponsorChip extends StatelessWidget {
   final SponsorInfo sponsor;
   const _SponsorChip({required this.sponsor});
- 
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -366,24 +348,24 @@ class _SponsorChip extends StatelessWidget {
     ],
   );
 }
- 
+
 // ─── Inline race card ─────────────────────────────────────────────────────────
- 
+
 class _InlineRaceCard extends StatefulWidget {
   final RaceData    race;
   final String      accountEmail;
   final AccountData accountData;
   const _InlineRaceCard({
-    super.key, // Added super.key to support ValueKey
+    super.key,
     required this.race,
     required this.accountEmail,
     required this.accountData,
   });
- 
+
   @override
   State<_InlineRaceCard> createState() => _InlineRaceCardState();
 }
- 
+
 class _InlineRaceCardState extends State<_InlineRaceCard> {
   late int    _ride, _suspension, _wing;
   late String _practiceTyre;
@@ -392,18 +374,31 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
   late int _d2AdvancedFuel; 
   int  _pushLevel = 60;
   bool _saving    = false;
- 
-  // ── Car 2 state (only used when numCars == 2) ──────────
+
   late int    _d2Ride, _d2Suspension, _d2Wing;
   late String _d2PracticeTyre;
   late List<_Stint> _d2Stints;
   int  _d2PushLevel = 60;
- 
+
+  late String _trackCode;
+  
+  int _getAttr(int index) {
+    try {
+      return widget.accountData.carData!.attributes[index].currentValue;
+    } catch (_) { return 50; }
+  }
+
+  // Getters naturally recalculate dynamically based on selected push levels
+  double get _d1FuelPerLap => StrategyCalc.getFuelPerLap(_getAttr(4), _trackCode, _pushLevel);
+  double get _d2FuelPerLap => StrategyCalc.getFuelPerLap(_getAttr(4), _trackCode, _d2PushLevel);
+
   @override
   void initState() {
     super.initState();
     final r = widget.race;
- 
+    
+    _trackCode = r.raceTrackFlag.isNotEmpty ? r.raceTrackFlag : r.raceTrackId;
+    
     _ride         = r.d1Ride.clamp(1, 100);
     _suspension   = r.d1Suspension.clamp(1, 100);
     _wing         = r.d1Aerodynamics.clamp(1, 100);
@@ -411,87 +406,71 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
     _pushLevel    = r.d1PushLevel;
     _d1AdvancedFuel = r.d1AdvancedFuel;
     _d2AdvancedFuel = r.d2AdvancedFuel;
- 
-    // Load saved stints from server, fall back to default if none
+
     if (r.d1Stints.isNotEmpty) {
       _stints = r.d1Stints.map((s) => _Stint(
         tyre:       s.tyre,
         laps:       s.laps,
-        fuelPerLap: r.d1FuelPrediction,
+        fuelPerLap: _d1FuelPerLap,
+        explicitFuel: r.refuelling ? s.fuel : null,
       )).toList();
     } else {
       final n = (r.d1Pits + 1).clamp(1, 5);
-      _stints = List.generate(n, (_) => _Stint(fuelPerLap: r.d1FuelPrediction));
+      _stints = List.generate(n, (_) => _Stint(fuelPerLap: _d1FuelPerLap));
     }
- 
-    // Car 2 — only meaningful when twoCars
+
     _d2Ride         = r.d2Ride.clamp(1, 100);
     _d2Suspension   = r.d2Suspension.clamp(1, 100);
     _d2Wing         = r.d2Aerodynamics.clamp(1, 100);
     _d2PracticeTyre = r.d2PracticeTyre.isEmpty ? 'M' : r.d2PracticeTyre;
     _d2PushLevel    = r.d2PushLevel;
- 
+
     if (r.d2Stints.isNotEmpty) {
       _d2Stints = r.d2Stints.map((s) => _Stint(
         tyre:       s.tyre,
         laps:       s.laps,
-        fuelPerLap: r.d2FuelPrediction,
+        fuelPerLap: _d2FuelPerLap,
+        explicitFuel: r.refuelling ? s.fuel : null,
       )).toList();
     } else {
       final n2 = (r.d2Pits + 1).clamp(1, 5);
-      _d2Stints = List.generate(n2, (_) => _Stint(fuelPerLap: r.d2FuelPrediction));
+      _d2Stints = List.generate(n2, (_) => _Stint(fuelPerLap: _d2FuelPerLap));
     }
   }
- 
+
   int  get _totalLaps => _stints.fold(0, (s, st) => s + st.laps);
   bool get _lapsOk    => _totalLaps >= widget.race.raceLaps;
- 
- // Inside _InlineRaceCardState
-Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
-  final drivers = ref.read(driversProvider(widget.accountEmail));
-  final circuits = await ref.read(circuitsProvider(widget.accountEmail).future);
- 
-  final trackCode = widget.race.raceTrackFlag.isNotEmpty
-      ? widget.race.raceTrackFlag
-      : widget.race.raceTrackId;
- 
-  if (!context.mounted) return;
- 
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: AppTheme.surfaceCard,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-    builder: (_) => SetupSuggestSheet(
-      trackCode: trackCode,
-      drivers: drivers,
-      circuits: circuits,
-      accountEmail: widget.accountEmail,
-      numCars: widget.accountData.numCars, // Pass numCars
-      // Pass current values for comparison
-      currentRide1: _ride,
-      currentSusp1: _suspension,
-      currentWing1: _wing,
-      currentRide2: _d2Ride,
-      currentSusp2: _d2Suspension,
-      currentWing2: _d2Wing,
-      onApply: (r1, s1, w1, r2, s2, w2) => setState(() {
-        // Apply Car 1
-        _ride = r1;
-        _suspension = s1;
-        _wing = w1;
-        // Apply Car 2 (if provided)
-        if (r2 != null && s2 != null && w2 != null) {
-          _d2Ride = r2;
-          _d2Suspension = s2;
-          _d2Wing = w2;
-        }
-      }),
-    ),
-  );
-}
- 
+
+  Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
+    final drivers = ref.read(driversProvider(widget.accountEmail));
+    final circuits = await ref.read(circuitsProvider(widget.accountEmail).future);
+
+    if (!context.mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surfaceCard,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => SetupSuggestSheet(
+        trackCode: _trackCode,
+        drivers: drivers,
+        circuits: circuits,
+        accountEmail: widget.accountEmail,
+        numCars: widget.accountData.numCars,
+        currentRide1: _ride, currentSusp1: _suspension, currentWing1: _wing,
+        currentRide2: _d2Ride, currentSusp2: _d2Suspension, currentWing2: _d2Wing,
+        onApply: (r1, s1, w1, r2, s2, w2) => setState(() {
+          _ride = r1; _suspension = s1; _wing = w1;
+          if (r2 != null && s2 != null && w2 != null) {
+            _d2Ride = r2; _d2Suspension = s2; _d2Wing = w2;
+          }
+        }),
+      ),
+    );
+  }
+
   Future<void> _save(BuildContext context, WidgetRef ref) async {
     if (_saving) return;
     setState(() => _saving = true);
@@ -500,7 +479,7 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
         accountEmail:   widget.accountEmail,
         raceId:         widget.race.raceId,
         twoCars:        widget.accountData.numCars >= 2,
-        refuelling:     widget.race.refuelling, // Important flag
+        refuelling:     widget.race.refuelling,
         d1Ride:         _ride,
         d1Suspension:   _suspension,
         d1Wing:         _wing,
@@ -508,7 +487,7 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
         d1Stints:       _stints.map((s) => s.toMap()).toList(),
         d1NumPits:      _stints.length - 1,
         d1PushLevel:    _pushLevel,
-        d1AdvancedFuel: _d1AdvancedFuel, // Pass the local state variable
+        d1AdvancedFuel: _d1AdvancedFuel,
         d1Saved:        true,
         d2Ride:         _d2Ride,
         d2Suspension:   _d2Suspension,
@@ -517,7 +496,7 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
         d2Stints:       _d2Stints.map((s) => s.toMap()).toList(),
         d2NumPits:      _d2Stints.length - 1,
         d2PushLevel:    _d2PushLevel,
-        d2AdvancedFuel: _d2AdvancedFuel, // Pass the local state variable
+        d2AdvancedFuel: _d2AdvancedFuel,
       );
       ref.invalidate(raceDataProvider(widget.accountEmail));
       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
@@ -529,9 +508,11 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
       if (mounted) setState(() => _saving = false);
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
+    int teAttr = _getAttr(5);
+
     return Consumer(builder: (ctx, ref, _) => Container(
       decoration: BoxDecoration(
         color:        AppTheme.surfaceCard,
@@ -539,7 +520,6 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
         border:       Border.all(color: AppTheme.border, width: 0.5),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Header
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
           child: Row(children: [
@@ -569,12 +549,10 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
         const SizedBox(height: 10),
         const Divider(color: AppTheme.border, thickness: 0.5, height: 0),
         const SizedBox(height: 10),
- 
-        // Setup sliders
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Setup header with Suggest button
             Row(children: [
               const Expanded(
                 child: Text('SETUP', style: TextStyle(
@@ -610,18 +588,15 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
         const SizedBox(height: 10),
         const Divider(color: AppTheme.border, thickness: 0.5, height: 0),
         const SizedBox(height: 10),
- 
-        // Strategy
+
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // ── Strategy header with add/delete controls ─────
             Row(children: [
               const Text('STRATEGY', style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w500,
                 color: AppTheme.onSurfaceDim, letterSpacing: 0.5)),
               const Spacer(),
-              // +/- centred in the remaining space
               if (_stints.length > 1)
                 _StintHeaderBtn(
                   icon:  Icons.remove,
@@ -633,7 +608,7 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
                 _StintHeaderBtn(
                   icon:  Icons.add,
                   onTap: () => setState(() => _stints.add(
-                      _Stint(fuelPerLap: widget.race.d1FuelPrediction))),
+                      _Stint(fuelPerLap: _d1FuelPerLap))),
                 ),
               const Spacer(),
               Text('$_totalLaps / ${widget.race.raceLaps}',
@@ -641,16 +616,17 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
                   color: _lapsOk ? AppTheme.onSurfaceDim : AppTheme.error)),
             ]),
             const SizedBox(height: 4),
-            Text('~${widget.race.d1FuelPrediction.toStringAsFixed(2)}L/lap',
+            Text('~${_d1FuelPerLap.toStringAsFixed(2)}L/lap',
               style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
             const SizedBox(height: 8),
- 
-            // Stint row — draggable reorder by long-press
+
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: ReorderableRow(
                 stints:    _stints,
-                fuelPerLap: widget.race.d1FuelPrediction,
+                fuelPerLap: _d1FuelPerLap,
+                teAttr:     teAttr,
+                trackCode:  _trackCode,
                 refuelling: widget.race.refuelling,
                 raceLaps:  widget.race.raceLaps,
                 onReorder: (o, n) => setState(() {
@@ -661,26 +637,31 @@ Future<void> _showSuggestSetup(BuildContext context, WidgetRef ref) async {
               ),
             ),
             const SizedBox(height: 10),
- 
- 
-// Show Total Fuel only if NO refuelling
-if (!widget.race.refuelling) ...[
-  _FuelSlider(
-    label: 'Total Fuel',
-    value: _d1AdvancedFuel,
-    onChanged: (v) => setState(() => _d1AdvancedFuel = v),
-  ),
-  const SizedBox(height: 10),
-],
- 
-            // Push level
+
+            if (!widget.race.refuelling) ...[
+              _FuelSlider(
+                label: 'Total Fuel',
+                value: _d1AdvancedFuel,
+                fuelPerLap: _d1FuelPerLap,
+                onChanged: (v) => setState(() => _d1AdvancedFuel = v),
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            // Push level dynamically updates fuel for stints
             Row(children: [
               const Text('Push:', style: TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim)),
               const SizedBox(width: 8),
               ...{20: 'V.Low', 40: 'Low', 60: 'Mid', 80: 'High', 100: 'V.High'}.entries.map((e) {
                 final sel = _pushLevel == e.key;
                 return GestureDetector(
-                  onTap: () => setState(() => _pushLevel = e.key),
+                  onTap: () {
+                    setState(() {
+                      _pushLevel = e.key;
+                      final newFuel = _d1FuelPerLap;
+                      for (var s in _stints) { s.fuelPerLap = newFuel; }
+                    });
+                  },
                   child: Container(
                     margin: const EdgeInsets.only(right: 5),
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -695,8 +676,7 @@ if (!widget.race.refuelling) ...[
                 );
               }),
             ]),
- 
-            // ── Car 2 section (2-car leagues only) ─────────
+
             if (widget.accountData.numCars >= 2) ...[
               const SizedBox(height: 14),
               const Divider(color: AppTheme.border, thickness: 0.5, height: 0),
@@ -726,7 +706,7 @@ if (!widget.race.refuelling) ...[
                   _StintHeaderBtn(
                     icon:  Icons.add,
                     onTap: () => setState(() => _d2Stints.add(
-                        _Stint(fuelPerLap: widget.race.d2FuelPrediction))),
+                        _Stint(fuelPerLap: _d2FuelPerLap))),
                   ),
                 const Spacer(),
                 Text('${_d2Stints.fold(0, (s, st) => s + st.laps)} / ${widget.race.raceLaps}',
@@ -734,12 +714,18 @@ if (!widget.race.refuelling) ...[
                     color: _d2Stints.fold(0, (s, st) => s + st.laps) >= widget.race.raceLaps
                         ? AppTheme.onSurfaceDim : AppTheme.error)),
               ]),
+              const SizedBox(height: 4),
+              Text('~${_d2FuelPerLap.toStringAsFixed(2)}L/lap',
+                style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
               const SizedBox(height: 8),
+
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: ReorderableRow(
                   stints:     _d2Stints,
-                  fuelPerLap: widget.race.d2FuelPrediction,
+                  fuelPerLap: _d2FuelPerLap,
+                  teAttr:     teAttr,
+                  trackCode:  _trackCode,
                   refuelling: widget.race.refuelling, 
                   raceLaps:   widget.race.raceLaps,
                   onReorder: (o, n) => setState(() {
@@ -751,20 +737,27 @@ if (!widget.race.refuelling) ...[
               ),
               const SizedBox(height: 10),
                if (!widget.race.refuelling) ...[
-     _FuelSlider(
-       label: 'Total Fuel',
-       value: _d2AdvancedFuel,
-       onChanged: (v) => setState(() => _d2AdvancedFuel = v),
-     ),
-     const SizedBox(height: 10),
-   ],
+                 _FuelSlider(
+                   label: 'Total Fuel',
+                   value: _d2AdvancedFuel,
+                   fuelPerLap: _d2FuelPerLap,
+                   onChanged: (v) => setState(() => _d2AdvancedFuel = v),
+                 ),
+                 const SizedBox(height: 10),
+               ],
               Row(children: [
                 const Text('Push:', style: TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim)),
                 const SizedBox(width: 8),
                 ...{20: 'V.Low', 40: 'Low', 60: 'Mid', 80: 'High', 100: 'V.High'}.entries.map((e) {
                   final sel = _d2PushLevel == e.key;
                   return GestureDetector(
-                    onTap: () => setState(() => _d2PushLevel = e.key),
+                    onTap: () {
+                      setState(() {
+                        _d2PushLevel = e.key;
+                        final newFuel = _d2FuelPerLap;
+                        for (var s in _d2Stints) { s.fuelPerLap = newFuel; }
+                      });
+                    },
                     child: Container(
                       margin: const EdgeInsets.only(right: 5),
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
@@ -787,16 +780,13 @@ if (!widget.race.refuelling) ...[
     ));
   }
 }
- 
- 
-// ─── Stint header button (+ / -) ─────────────────────────────────────────────
- 
+
 class _StintHeaderBtn extends StatelessWidget {
   final IconData     icon;
   final VoidCallback onTap;
- 
+
   const _StintHeaderBtn({required this.icon, required this.onTap});
- 
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -815,36 +805,36 @@ class _StintHeaderBtn extends StatelessWidget {
     );
   }
 }
- 
-// ─── Draggable reorderable stint row ─────────────────────────────────────────
- 
-/// Horizontal row of stint cards that can be long-pressed to drag and
-/// dropped onto another card to swap positions.
+
 class ReorderableRow extends StatefulWidget {
   final List<_Stint>                stints;
   final double                      fuelPerLap;
+  final int                         teAttr;
+  final String                      trackCode;
   final int                         raceLaps;
-  final bool                        refuelling;   // ADD THIS
+  final bool                        refuelling;   
   final void Function(int, int)     onReorder;   
   final void Function(int, _Stint)  onChanged;
- 
+
   const ReorderableRow({
     super.key,
     required this.stints,
     required this.fuelPerLap,
+    required this.teAttr,
+    required this.trackCode,
     required this.raceLaps,
-    required this.refuelling, // ADD THIS
+    required this.refuelling, 
     required this.onReorder,
     required this.onChanged,
   });
- 
+
   @override
   State<ReorderableRow> createState() => _ReorderableRowState();
 }
- 
+
 class _ReorderableRowState extends State<ReorderableRow> {
   int? _draggingIndex;
- 
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -852,7 +842,7 @@ class _ReorderableRowState extends State<ReorderableRow> {
         final i     = entry.key;
         final stint = entry.value;
         final isDragging = _draggingIndex == i;
- 
+
         return Padding(
           padding: const EdgeInsets.only(right: 8),
           child: DragTarget<int>(
@@ -878,6 +868,8 @@ class _ReorderableRowState extends State<ReorderableRow> {
                       raceLaps:   widget.raceLaps,
                       refuelling: widget.refuelling,
                       fuelPerLap: widget.fuelPerLap,
+                      teAttr:     widget.teAttr,
+                      trackCode:  widget.trackCode,
                       onChanged:  (_) {},
                     ),
                   ),
@@ -890,6 +882,8 @@ class _ReorderableRowState extends State<ReorderableRow> {
                     raceLaps:   widget.raceLaps,
                     fuelPerLap: widget.fuelPerLap,
                     refuelling: widget.refuelling,
+                    teAttr:     widget.teAttr,
+                    trackCode:  widget.trackCode,
                     onChanged:  (_) {},
                   ),
                 ),
@@ -907,6 +901,8 @@ class _ReorderableRowState extends State<ReorderableRow> {
                     raceLaps:   widget.raceLaps,
                     fuelPerLap: widget.fuelPerLap,
                     refuelling: widget.refuelling,
+                    teAttr:     widget.teAttr,
+                    trackCode:  widget.trackCode,
                     onChanged:  (s) => widget.onChanged(i, s),
                   ),
                 ),
@@ -918,50 +914,43 @@ class _ReorderableRowState extends State<ReorderableRow> {
     );
   }
 }
-// ─── Stint model ──────────────────────────────────────────────────────────────
- 
+
 class _Stint {
   String tyre;
   int laps;
   double fuelPerLap;
- 
-  _Stint({this.tyre = 'M', this.laps = 7, this.fuelPerLap = 0.0});
- 
-  // Calculate fuel based on current laps
-  int get fuel => (laps * fuelPerLap).ceil().clamp(1, 300);
- 
-  // Helper to calculate how many laps we can do with a specific amount of fuel
-  static int lapsFromFuel(int fuelAmount, double consumption) {
-    if (consumption <= 0) return 1;
-    // We use floor because we can't complete a lap if we have partial fuel
-    return (fuelAmount / consumption).floor().clamp(1, 100);
-  }
- 
+  int fuel; // <--- FIX: Made this a solid integer
+
+  _Stint({
+    this.tyre = 'M', 
+    this.laps = 7, 
+    this.fuelPerLap = 0.0, 
+    int? explicitFuel
+  }) : fuel = explicitFuel ?? (laps * fuelPerLap).ceil().clamp(1, 300);
+
   Map<String, dynamic> toMap() => {
     'tyre': tyre,
     'laps': laps,
-    'fuel': fuel,
+    'fuel': fuel, // Now it will safely send exactly 28L
     'fuelPerLap': fuelPerLap,
   };
 }
- 
-// ─── Stint card ───────────────────────────────────────────────────────────────
- 
+
 class _StintCard extends StatelessWidget {
   final int        index;
   final _Stint     stint;
   final int        raceLaps;
   final double     fuelPerLap;
+  final int        teAttr;
+  final String     trackCode;
   final bool       refuelling;
   final ValueChanged<_Stint>  onChanged;
- 
- 
+
   const _StintCard({
     required this.index, required this.stint, required this.raceLaps,required this.refuelling, 
-    required this.fuelPerLap, required this.onChanged,
+    required this.fuelPerLap, required this.teAttr, required this.trackCode, required this.onChanged,
   });
- 
-  // Real F1-style tyre colours
+
   static const _colors = {
     'SS': Color(0xFFD65E56),
     'S':  Color(0xFFD9C777),
@@ -970,30 +959,40 @@ class _StintCard extends StatelessWidget {
     'I':  Color(0xFF82A674),
     'W':  Color(0xFF4786B3),
   };
- 
+
   String get _label => index == 0 ? 'Start' : 'Pit $index';
- 
+
   @override
   Widget build(BuildContext context) {
     final c = _colors[stint.tyre] ?? AppTheme.onSurfaceDim;
-    final fuel = (stint.laps * fuelPerLap).toStringAsFixed(1);
- 
+    
+    final fuelVal = stint.fuel;
+        
+    final wearLeft = StrategyCalc.getTyreWearPercentage(
+      teAttr: teAttr,
+      trackCode: trackCode,
+      tyre: stint.tyre,
+      laps: stint.laps,
+      raceLaps: raceLaps,
+    );
+
     return GestureDetector(
       onTap: () => showModalBottomSheet(
-  context: context,
-  // ...
-  builder: (_) => _StintEditor(
-    label: _label, 
-    stint: stint, 
-    raceLaps: raceLaps,
-    fuelPerLap: fuelPerLap, 
-    refuelling: refuelling,
-    onSave: onChanged, 
-  ),
-),
+        context: context,
+        builder: (_) => _StintEditor(
+          label: _label, 
+          stint: stint, 
+          raceLaps: raceLaps,
+          fuelPerLap: fuelPerLap, 
+          refuelling: refuelling,
+          teAttr: teAttr,
+          trackCode: trackCode,
+          onSave: onChanged, 
+        ),
+      ),
       child: Container(
         width:  52,
-        height: 72,
+        height: 80,
         decoration: BoxDecoration(
           color:        AppTheme.surfaceRaised,
           borderRadius: BorderRadius.circular(10),
@@ -1002,34 +1001,43 @@ class _StintCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Label
             Text(_label,
                 style: const TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.onSurfaceDim)),
-            const SizedBox(height: 4),
-            // Tyre circle with laps inside
-            Container(
-              width:  36,
-              height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.surface,
-                border:       Border.all(color: c, width: 6.5),
-              ),
-              child: Text(
-                '${stint.laps}',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppTheme.pillTextSel),
+            const SizedBox(height: 3),
+            
+            SizedBox(
+              width:  34,
+              height: 34,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Transform.scale(
+                    scaleX: -1, // Mirrors to drain anti-clockwise
+                    child: CircularProgressIndicator(
+                      value: wearLeft / 100,
+                      strokeWidth: 4.5,
+                      color: c,
+                      backgroundColor: c.withOpacity(0.15),
+                    ),
+                  ),
+                  Text(
+                    '${stint.laps}',
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.pillTextSel),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 4),
-            // Fuel load
-            Text('${fuel}L',
+            const SizedBox(height: 2),
+            Text('${wearLeft.round()}%',
+                style: TextStyle(fontSize: 7, fontWeight: FontWeight.bold, color: c)),
+            const SizedBox(height: 2),
+            Text('${fuelVal}L',
                 style: const TextStyle(
                     fontSize: 9, color: AppTheme.onSurfaceDim)),
           ],
@@ -1038,38 +1046,39 @@ class _StintCard extends StatelessWidget {
     );
   }
 }
- 
-// ─── Stint editor bottom sheet ────────────────────────────────────────────────
- 
+
 class _StintEditor extends StatefulWidget {
   final String label;
   final _Stint stint;
   final int raceLaps;
   final double fuelPerLap;
-  final bool refuelling; // Added this
+  final bool refuelling;
+  final int teAttr;
+  final String trackCode;
   final ValueChanged<_Stint> onSave;
   final VoidCallback? onDelete;
- 
+
   const _StintEditor({
     required this.label,
     required this.stint,
     required this.raceLaps,
     required this.fuelPerLap,
     required this.refuelling,
+    required this.teAttr,
+    required this.trackCode,
     required this.onSave,
     this.onDelete,
   });
- 
+
   @override
   State<_StintEditor> createState() => _StintEditorState();
 }
- 
+
 class _StintEditorState extends State<_StintEditor> {
   late String _tyre;
   late int    _laps;
   late int    _fuel;
- 
-  // These need to be here for the tyre selection
+
   static const _colors = {
     'SS': Color(0xFFD65E56),
     'S':  Color(0xFFD9C777),
@@ -1079,40 +1088,47 @@ class _StintEditorState extends State<_StintEditor> {
     'W':  Color(0xFF4786B3),
   };
   static const _tyres  = ['SS', 'S', 'M', 'H', 'I', 'W'];
- 
+
   @override
   void initState() {
     super.initState();
     _tyre = widget.stint.tyre;
     _laps = widget.stint.laps;
-    _fuel = widget.stint.fuel;
+    _fuel = widget.stint.fuel; 
   }
- 
+
   void _updateFuel(int newFuel) {
     setState(() {
-      _fuel = newFuel.clamp(1, 100);
-      _laps = _Stint.lapsFromFuel(_fuel, widget.fuelPerLap);
+      _fuel = newFuel.clamp(1, 150);
+      _laps = (_fuel / widget.fuelPerLap).floor().clamp(1, widget.raceLaps);
     });
   }
- 
+
   void _updateLaps(int newLaps) {
     setState(() {
       _laps = newLaps.clamp(1, widget.raceLaps);
       _fuel = (_laps * widget.fuelPerLap).ceil();
     });
   }
- 
+
   @override
   Widget build(BuildContext context) {
+    final wearLeft = StrategyCalc.getTyreWearPercentage(
+      teAttr: widget.teAttr,
+      trackCode: widget.trackCode,
+      tyre: _tyre,
+      laps: _laps,
+      raceLaps: widget.raceLaps,
+    );
+    final tyreColor = _colors[_tyre] ?? AppTheme.onSurfaceDim;
+
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 20),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        // Top Handle
         Center(child: Container(width: 36, height: 4,
           decoration: BoxDecoration(color: AppTheme.border, borderRadius: BorderRadius.circular(2)))),
         const SizedBox(height: 16),
         
-        // Header (Label + Delete)
         Row(children: [
           Text(widget.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.onSurface)),
           const Spacer(),
@@ -1123,52 +1139,50 @@ class _StintEditorState extends State<_StintEditor> {
         ]),
         const SizedBox(height: 16),
         
-        // --- THIS IS THE MISSING TYRE SELECTION UI ---
         const Align(alignment: Alignment.centerLeft,
           child: Text('Tyre', style: TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim))),
         const SizedBox(height: 8),
         Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: _tyres.map((t) {
-    final c = _colors[t] ?? AppTheme.onSurfaceDim;
-    final sel = _tyre == t;
- 
-    return SizedBox(
-      width: 44,
-      height: 44, // fixed row height
-      child: GestureDetector(
-        onTap: () => setState(() => _tyre = t),
-        child: Center(
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 110),
-            width: sel ? 44 : 36,
-            height: sel ? 44 : 36,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.surface,
-              border: Border.all(
-                color: sel ? c : c.withValues(alpha: 0.2),
-                width: 7.5,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: _tyres.map((t) {
+            final c = _colors[t] ?? AppTheme.onSurfaceDim;
+            final sel = _tyre == t;
+
+            return SizedBox(
+              width: 44,
+              height: 44,
+              child: GestureDetector(
+                onTap: () => setState(() => _tyre = t),
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 110),
+                    width: sel ? 44 : 36,
+                    height: sel ? 44 : 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppTheme.surface,
+                      border: Border.all(
+                        color: sel ? c : c.withValues(alpha: 0.2),
+                        width: 7.5,
+                      ),
+                    ),
+                    child: Text(
+                      t,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: sel ? AppTheme.pillTextSel : c,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-            child: Text(
-              t,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: sel ? AppTheme.pillTextSel : c,
-              ),
-            ),
-          ),
+            );
+          }).toList(),
         ),
-      ),
-    );
-  }).toList(),
-),
         const SizedBox(height: 20),
         
-        // --- NEW DYNAMIC FUEL/LAPS EDITOR ---
         Row(children: [
           Expanded(
             child: Text(
@@ -1195,31 +1209,44 @@ class _StintEditorState extends State<_StintEditor> {
           _Btn(
             icon: Icons.add, 
             onTap: widget.refuelling 
-              ? (_fuel < 100 ? () => _updateFuel(_fuel + 1) : null)
+              ? (_fuel < 150 ? () => _updateFuel(_fuel + 1) : null)
               : (_laps < widget.raceLaps ? () => _updateLaps(_laps + 1) : null)
           ),
         ]),
         const SizedBox(height: 12),
+        
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: AppTheme.surfaceRaised,
             borderRadius: BorderRadius.circular(8)
           ),
-          child: Text(
-            widget.refuelling 
-              ? 'Estimated Range: $_laps Laps' 
-              : 'Required Fuel: ~${(_laps * widget.fuelPerLap).toStringAsFixed(1)}L',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                widget.refuelling 
+                  ? 'Range: ${(_fuel / widget.fuelPerLap).toStringAsFixed(1)} Laps' 
+                  : 'Required: ~${(_laps * widget.fuelPerLap).toStringAsFixed(1)}L',
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.primary),
+              ),
+              Row(
+                children: [
+                  const Text('Wear: ', style: TextStyle(fontSize: 12, color: AppTheme.onSurfaceDim)),
+                  Text('${wearLeft.round()}%', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tyreColor)),
+                ]
+              )
+            ],
           ),
         ),
         const SizedBox(height: 24),
-        SizedBox(width: double.infinity, child: ElevatedButton(
+SizedBox(width: double.infinity, child: ElevatedButton(
           onPressed: () {
             widget.onSave(_Stint(
               tyre: _tyre,
               laps: _laps,
               fuelPerLap: widget.fuelPerLap,
+              explicitFuel: _fuel, // <--- FIX: Always force the exact editor fuel
             ));
             Navigator.pop(context);
           },
@@ -1228,10 +1255,11 @@ class _StintEditorState extends State<_StintEditor> {
     );
   }
 }
+
 class _Btn extends StatelessWidget {
   final IconData icon; final VoidCallback? onTap;
   const _Btn({required this.icon, this.onTap});
- 
+
   @override
   Widget build(BuildContext context) {
     final active = onTap != null;
@@ -1245,13 +1273,11 @@ class _Btn extends StatelessWidget {
         child: Icon(icon, size: 16, color: active ? AppTheme.onSurface : AppTheme.onSurfaceFaint)));
   }
 }
- 
-// ─── Setup slider ─────────────────────────────────────────────────────────────
- 
+
 class _SetupSlider extends StatelessWidget {
   final String label; final int value; final ValueChanged<int> onChanged;
   const _SetupSlider({required this.label, required this.value, required this.onChanged});
- 
+
   @override
   Widget build(BuildContext context) => Row(children: [
     SizedBox(width: 46, child: Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim))),
@@ -1275,346 +1301,20 @@ class _SetupSlider extends StatelessWidget {
       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.onSurface))),
   ]);
 }
- 
-// ─── Shared utils ─────────────────────────────────────────────────────────────
- 
-class _SectionLabel extends StatelessWidget {
-  final String text; const _SectionLabel(this.text);
-  @override
-  Widget build(BuildContext context) => Text(text.toUpperCase(),
-    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
-      color: AppTheme.onSurfaceDim, letterSpacing: 0.5));
-}
- 
-class _HDivider extends StatelessWidget {
-  const _HDivider();
-  @override
-  Widget build(BuildContext context) =>
-    const Divider(color: AppTheme.border, thickness: 0.5, height: 0);
-}
- 
-class _ActionButton extends StatelessWidget {
-  final IconData icon; final String label, sub; final VoidCallback onTap;
-  const _ActionButton({required this.icon, required this.label, required this.sub, required this.onTap});
- 
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(color: AppTheme.surfaceCard, borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.border, width: 0.5)),
-      child: Row(children: [
-        Icon(icon, size: 20, color: AppTheme.onSurfaceDim),
-        const SizedBox(width: 10),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.onSurface)),
-          Text(sub,   style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
-        ])),
-      ]),
-    ),
-  );
-}
- 
-class _LoadingPanel extends StatelessWidget {
-  const _LoadingPanel();
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Padding(padding: EdgeInsets.all(40),
-      child: CircularProgressIndicator(strokeWidth: 2)));
-}
- 
-class _ErrorPanel extends StatelessWidget {
-  final String message; const _ErrorPanel({required this.message});
-  @override
-  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24),
-    child: Text(message, textAlign: TextAlign.center,
-      style: const TextStyle(color: AppTheme.onSurfaceDim, fontSize: 13))));
-}
- 
- 
-class _RaceCardSkeleton extends StatelessWidget {
-  const _RaceCardSkeleton();
-  @override
-  Widget build(BuildContext context) => Container(height: 64,
-    decoration: BoxDecoration(color: AppTheme.surfaceRaised, borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppTheme.border, width: 0.5)));
-}
- 
-class _NoRaceCard extends StatelessWidget {
-  const _NoRaceCard();
-  @override
-  Widget build(BuildContext context) => Container(
-    height: 48, alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 14),
-    decoration: BoxDecoration(color: AppTheme.surfaceRaised, borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppTheme.border, width: 0.5)),
-    child: const Text('No upcoming race', style: TextStyle(color: AppTheme.onSurfaceDim, fontSize: 12)));
-}
- 
-class _RaceCardError extends StatelessWidget {
-  const _RaceCardError();
-  @override
-  Widget build(BuildContext context) => Container(height: 48, alignment: Alignment.centerLeft,
-    padding: const EdgeInsets.symmetric(horizontal: 14),
-    decoration: BoxDecoration(color: AppTheme.surfaceRaised, borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppTheme.border, width: 0.5)),
-    child: const Text('Race data unavailable', style: TextStyle(color: AppTheme.onSurfaceDim, fontSize: 12)));
-}
- 
-// ─── Setup suggestion sheet ───────────────────────────────────────────────────
- 
-class SetupSuggestSheet extends ConsumerStatefulWidget {
-  final String trackCode;
-  final List<DriverData> drivers;
-  final Map<String, CircuitSetup> circuits;
-  final String accountEmail;
-  final int numCars;
-  final int currentRide1, currentSusp1, currentWing1;
-  final int currentRide2, currentSusp2, currentWing2;
-  final void Function(int r1, int s1, int w1, int? r2, int? s2, int? w2) onApply;
- 
-  const SetupSuggestSheet({
-    super.key,
-    required this.trackCode,
-    required this.drivers,
-    required this.circuits,
-    required this.accountEmail,
-    required this.numCars,
-    required this.currentRide1, required this.currentSusp1, required this.currentWing1,
-    required this.currentRide2, required this.currentSusp2, required this.currentWing2,
-    required this.onApply,
-  });
- 
-  @override
-  ConsumerState<SetupSuggestSheet> createState() => _SetupSuggestSheetState();
-}
- 
-class _SetupSuggestSheetState extends ConsumerState<SetupSuggestSheet> {
-  late CircuitSetup _editing;
-  bool _showEdit = false;
- 
- 
-  @override
-  void initState() {
-    super.initState();
-    _editing = widget.circuits[widget.trackCode.toLowerCase()] ??
-        const CircuitSetup(ride: 50, wing: 50, suspension: 50);
-  }
- 
-  // Helper to calculate setup for a specific driver index
-SuggestedSetup _calculateForDriver(int index) {
-  final height = widget.drivers.length > index 
-      ? widget.drivers[index].heightCm : 170;
-  final adj = SetupSuggestion.heightAdjustment(height);
-  return SuggestedSetup(
-    ride: (_editing.ride + adj).clamp(1, 100),
-    wing: _editing.wing.clamp(1, 100),
-    suspension: _editing.suspension.clamp(1, 100),
-    trackCode: widget.trackCode,
-  );
-}
- 
-  @override
-  Widget build(BuildContext context) {
-    final s1 = _calculateForDriver(0);
-    final s2 = widget.numCars >= 2 ? _calculateForDriver(1) : null;
- 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppTheme.border, borderRadius: BorderRadius.circular(2)))),
-        const SizedBox(height: 16),
- 
-        Row(children: [
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Suggested setup', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.onSurface)),
-            Text(widget.trackCode.toUpperCase(), style: const TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim)),
-          ])),
-          GestureDetector(
-            onTap: () => setState(() => _showEdit = !_showEdit),
-            child: Text(_showEdit ? 'Done' : 'Edit base', style: TextStyle(fontSize: 12, color: AppTheme.primary)),
-          ),
-        ]),
-        const SizedBox(height: 16),
- 
-        // --- CAR 1 ---
-        _DriverHeader(index: 0, driver: widget.drivers.isNotEmpty ? widget.drivers[0] : null),
-        const SizedBox(height: 8),
-        Row(children: [
-          _SuggestValue(label: 'Ride', value: s1.ride, current: widget.currentRide1),
-          const SizedBox(width: 8),
-          _SuggestValue(label: 'Susp.', value: s1.suspension, current: widget.currentSusp1),
-          const SizedBox(width: 8),
-          _SuggestValue(label: 'Wing', value: s1.wing, current: widget.currentWing1),
-        ]),
- 
-        // --- CAR 2 (Conditional) ---
-        if (s2 != null) ...[
-          const SizedBox(height: 20),
-          _DriverHeader(index: 1, driver: widget.drivers.length > 1 ? widget.drivers[1] : null),
-          const SizedBox(height: 8),
-          Row(children: [
-            _SuggestValue(label: 'Ride', value: s2.ride, current: widget.currentRide2),
-            const SizedBox(width: 8),
-            _SuggestValue(label: 'Susp.', value: s2.suspension, current: widget.currentSusp2),
-            const SizedBox(width: 8),
-            _SuggestValue(label: 'Wing', value: s2.wing, current: widget.currentWing2),
-          ]),
-        ],
- 
-        // Edit Sliders (hidden by default)
-        if (_showEdit) ...[
-          const SizedBox(height: 16),
-          _EditSlider(label: 'Ride base', value: _editing.ride, onChanged: (v) => setState(() => _editing = _editing.copyWith(ride: v))),
-          _EditSlider(label: 'Susp. base', value: _editing.suspension, onChanged: (v) => setState(() => _editing = _editing.copyWith(suspension: v))),
-          _EditSlider(label: 'Wing base', value: _editing.wing, min: -20, max: 50, onChanged: (v) => setState(() => _editing = _editing.copyWith(wing: v))),
-        ],
- 
-        const SizedBox(height: 24),
-        SizedBox(width: double.infinity, child: ElevatedButton(
-          onPressed: () {
-            widget.onApply(
-              s1.ride, s1.suspension, s1.wing,
-              s2?.ride, s2?.suspension, s2?.wing,
-            );
-            Navigator.pop(context);
-          },
-          child: Text(widget.numCars >= 2 ? 'Apply to both cars' : 'Apply to car'),
-        )),
-      ]),
-    );
-  }
-}
- 
-// Small helper widget for the Driver labels inside the sheet
-class _DriverHeader extends StatelessWidget {
-  final int index;
-  final DriverData? driver;
-  const _DriverHeader({required this.index, this.driver});
- 
-  @override
-  Widget build(BuildContext context) {
-    return Row(children: [
-      Text('CAR ${index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.onSurfaceDim)),
-      const SizedBox(width: 8),
-      Text(driver?.lastName ?? 'Driver ${index + 1}', style: const TextStyle(fontSize: 11, color: AppTheme.onSurface)),
-      const Spacer(),
-      Text('${driver?.heightCm ?? 170}cm', style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
-    ]);
-  }
-}
- 
-class _SuggestValue extends StatelessWidget {
-  final String label;
-  final int    value;
-  final int    current; // -1 = no comparison
- 
-  const _SuggestValue({
-    required this.label,
-    required this.value,
-    required this.current,
-  });
- 
-  @override
-  Widget build(BuildContext context) {
-    final diff  = current >= 0 ? value - current : 0;
-    final Color diffColor;
-    final String diffStr;
-    if (current < 0 || diff == 0) {
-      diffColor = AppTheme.onSurfaceDim;
-      diffStr   = '';
-    } else if (diff > 0) {
-      diffColor = AppTheme.success;
-      diffStr   = '+$diff';
-    } else {
-      diffColor = AppTheme.error;
-      diffStr   = '$diff';
-    }
- 
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color:        AppTheme.surfaceRaised,
-          borderRadius: BorderRadius.circular(8),
-          border:       Border.all(color: AppTheme.border, width: 0.5),
-        ),
-        child: Column(children: [
-          Text(label,
-              style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
-          const SizedBox(height: 4),
-          Text('$value',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
-                  color: AppTheme.onSurface)),
-          if (diffStr.isNotEmpty)
-            Text(diffStr,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
-                    color: diffColor)),
-        ]),
-      ),
-    );
-  }
-}
- 
-class _EditSlider extends StatelessWidget {
-  final String           label;
-  final int              value;
-  final int              min;
-  final int              max;
-  final ValueChanged<int> onChanged;
- 
-  const _EditSlider({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-    this.min = 1,
-    this.max = 100,
-  });
- 
-  @override
-  Widget build(BuildContext context) {
-    final clamped = value.clamp(min, max);
-    return Row(children: [
-      SizedBox(width: 72,
-          child: Text(label,
-              style: const TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim))),
-      Expanded(child: SliderTheme(
-        data: SliderTheme.of(context).copyWith(
-          activeTrackColor:   AppTheme.primary,
-          inactiveTrackColor: AppTheme.border,
-          thumbColor:         AppTheme.primary,
-          thumbShape:         const RoundSliderThumbShape(enabledThumbRadius: 7),
-          trackHeight:        3,
-          overlayShape:       SliderComponentShape.noOverlay,
-        ),
-        child: Slider(
-          value:    clamped.toDouble(),
-          min:      min.toDouble(),
-          max:      max.toDouble(),
-          onChanged: (v) => onChanged(v.round()),
-        ),
-      )),
-      SizedBox(width: 28,
-          child: Text('$clamped', textAlign: TextAlign.right,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-                  color: AppTheme.onSurface))),
-    ]);
-  }
-}
+
 class _FuelSlider extends StatelessWidget {
   final String label;
   final int value;
+  final double fuelPerLap;
   final ValueChanged<int> onChanged;
- 
-  const _FuelSlider({required this.label, required this.value, required this.onChanged});
- 
+
+  const _FuelSlider({required this.label, required this.value, required this.fuelPerLap, required this.onChanged});
+
   @override
   Widget build(BuildContext context) {
     return Row(children: [
       SizedBox(width: 60, child: Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim))),
       
-      // Minus Button
       _MiniCircleBtn(icon: Icons.remove, onTap: () => onChanged((value - 1).clamp(0, 200))),
       
       Expanded(
@@ -1629,26 +1329,35 @@ class _FuelSlider extends StatelessWidget {
           ),
           child: Slider(
             value: value.toDouble(),
-            min: 0, max: 200, // Adjust max based on typical iGP needs
+            min: 0, max: 200,
             onChanged: (v) => onChanged(v.round()),
           ),
         ),
       ),
       
-      // Plus Button
       _MiniCircleBtn(icon: Icons.add, onTap: () => onChanged((value + 1).clamp(0, 200))),
       
-      SizedBox(width: 35, child: Text('$value L', textAlign: TextAlign.right,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primary))),
+      const SizedBox(width: 12),
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('$value L', textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.primary)),
+          if (fuelPerLap > 0)
+            Text('~${(value / fuelPerLap).toStringAsFixed(1)} laps', textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 9, color: AppTheme.onSurfaceDim)),
+        ],
+      ),
     ]);
   }
 }
- 
+
 class _MiniCircleBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
   const _MiniCircleBtn({required this.icon, required this.onTap});
- 
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -1661,34 +1370,28 @@ class _MiniCircleBtn extends StatelessWidget {
     );
   }
 }
- 
-// ─── Car condition card ───────────────────────────────────────────────────────
- 
-/// Inline compact card showing parts + engine condition for up to 2 cars.
-/// Lives inside _PanelContent so it rebuilds automatically when the session
-/// refreshes after a repair — no stale data problem.
+
 class _CarConditionCard extends ConsumerStatefulWidget {
   final CarData carData;
   final String  accountEmail;
   final int     numCars;
- 
+
   const _CarConditionCard({
     required this.carData,
     required this.accountEmail,
     required this.numCars,
   });
- 
+
   @override
   ConsumerState<_CarConditionCard> createState() => _CarConditionCardState();
 }
- 
+
 class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
-  // 'c1-parts', 'c1-engine', 'c2-parts', 'c2-engine'
   final Set<String> _loading = {};
- 
+
   bool _isLoading(int carNum, String type) =>
       _loading.contains('c$carNum-$type');
- 
+
   Future<void> _repair(CarCondition cond, String type) async {
     final key = 'c${cond.carNumber}-$type';
     if (_loading.contains(key)) return;
@@ -1702,7 +1405,6 @@ class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
         await svc.replaceEngine(widget.accountEmail,
             carId: cond.carId, carNumber: cond.carNumber);
       }
-      // Session refresh triggers _PanelContent rebuild with fresh carData
       await ref
           .read(sessionStateProvider(widget.accountEmail).notifier)
           .refresh();
@@ -1713,13 +1415,13 @@ class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
       if (mounted) setState(() => _loading.remove(key));
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
     final c1 = widget.carData.car1Condition;
     final c2 = widget.numCars >= 2 ? widget.carData.car2Condition : null;
     if (c1 == null) return const SizedBox.shrink();
- 
+
     return Container(
       padding:    const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
@@ -1759,14 +1461,14 @@ class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
     );
   }
 }
- 
+
 class _CarRow extends StatelessWidget {
   final CarCondition  cond;
   final bool          partsLoading;
   final bool          engineLoading;
   final VoidCallback? onRepairParts;
   final VoidCallback? onRepairEngine;
- 
+
   const _CarRow({
     required this.cond,
     required this.partsLoading,
@@ -1774,7 +1476,7 @@ class _CarRow extends StatelessWidget {
     this.onRepairParts,
     this.onRepairEngine,
   });
- 
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -1812,15 +1514,15 @@ class _CarRow extends StatelessWidget {
     );
   }
 }
- 
+
 class _ConditionItem extends StatelessWidget {
   final String        label;
-  final int           value;   // 0-100
+  final int           value;
   final int           cost;
   final bool          locked;
   final bool          loading;
   final VoidCallback? onTap;
- 
+
   const _ConditionItem({
     required this.label,
     required this.value,
@@ -1829,21 +1531,20 @@ class _ConditionItem extends StatelessWidget {
     required this.loading,
     this.onTap,
   });
- 
+
   Color get _color {
     if (value >= 100) return AppTheme.success;
     if (value >= 80) return const Color.fromARGB(255, 232, 232, 32);
     if (value >= 50) return const Color(0xFFE8A020);
     return AppTheme.error;
   }
- 
+
   @override
   Widget build(BuildContext context) {
     final needsRepair = value < 100;
     final canRepair   = needsRepair && !locked && onTap != null;
- 
+
     return Row(children: [
-      // Condition circle
       SizedBox(
         width: 32, height: 32,
         child: Stack(alignment: Alignment.center, children: [
@@ -1860,14 +1561,12 @@ class _ConditionItem extends StatelessWidget {
         ]),
       ),
       const SizedBox(width: 6),
-      // Label
       Expanded(
         child: Text(label,
             style: const TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w500,
                 color: AppTheme.onSurface)),
       ),
-      // Repair button or checkmark
       if (needsRepair)
         _InlineRepairBtn(
           cost:    cost,
@@ -1881,20 +1580,20 @@ class _ConditionItem extends StatelessWidget {
     ]);
   }
 }
- 
+
 class _InlineRepairBtn extends StatelessWidget {
   final int           cost;
   final bool          loading;
   final bool          active;
   final VoidCallback? onTap;
- 
+
   const _InlineRepairBtn({
     required this.cost,
     required this.loading,
     required this.active,
     this.onTap,
   });
- 
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -1932,5 +1631,430 @@ class _InlineRepairBtn extends StatelessWidget {
               ]),
       ),
     );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text; const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Text(text.toUpperCase(),
+    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500,
+      color: AppTheme.onSurfaceDim, letterSpacing: 0.5));
+}
+
+class _HDivider extends StatelessWidget {
+  const _HDivider();
+  @override
+  Widget build(BuildContext context) =>
+    const Divider(color: AppTheme.border, thickness: 0.5, height: 0);
+}
+
+class _ActionButton extends StatelessWidget {
+  final IconData icon; final String label, sub; final VoidCallback onTap;
+  const _ActionButton({required this.icon, required this.label, required this.sub, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: AppTheme.surfaceCard, borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.border, width: 0.5)),
+      child: Row(children: [
+        Icon(icon, size: 20, color: AppTheme.onSurfaceDim),
+        const SizedBox(width: 10),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.onSurface)),
+          Text(sub,   style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
+        ])),
+      ]),
+    ),
+  );
+}
+
+class _LoadingPanel extends StatelessWidget {
+  const _LoadingPanel();
+  @override
+  Widget build(BuildContext context) => const Center(
+    child: Padding(padding: EdgeInsets.all(40),
+      child: CircularProgressIndicator(strokeWidth: 2)));
+}
+
+class _ErrorPanel extends StatelessWidget {
+  final String message; const _ErrorPanel({required this.message});
+  @override
+  Widget build(BuildContext context) => Center(child: Padding(padding: const EdgeInsets.all(24),
+    child: Text(message, textAlign: TextAlign.center,
+      style: const TextStyle(color: AppTheme.onSurfaceDim, fontSize: 13))));
+}
+
+class _RaceCardSkeleton extends StatelessWidget {
+  const _RaceCardSkeleton();
+  @override
+  Widget build(BuildContext context) => Container(height: 64,
+    decoration: BoxDecoration(color: AppTheme.surfaceRaised, borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppTheme.border, width: 0.5)));
+}
+
+class _NoRaceCard extends StatelessWidget {
+  const _NoRaceCard();
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 48, alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    decoration: BoxDecoration(color: AppTheme.surfaceRaised, borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppTheme.border, width: 0.5)),
+    child: const Text('No upcoming race', style: TextStyle(color: AppTheme.onSurfaceDim, fontSize: 12)));
+}
+
+class _RaceCardError extends StatelessWidget {
+  const _RaceCardError();
+  @override
+  Widget build(BuildContext context) => Container(height: 48, alignment: Alignment.centerLeft,
+    padding: const EdgeInsets.symmetric(horizontal: 14),
+    decoration: BoxDecoration(color: AppTheme.surfaceRaised, borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppTheme.border, width: 0.5)),
+    child: const Text('Race data unavailable', style: TextStyle(color: AppTheme.onSurfaceDim, fontSize: 12)));
+}
+
+class SetupSuggestSheet extends ConsumerStatefulWidget {
+  final String trackCode;
+  final List<DriverData> drivers;
+  final Map<String, CircuitSetup> circuits;
+  final String accountEmail;
+  final int numCars;
+  final int currentRide1, currentSusp1, currentWing1;
+  final int currentRide2, currentSusp2, currentWing2;
+  final void Function(int r1, int s1, int w1, int? r2, int? s2, int? w2) onApply;
+
+  const SetupSuggestSheet({
+    super.key,
+    required this.trackCode,
+    required this.drivers,
+    required this.circuits,
+    required this.accountEmail,
+    required this.numCars,
+    required this.currentRide1, required this.currentSusp1, required this.currentWing1,
+    required this.currentRide2, required this.currentSusp2, required this.currentWing2,
+    required this.onApply,
+  });
+
+  @override
+  ConsumerState<SetupSuggestSheet> createState() => _SetupSuggestSheetState();
+}
+
+class _SetupSuggestSheetState extends ConsumerState<SetupSuggestSheet> {
+  late CircuitSetup _editing;
+  bool _showEdit = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _editing = widget.circuits[widget.trackCode.toLowerCase()] ??
+        const CircuitSetup(ride: 50, wing: 50, suspension: 50);
+  }
+
+  SuggestedSetup _calculateForDriver(int index) {
+    final height = widget.drivers.length > index 
+        ? widget.drivers[index].heightCm : 170;
+    final adj = SetupSuggestion.heightAdjustment(height);
+    return SuggestedSetup(
+      ride: (_editing.ride + adj).clamp(1, 100),
+      wing: _editing.wing.clamp(1, 100),
+      suspension: _editing.suspension.clamp(1, 100),
+      trackCode: widget.trackCode,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s1 = _calculateForDriver(0);
+    final s2 = widget.numCars >= 2 ? _calculateForDriver(1) : null;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).viewInsets.bottom + 24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: AppTheme.border, borderRadius: BorderRadius.circular(2)))),
+        const SizedBox(height: 16),
+
+        Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Suggested setup', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.onSurface)),
+            Text(widget.trackCode.toUpperCase(), style: const TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim)),
+          ])),
+          GestureDetector(
+            onTap: () => setState(() => _showEdit = !_showEdit),
+            child: Text(_showEdit ? 'Done' : 'Edit base', style: TextStyle(fontSize: 12, color: AppTheme.primary)),
+          ),
+        ]),
+        const SizedBox(height: 16),
+
+        _DriverHeader(index: 0, driver: widget.drivers.isNotEmpty ? widget.drivers[0] : null),
+        const SizedBox(height: 8),
+        Row(children: [
+          _SuggestValue(label: 'Ride', value: s1.ride, current: widget.currentRide1),
+          const SizedBox(width: 8),
+          _SuggestValue(label: 'Susp.', value: s1.suspension, current: widget.currentSusp1),
+          const SizedBox(width: 8),
+          _SuggestValue(label: 'Wing', value: s1.wing, current: widget.currentWing1),
+        ]),
+
+        if (s2 != null) ...[
+          const SizedBox(height: 20),
+          _DriverHeader(index: 1, driver: widget.drivers.length > 1 ? widget.drivers[1] : null),
+          const SizedBox(height: 8),
+          Row(children: [
+            _SuggestValue(label: 'Ride', value: s2.ride, current: widget.currentRide2),
+            const SizedBox(width: 8),
+            _SuggestValue(label: 'Susp.', value: s2.suspension, current: widget.currentSusp2),
+            const SizedBox(width: 8),
+            _SuggestValue(label: 'Wing', value: s2.wing, current: widget.currentWing2),
+          ]),
+        ],
+
+        if (_showEdit) ...[
+          const SizedBox(height: 16),
+          _EditSlider(label: 'Ride base', value: _editing.ride, onChanged: (v) => setState(() => _editing = _editing.copyWith(ride: v))),
+          _EditSlider(label: 'Susp. base', value: _editing.suspension, onChanged: (v) => setState(() => _editing = _editing.copyWith(suspension: v))),
+          _EditSlider(label: 'Wing base', value: _editing.wing, min: -20, max: 50, onChanged: (v) => setState(() => _editing = _editing.copyWith(wing: v))),
+        ],
+
+        const SizedBox(height: 24),
+        SizedBox(width: double.infinity, child: ElevatedButton(
+          onPressed: () {
+            widget.onApply(
+              s1.ride, s1.suspension, s1.wing,
+              s2?.ride, s2?.suspension, s2?.wing,
+            );
+            Navigator.pop(context);
+          },
+          child: Text(widget.numCars >= 2 ? 'Apply to both cars' : 'Apply to car'),
+        )),
+      ]),
+    );
+  }
+}
+
+class _DriverHeader extends StatelessWidget {
+  final int index;
+  final DriverData? driver;
+  const _DriverHeader({required this.index, this.driver});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Text('CAR ${index + 1}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppTheme.onSurfaceDim)),
+      const SizedBox(width: 8),
+      Text(driver?.lastName ?? 'Driver ${index + 1}', style: const TextStyle(fontSize: 11, color: AppTheme.onSurface)),
+      const Spacer(),
+      Text('${driver?.heightCm ?? 170}cm', style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
+    ]);
+  }
+}
+
+class _SuggestValue extends StatelessWidget {
+  final String label;
+  final int    value;
+  final int    current; 
+
+  const _SuggestValue({
+    required this.label,
+    required this.value,
+    required this.current,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final diff  = current >= 0 ? value - current : 0;
+    final Color diffColor;
+    final String diffStr;
+    if (current < 0 || diff == 0) {
+      diffColor = AppTheme.onSurfaceDim;
+      diffStr   = '';
+    } else if (diff > 0) {
+      diffColor = AppTheme.success;
+      diffStr   = '+$diff';
+    } else {
+      diffColor = AppTheme.error;
+      diffStr   = '$diff';
+    }
+
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color:        AppTheme.surfaceRaised,
+          borderRadius: BorderRadius.circular(8),
+          border:       Border.all(color: AppTheme.border, width: 0.5),
+        ),
+        child: Column(children: [
+          Text(label,
+              style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
+          const SizedBox(height: 4),
+          Text('$value',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700,
+                  color: AppTheme.onSurface)),
+          if (diffStr.isNotEmpty)
+            Text(diffStr,
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600,
+                    color: diffColor)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _EditSlider extends StatelessWidget {
+  final String           label;
+  final int              value;
+  final int              min;
+  final int              max;
+  final ValueChanged<int> onChanged;
+
+  const _EditSlider({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.min = 1,
+    this.max = 100,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = value.clamp(min, max);
+    return Row(children: [
+      SizedBox(width: 72,
+          child: Text(label,
+              style: const TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim))),
+      Expanded(child: SliderTheme(
+        data: SliderTheme.of(context).copyWith(
+          activeTrackColor:   AppTheme.primary,
+          inactiveTrackColor: AppTheme.border,
+          thumbColor:         AppTheme.primary,
+          thumbShape:         const RoundSliderThumbShape(enabledThumbRadius: 7),
+          trackHeight:        3,
+          overlayShape:       SliderComponentShape.noOverlay,
+        ),
+        child: Slider(
+          value:    clamped.toDouble(),
+          min:      min.toDouble(),
+          max:      max.toDouble(),
+          onChanged: (v) => onChanged(v.round()),
+        ),
+      )),
+      SizedBox(width: 28,
+          child: Text('$clamped', textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+                  color: AppTheme.onSurface))),
+    ]);
+  }
+}
+
+// ─── Strategy Formula Helper ──────────────────────────────────────────────────
+
+class StrategyCalc {
+  static const trackInfo = {
+    'au': {'length': 5.3017135, 'wear': 40, 'avg': 226.1090047},
+    'my': {'length': 5.5358276, 'wear': 80, 'avg': 208.879},
+    'cn': {'length': 5.4417996, 'wear': 80, 'avg': 207.975},
+    'bh': {'length': 4.7273, 'wear': 60, 'avg': 184.933},
+    'es': {'length': 4.4580207, 'wear': 85, 'avg': 189.212},
+    'mc': {'length': 4.0156865, 'wear': 20, 'avg': 187.0},
+    'tr': {'length': 5.1630893, 'wear': 90, 'avg': 196.0},
+    'de': {'length': 4.1797523, 'wear': 50, 'avg': 215.227},
+    'hu': {'length': 3.4990127, 'wear': 30, 'avg': 165.043},
+    'eu': {'length': 5.5907145, 'wear': 45, 'avg': 199.05},
+    'be': {'length': 7.0406127, 'wear': 60, 'avg': 217.7},
+    'it': {'length': 5.4024186, 'wear': 35, 'avg': 263.107},
+    'sg': {'length': 5.049042, 'wear': 45, 'avg': 187.0866142},
+    'jp': {'length': 5.0587635, 'wear': 70, 'avg': 197.065},
+    'br': {'length': 3.9715014, 'wear': 60, 'avg': 203.932},
+    'ae': {'length': 5.412688, 'wear': 50, 'avg': 213.218309},
+    'gb': {'length': 5.75213, 'wear': 65, 'avg': 230.552},
+    'fr': {'length': 5.882508, 'wear': 80, 'avg': 215.1585366},
+    'at': {'length': 4.044372, 'wear': 60, 'avg': 228.546},
+    'ca': {'length': 4.3413563, 'wear': 45, 'avg': 221.357243},
+    'az': {'length': 6.053212, 'wear': 45, 'avg': 220.409},
+    'mx': {'length': 4.3076024, 'wear': 60, 'avg': 172.32},
+    'ru': {'length': 6.078335, 'wear': 50, 'avg': 197.092},
+    'us': {'length': 4.60296, 'wear': 65, 'avg': 186.568},
+    'nl': {'length': 4.259, 'wear': 65, 'avg': 186.568},
+  };
+
+  static const raceLengthMap = {
+    'ae': [50, 37, 25, 12], 'au': [57, 42, 28, 14], 'at': [68, 51, 34, 17],
+    'az': [46, 34, 23, 11], 'bh': [59, 44, 29, 14], 'be': [43, 32, 21, 10],
+    'br': [69, 51, 34, 17], 'ca': [63, 47, 31, 15], 'cn': [55, 41, 27, 13],
+    'eu': [50, 37, 25, 12], 'fr': [48, 36, 24, 12], 'de': [67, 50, 33, 16],
+    'jp': [55, 41, 27, 13], 'gb': [48, 36, 24, 12], 'it': [51, 38, 25, 12],
+    'my': [55, 41, 27, 13], 'mx': [70, 52, 35, 17], 'mc': [59, 44, 29, 14],
+    'ru': [46, 34, 23, 11], 'sg': [60, 45, 30, 15], 'es': [62, 46, 31, 15],
+    'us': [60, 45, 30, 15], 'tr': [54, 40, 27, 13], 'hu': [79, 59, 39, 19],
+    'nl': [72, 59, 36, 19],
+  };
+
+  static const tyreWearFactors = { 'SS': 2.14, 'S': 1.4, 'M': 1.0, 'H': 0.78, 'I': 1.0, 'W': 1.0 };
+  static const multipliers = { 100: 1.0, 75: 1.25, 50: 1.5, 25: 3.0 };
+
+  static double getPushModifier(int pushLevel) {
+    switch (pushLevel) {
+      case 20: return -0.007;
+      case 40: return -0.004;
+      case 60: return 0.0;
+      case 80: return 0.01;
+      case 100: return 0.02;
+      default: return 0.0;
+    }
+  }
+
+  static double getFuelPerLap(int fuelAttr, String trackCode, int pushLevel) {
+    if (fuelAttr <= 0) fuelAttr = 1;
+    final track = trackInfo[trackCode.toLowerCase()];
+    if (track == null) return 2.0; 
+    
+    final length = track['length']!;
+    final fuelPerKm = 0.6983736841 * math.pow(fuelAttr, -0.08510976572);
+    final baseFuel = fuelPerKm * length;
+    
+    return baseFuel * (1.0 + getPushModifier(pushLevel));
+  }
+
+  static int getLeagueLengthKey(String trackCode, int raceLaps) {
+    final lapsArr = raceLengthMap[trackCode.toLowerCase()];
+    if (lapsArr == null) return 100;
+    for (int i = 0; i < lapsArr.length; i++) {
+      if ((lapsArr[i] - raceLaps).abs() <= 2) {
+        return [100, 75, 50, 25][i];
+      }
+    }
+    return 100; 
+  }
+
+  static double getTyreWearPercentage({
+    required int teAttr,
+    required String trackCode,
+    required String tyre,
+    required int laps,
+    required int raceLaps,
+  }) {
+    if (teAttr <= 0) teAttr = 1;
+    final track = trackInfo[trackCode.toLowerCase()];
+    if (track == null) return 100.0;
+    
+    final trackWear = track['wear']!;
+    final trackLength = track['length']!;
+    
+    final multKey = getLeagueLengthKey(trackCode, raceLaps);
+    final mult = multipliers[multKey] ?? 1.0;
+    final wearFactor = tyreWearFactors[tyre] ?? 1.0;
+    
+    final t = (1.29 * math.pow(teAttr, -0.0696)) *
+              (0.00527 * trackWear + 0.556) *
+              trackLength *
+              mult *
+              wearFactor;
+              
+    final stintWearLeft = math.pow(math.e, (-t / 100 * 1.18) * laps) * 100;
+    return stintWearLeft.clamp(0.0, 100.0).toDouble();
   }
 }
