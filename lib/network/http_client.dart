@@ -147,11 +147,17 @@ class _AccountCookieInterceptor extends Interceptor {
   ) async {
     final email = options.extra['accountEmail'] as String?;
     if (email != null) {
-      final jar     = _jarFor(email);
-      final cookies = await jar.loadForRequest(options.uri);
-      if (cookies.isNotEmpty) {
-        options.headers['Cookie'] =
-            cookies.map((c) => '${c.name}=${c.value}').join('; ');
+      // Never inject cookies for login requests — login is explicitly
+      // requesting a new session, so sending an existing PHPSESSID causes
+      // the server to treat it as session validation and reject the login.
+      final isLogin = options.path.contains('type=login');
+      if (!isLogin) {
+        final jar     = _jarFor(email);
+        final cookies = await jar.loadForRequest(options.uri);
+        if (cookies.isNotEmpty) {
+          options.headers['Cookie'] =
+              cookies.map((c) => '${c.name}=${c.value}').join('; ');
+        }
       }
     }
     handler.next(options);

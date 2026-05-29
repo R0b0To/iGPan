@@ -114,9 +114,9 @@ class CarService {
     for (final e in attributeValues.entries) {
       buf.write('&${e.key}=${e.value}');
     }
-    // CSRF interceptor caches the latest token from any prior response
-    buf.write('&csrfName=${csrfInterceptor.name}');
-    buf.write('&csrfToken=${csrfInterceptor.token}');
+    // Use per-account CSRF token
+    buf.write('&csrfName=${csrfInterceptor.nameFor(accountEmail)}');
+    buf.write('&csrfToken=${csrfInterceptor.tokenFor(accountEmail)}');
  
     final response = await _httpClient.get<String>(
       buf.toString(),
