@@ -2184,7 +2184,6 @@ class StrategyCalc {
         bestStints = currentStints;
       }
     }
-
     // Failsafe: if every strategy blew the tyres before 15%, return a conservative H 5-stop
     if (bestStints == null) {
       int bLaps = raceLaps ~/ 5;
