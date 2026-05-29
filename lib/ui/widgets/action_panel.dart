@@ -388,7 +388,6 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
     } catch (_) { return 50; }
   }
 
-  // Getters naturally recalculate dynamically based on selected push levels
   double get _d1FuelPerLap => StrategyCalc.getFuelPerLap(_getAttr(4), _trackCode, _pushLevel);
   double get _d2FuelPerLap => StrategyCalc.getFuelPerLap(_getAttr(4), _trackCode, _d2PushLevel);
 
@@ -469,6 +468,25 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
         }),
       ),
     );
+  }
+
+  void _applyOptimalStrategy(int carNum) {
+    setState(() {
+      final newStints = StrategyCalc.getOptimalStrategy(
+        raceLaps: widget.race.raceLaps,
+        fuelPerLap: carNum == 1 ? _d1FuelPerLap : _d2FuelPerLap,
+        teAttr: _getAttr(7),
+        trackCode: _trackCode,
+        refuelling: widget.race.refuelling,
+      );
+      if (carNum == 1) {
+        _stints = newStints;
+        _d1AdvancedFuel = (widget.race.raceLaps * _d1FuelPerLap).ceil();
+      } else {
+        _d2Stints = newStints;
+        _d2AdvancedFuel = (widget.race.raceLaps * _d2FuelPerLap).ceil();
+      }
+    });
   }
 
   Future<void> _save(BuildContext context, WidgetRef ref) async {
@@ -558,24 +576,7 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
                 child: Text('SETUP', style: TextStyle(
                     fontSize: 10, fontWeight: FontWeight.w500,
                     color: AppTheme.onSurfaceDim, letterSpacing: 0.5))),
-              GestureDetector(
-                onTap: () => _showSuggestSetup(ctx, ref),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color:        AppTheme.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(6),
-                    border:       Border.all(color: AppTheme.primary, width: 0.5),
-                  ),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.auto_fix_high_rounded, size: 12, color: AppTheme.primary),
-                    SizedBox(width: 4),
-                    Text('Suggest', style: TextStyle(
-                        fontSize: 10, fontWeight: FontWeight.w600,
-                        color: AppTheme.primary)),
-                  ]),
-                ),
-              ),
+              _SuggestBtn(onTap: () => _showSuggestSetup(ctx, ref)),
             ]),
             const SizedBox(height: 8),
             _SetupSlider(label: 'Ride',  value: _ride,       onChanged: (v) => setState(() => _ride = v)),
@@ -596,6 +597,8 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
               const Text('STRATEGY', style: TextStyle(
                 fontSize: 10, fontWeight: FontWeight.w500,
                 color: AppTheme.onSurfaceDim, letterSpacing: 0.5)),
+              const SizedBox(width: 8),
+              _SuggestBtn(onTap: () => _applyOptimalStrategy(1)),
               const Spacer(),
               if (_stints.length > 1)
                 _StintHeaderBtn(
@@ -648,7 +651,6 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
               const SizedBox(height: 10),
             ],
 
-            // Push level dynamically updates fuel for stints
             Row(children: [
               const Text('Push:', style: TextStyle(fontSize: 11, color: AppTheme.onSurfaceDim)),
               const SizedBox(width: 8),
@@ -694,6 +696,8 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
                 const Text('CAR 2 — STRATEGY',
                   style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500,
                     color: AppTheme.onSurfaceDim, letterSpacing: 0.5)),
+                const SizedBox(width: 8),
+                _SuggestBtn(onTap: () => _applyOptimalStrategy(2)),
                 const Spacer(),
                 if (_d2Stints.length > 1)
                   _StintHeaderBtn(
@@ -778,6 +782,33 @@ class _InlineRaceCardState extends State<_InlineRaceCard> {
         const SizedBox(height: 14),
       ]),
     ));
+  }
+}
+
+class _SuggestBtn extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SuggestBtn({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color:        AppTheme.primary.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(6),
+          border:       Border.all(color: AppTheme.primary, width: 0.5),
+        ),
+        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.auto_fix_high_rounded, size: 12, color: AppTheme.primary),
+          SizedBox(width: 4),
+          Text('Suggest', style: TextStyle(
+              fontSize: 10, fontWeight: FontWeight.w600,
+              color: AppTheme.primary)),
+        ]),
+      ),
+    );
   }
 }
 
@@ -919,7 +950,7 @@ class _Stint {
   String tyre;
   int laps;
   double fuelPerLap;
-  int fuel; // <--- FIX: Made this a solid integer
+  int fuel; 
 
   _Stint({
     this.tyre = 'M', 
@@ -931,7 +962,7 @@ class _Stint {
   Map<String, dynamic> toMap() => {
     'tyre': tyre,
     'laps': laps,
-    'fuel': fuel, // Now it will safely send exactly 28L
+    'fuel': fuel,
     'fuelPerLap': fuelPerLap,
   };
 }
@@ -965,8 +996,7 @@ class _StintCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = _colors[stint.tyre] ?? AppTheme.onSurfaceDim;
-    
-    final fuelVal = stint.fuel;
+    final fuelVal = refuelling ? stint.fuel.toString() : (stint.laps * fuelPerLap).toStringAsFixed(1);
         
     final wearLeft = StrategyCalc.getTyreWearPercentage(
       teAttr: teAttr,
@@ -1015,7 +1045,7 @@ class _StintCard extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Transform.scale(
-                    scaleX: -1, // Mirrors to drain anti-clockwise
+                    scaleX: -1,
                     child: CircularProgressIndicator(
                       value: wearLeft / 100,
                       strokeWidth: 4.5,
@@ -1240,13 +1270,13 @@ class _StintEditorState extends State<_StintEditor> {
           ),
         ),
         const SizedBox(height: 24),
-SizedBox(width: double.infinity, child: ElevatedButton(
+        SizedBox(width: double.infinity, child: ElevatedButton(
           onPressed: () {
             widget.onSave(_Stint(
               tyre: _tyre,
               laps: _laps,
               fuelPerLap: widget.fuelPerLap,
-              explicitFuel: _fuel, // <--- FIX: Always force the exact editor fuel
+              explicitFuel: _fuel,
             ));
             Navigator.pop(context);
           },
@@ -1950,35 +1980,36 @@ class _EditSlider extends StatelessWidget {
   }
 }
 
+
 // ─── Strategy Formula Helper ──────────────────────────────────────────────────
 
 class StrategyCalc {
   static const trackInfo = {
-    'au': {'length': 5.3017135, 'wear': 40, 'avg': 226.1090047},
-    'my': {'length': 5.5358276, 'wear': 80, 'avg': 208.879},
-    'cn': {'length': 5.4417996, 'wear': 80, 'avg': 207.975},
-    'bh': {'length': 4.7273, 'wear': 60, 'avg': 184.933},
-    'es': {'length': 4.4580207, 'wear': 85, 'avg': 189.212},
-    'mc': {'length': 4.0156865, 'wear': 20, 'avg': 187.0},
-    'tr': {'length': 5.1630893, 'wear': 90, 'avg': 196.0},
-    'de': {'length': 4.1797523, 'wear': 50, 'avg': 215.227},
-    'hu': {'length': 3.4990127, 'wear': 30, 'avg': 165.043},
-    'eu': {'length': 5.5907145, 'wear': 45, 'avg': 199.05},
-    'be': {'length': 7.0406127, 'wear': 60, 'avg': 217.7},
-    'it': {'length': 5.4024186, 'wear': 35, 'avg': 263.107},
-    'sg': {'length': 5.049042, 'wear': 45, 'avg': 187.0866142},
-    'jp': {'length': 5.0587635, 'wear': 70, 'avg': 197.065},
-    'br': {'length': 3.9715014, 'wear': 60, 'avg': 203.932},
-    'ae': {'length': 5.412688, 'wear': 50, 'avg': 213.218309},
-    'gb': {'length': 5.75213, 'wear': 65, 'avg': 230.552},
-    'fr': {'length': 5.882508, 'wear': 80, 'avg': 215.1585366},
-    'at': {'length': 4.044372, 'wear': 60, 'avg': 228.546},
-    'ca': {'length': 4.3413563, 'wear': 45, 'avg': 221.357243},
-    'az': {'length': 6.053212, 'wear': 45, 'avg': 220.409},
-    'mx': {'length': 4.3076024, 'wear': 60, 'avg': 172.32},
-    'ru': {'length': 6.078335, 'wear': 50, 'avg': 197.092},
-    'us': {'length': 4.60296, 'wear': 65, 'avg': 186.568},
-    'nl': {'length': 4.259, 'wear': 65, 'avg': 186.568},
+    'au': {'length': 5.3017135, 'wear': 40, 'avg': 226.1090047, 'pit': 24.0},
+    'my': {'length': 5.5358276, 'wear': 80, 'avg': 208.879, 'pit': 22.0},
+    'cn': {'length': 5.4417996, 'wear': 80, 'avg': 207.975, 'pit': 26.0},
+    'bh': {'length': 4.7273, 'wear': 60, 'avg': 184.933, 'pit': 23.0},
+    'es': {'length': 4.4580207, 'wear': 85, 'avg': 189.212, 'pit': 25.0},
+    'mc': {'length': 4.0156865, 'wear': 20, 'avg': 187.0, 'pit': 16.0},
+    'tr': {'length': 5.1630893, 'wear': 90, 'avg': 196.0, 'pit': 18.0},
+    'de': {'length': 4.1797523, 'wear': 50, 'avg': 215.227, 'pit': 17.0},
+    'hu': {'length': 3.4990127, 'wear': 30, 'avg': 165.043, 'pit': 17.0},
+    'eu': {'length': 5.5907145, 'wear': 45, 'avg': 199.05, 'pit': 17.0},
+    'be': {'length': 7.0406127, 'wear': 60, 'avg': 217.7, 'pit': 15.0},
+    'it': {'length': 5.4024186, 'wear': 35, 'avg': 263.107, 'pit': 24.0},
+    'sg': {'length': 5.049042, 'wear': 45, 'avg': 187.0866142, 'pit': 20.0},
+    'jp': {'length': 5.0587635, 'wear': 70, 'avg': 197.065, 'pit': 20.0},
+    'br': {'length': 3.9715014, 'wear': 60, 'avg': 203.932, 'pit': 21.0},
+    'ae': {'length': 5.412688, 'wear': 50, 'avg': 213.218309, 'pit': 23.0},
+    'gb': {'length': 5.75213, 'wear': 65, 'avg': 230.552, 'pit': 23.0},
+    'fr': {'length': 5.882508, 'wear': 80, 'avg': 215.1585366, 'pit': 20.0},
+    'at': {'length': 4.044372, 'wear': 60, 'avg': 228.546, 'pit': 27.0},
+    'ca': {'length': 4.3413563, 'wear': 45, 'avg': 221.357243, 'pit': 17.0},
+    'az': {'length': 6.053212, 'wear': 45, 'avg': 220.409, 'pit': 17.0},
+    'mx': {'length': 4.3076024, 'wear': 60, 'avg': 172.32, 'pit': 19.0},
+    'ru': {'length': 6.078335, 'wear': 50, 'avg': 197.092, 'pit': 21.0},
+    'us': {'length': 4.60296, 'wear': 65, 'avg': 186.568, 'pit': 16.0},
+    'nl': {'length': 4.259, 'wear': 65, 'avg': 186.568, 'pit': 18.0},
   };
 
   static const raceLengthMap = {
@@ -2012,7 +2043,7 @@ class StrategyCalc {
     final track = trackInfo[trackCode.toLowerCase()];
     if (track == null) return 2.0; 
     
-    final length = track['length']!;
+    final length = track['length'] as double;
     final fuelPerKm = 0.6983736841 * math.pow(fuelAttr, -0.08510976572);
     final baseFuel = fuelPerKm * length;
     
@@ -2041,8 +2072,8 @@ class StrategyCalc {
     final track = trackInfo[trackCode.toLowerCase()];
     if (track == null) return 100.0;
     
-    final trackWear = track['wear']!;
-    final trackLength = track['length']!;
+    final trackWear = (track['wear'] as num).toDouble();
+    final trackLength = track['length'] as double;
     
     final multKey = getLeagueLengthKey(trackCode, raceLaps);
     final mult = multipliers[multKey] ?? 1.0;
@@ -2056,5 +2087,119 @@ class StrategyCalc {
               
     final stintWearLeft = math.pow(math.e, (-t / 100 * 1.18) * laps) * 100;
     return stintWearLeft.clamp(0.0, 100.0).toDouble();
+  }
+
+  /// Evaluates strategies and returns the fastest realistic configuration.
+  static List<_Stint> getOptimalStrategy({
+    required int raceLaps,
+    required double fuelPerLap,
+    required int teAttr,
+    required String trackCode,
+    required bool refuelling,
+  }) {
+    final track = trackInfo[trackCode.toLowerCase()];
+    final pitTime = (track?['pit'] as double?) ?? 22.0;
+
+    List<_Stint>? bestStints;
+    double bestTime = double.infinity;
+
+    final tyres = ['SS', 'S', 'M', 'H'];
+    // 0.3s performance step between compounds
+    final tyrePace = {'SS': 0.0, 'S': 0.3, 'M': 0.6, 'H': 0.9};
+
+    // Sanity limit to prevent evaluating an absurd number of stops in short races.
+    // e.g. a 20 lap race maxes out at 2 stints (1 stop). A 50 lap race allows 4 stints (3 stops).
+    int maxStints = (raceLaps / 14).ceil() + 1;
+    if (maxStints > 5) maxStints = 5;
+
+    for (int numStints = 1; numStints <= maxStints; numStints++) {
+      int baseLaps = raceLaps ~/ numStints;
+      int remainder = raceLaps % numStints;
+
+      List<int> lapsPerStint = List.generate(
+        numStints, 
+        (i) => baseLaps + (i < remainder ? 1 : 0)
+      );
+
+      double totalTime = (numStints - 1) * pitTime;
+      bool isValid = true;
+      List<_Stint> currentStints = [];
+
+      for (int laps in lapsPerStint) {
+        String? selectedTyre;
+        double bestWear = -1.0;
+        double lowestPenalty = double.infinity;
+
+        // Find the fastest tyre that can survive the stint
+        for (String t in tyres) {
+          double wearLeft = getTyreWearPercentage(
+            teAttr: teAttr, trackCode: trackCode, tyre: t, laps: laps, raceLaps: raceLaps
+          );
+          
+          // Soft wall: Below 40% starts severely costing lap time
+          double penalty = 0.0;
+          if (wearLeft < 45.0) {
+            // Adds 1.5 seconds of lost pace for every 1% it dips below 40
+            penalty = (45.0 - wearLeft) * 1.5; 
+          }
+          
+          // Hard wall: Discard any tyre that finishes below 15% completely
+          if (wearLeft > 15.0) {
+             // We want the tyre with the smallest combined performance penalty (pace + wear dropoff)
+             double totalTyreCost = (laps * tyrePace[t]!) + penalty;
+             if (totalTyreCost < lowestPenalty) {
+               lowestPenalty = totalTyreCost;
+               selectedTyre = t;
+               bestWear = wearLeft;
+             }
+          }
+        }
+
+        if (selectedTyre == null || bestWear < 15.0) {
+          isValid = false; 
+          break; // Stint length is impossible on any tyre
+        }
+
+        // Add the base pace difference + wear dropoff penalty
+        double tTyre = lowestPenalty; 
+        double tFuel = 0.0;
+        
+        // Slower lap time from carrying heavy fuel (~0.025s per liter per lap)
+        if (refuelling) {
+           double averageFuelLiters = (laps * fuelPerLap) / 2.0;
+           tFuel = laps * (averageFuelLiters * 0.025);
+        }
+        totalTime += tTyre + tFuel;
+        
+        currentStints.add(_Stint(
+          tyre: selectedTyre,
+          laps: laps,
+          fuelPerLap: fuelPerLap,
+          explicitFuel: refuelling ? (laps * fuelPerLap).ceil() : null,
+        ));
+      }
+
+      if (isValid && totalTime < bestTime) {
+        bestTime = totalTime;
+        bestStints = currentStints;
+      }
+    }
+
+    // Failsafe: if every strategy blew the tyres before 15%, return a conservative H 5-stop
+    if (bestStints == null) {
+      int bLaps = raceLaps ~/ 5;
+      int rem = raceLaps % 5;
+      bestStints = List.generate(5, (i) {
+        int l = bLaps + (i < rem ? 1 : 0);
+        return _Stint(
+          tyre: 'H',
+          laps: l,
+          fuelPerLap: fuelPerLap,
+          explicitFuel: refuelling ? (l * fuelPerLap).ceil() : null,
+        );
+      });
+    }
+
+    return bestStints;
   }
 }
