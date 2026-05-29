@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,23 +9,98 @@ import '../../providers/accounts_provider.dart';
 import '../../providers/session_provider.dart';
 import '../../providers/ui_provider.dart';
 import '../../providers/game_provider.dart';
-import '../../services/game_service.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../ui/widgets/account_pill.dart';
 import '../../ui/widgets/action_panel.dart';
 import '../../ui/widgets/batch_bar.dart';
 import '../screens/accounts_screen.dart';
 
-class HomeScreen extends ConsumerWidget {
+// Adjusted breakpoints
+const double _kMobileMaxWidth = 400.0;
+const double _kDesktopColumnWidth = 400.0;
+
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final ScrollController _horizontalScrollController = ScrollController();
+  
+  double _currentItemWidth = 0.0;
+  bool _isCentered = false;
+  bool _isScrollingProgrammatically = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _horizontalScrollController.addListener(_onMainScroll);
+  }
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
+  }
+
+  // Updates the "selected" pill when the user manually scrolls left/right
+  void _onMainScroll() {
+    if (_isScrollingProgrammatically || _currentItemWidth == 0 || _isCentered) return;
+
+    final isBatchMode = ref.read(batchSelectionProvider).isNotEmpty;
+    if (isBatchMode) return;
+
+    final offset = _horizontalScrollController.offset;
+    final index = (offset / _currentItemWidth).round(); 
+
+    final accounts = ref.read(accountsProvider).valueOrNull?.where((a) => a.enabled).toList() ?? [];
+    if (index >= 0 && index < accounts.length) {
+      final email = accounts[index].email;
+      if (ref.read(selectedAccountProvider) != email) {
+        Future.microtask(() {
+          ref.read(selectedAccountProvider.notifier).select(email);
+        });
+      }
+    }
+  }
+
+  // Smooth scrolls the view when user taps a pill
+  void _scrollToIndex(int index) async {
+    if (_isCentered || !_horizontalScrollController.hasClients) return;
+    _isScrollingProgrammatically = true;
+    
+    await _horizontalScrollController.animateTo(
+      index * _currentItemWidth,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOutCubic,
+    );
+    
+    _isScrollingProgrammatically = false;
+  }
+
+  void _claimAll(WidgetRef ref, List<String> emails) {
+    ref.read(batchActionProvider.notifier).claimDailyRewardAll(emails);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final accountsAsync = ref.watch(accountsProvider);
     final selected      = ref.watch(selectedAccountProvider);
     final batchSelected = ref.watch(batchSelectionProvider);
     final isBatchMode   = batchSelected.isNotEmpty;
     final batchState    = ref.watch(batchActionProvider);
+
+    ref.listen<String?>(selectedAccountProvider, (previous, next) {
+      if (next != null && next != previous && !_isScrollingProgrammatically) {
+        final enabled = ref.read(accountsProvider).valueOrNull?.where((a) => a.enabled).toList() ?? [];
+        final index = enabled.indexWhere((a) => a.email == next);
+        if (index != -1) {
+          _scrollToIndex(index);
+        }
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppTheme.surface,
@@ -54,7 +130,6 @@ class HomeScreen extends ConsumerWidget {
             );
           }
 
-          // Auto-select first if nothing selected
           if (selected == null && enabled.isNotEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               ref.read(selectedAccountProvider.notifier).select(enabled.first.email);
@@ -63,7 +138,6 @@ class HomeScreen extends ConsumerWidget {
 
           return Column(
             children: [
-              // ── Pill rail with auto-scroll & fading edges ────────
               const Divider(height: 0),
               _AccountPillRail(
                 enabledAccounts: enabled,
@@ -73,7 +147,6 @@ class HomeScreen extends ConsumerWidget {
               ),
               const Divider(height: 0),
 
-              // ── Batch bar (Actions for multiple accounts) ────────
               if (isBatchMode)
                 BatchBar(
                   selectedCount: batchSelected.length,
@@ -83,15 +156,64 @@ class HomeScreen extends ConsumerWidget {
                   onClear:       () => ref.read(batchSelectionProvider.notifier).clear(),
                 ),
 
-              // ── Batch results overlay ─────────────────────────────
               if (batchState.hasResults && !batchState.isRunning)
                 _BatchResultsPanel(results: batchState.results),
 
-              // ── Main Action Panel (Strategy/Setup) ────────────────
+              // ── Dynamic Responsive Multi-Column Layout ────────────────
               Expanded(
-                child: selected != null
-                    ? ActionPanel(accountEmail: selected)
-                    : const SizedBox.shrink(),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availableWidth = constraints.maxWidth;
+                    final bool isDesktop = availableWidth > _kMobileMaxWidth;
+                    
+                    _currentItemWidth = isDesktop ? _kDesktopColumnWidth : availableWidth;
+                    
+                    // 1. Calculate how many whole columns can fit exactly
+                    int fitCount = (availableWidth / _currentItemWidth).floor();
+                    if (fitCount < 1) fitCount = 1;
+                    
+                    // 2. Clamp it so we don't reserve space for cards that don't exist
+                    final int displayCount = math.min(fitCount, enabled.length);
+                    
+                    // 3. This strict container width guarantees you NEVER see "half" a card resting at the edges
+                    final double containerWidth = displayCount * _currentItemWidth;
+                    
+                    _isCentered = isDesktop && (enabled.length <= fitCount);
+
+                    Widget contentRow = Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: enabled.map((account) {
+                        return SizedBox(
+                          width: _currentItemWidth,
+                          child: isDesktop 
+                              ? _DesktopAccountCard(accountEmail: account.email)
+                              : ActionPanel(accountEmail: account.email),
+                        );
+                      }).toList(),
+                    );
+
+                    Widget scrollableArea = ScrollConfiguration(
+                      behavior: ScrollConfiguration.of(context).copyWith(
+                        dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind.trackpad},
+                      ),
+                      child: SingleChildScrollView(
+                        controller: _horizontalScrollController,
+                        scrollDirection: Axis.horizontal,
+                        // Bouncing on desktop, swiping on mobile
+                        physics: isDesktop ? const BouncingScrollPhysics() : const PageScrollPhysics(),
+                        child: contentRow,
+                      ),
+                    );
+
+                    // 4. Wrap the scroll view in a centered SizedBox using our exact calculated width
+                    return Center(
+                      child: SizedBox(
+                        width: containerWidth,
+                        child: scrollableArea,
+                      ),
+                    );
+                  },
+                ),
               ),
             ],
           );
@@ -99,13 +221,38 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  void _claimAll(WidgetRef ref, List<String> emails) {
-    ref.read(batchActionProvider.notifier).claimDailyRewardAll(emails);
+// ─── Desktop Card Wrapper ────────────────────────────────────────────────────
+
+class _DesktopAccountCard extends StatelessWidget {
+  final String accountEmail;
+  const _DesktopAccountCard({required this.accountEmail});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      // The margins provide the visual spacing, while the wrapper guarantees it takes exactly 400 width
+      margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface, 
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border, width: 0.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias, 
+      child: ActionPanel(accountEmail: accountEmail),
+    );
   }
 }
 
-// ─── Scrolling Pill Rail Widget ──────────────────────────────────────────────
+// ─── Account Pill Rail ───────────────────────────────────────────────────────
 
 class _AccountPillRail extends ConsumerStatefulWidget {
   final List<Account> enabledAccounts;
@@ -135,7 +282,6 @@ class _AccountPillRailState extends ConsumerState<_AccountPillRail> {
   void initState() {
     super.initState();
     _scrollController.addListener(_updateArrows);
-    // Initial check after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) => _updateArrows());
   }
 
@@ -191,12 +337,9 @@ class _AccountPillRailState extends ConsumerState<_AccountPillRail> {
       color: AppTheme.surfaceCard,
       child: Stack(
         children: [
-          // ── The Scrollable List ──────────────────────────────────────────
           ScrollConfiguration(
-            // Enables mouse-dragging for desktop/emulator users
             behavior: ScrollConfiguration.of(context).copyWith(
               dragDevices: {
-                // Allows dragging with mouse, touch, and stylus
                 for (final kind in PointerDeviceKind.values) kind,
               },
             ),
@@ -213,7 +356,7 @@ class _AccountPillRailState extends ConsumerState<_AccountPillRail> {
               child: ListView.builder(
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(), // Feels more "premium"
+                physics: const BouncingScrollPhysics(), 
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 itemCount: widget.enabledAccounts.length + 1,
                 itemBuilder: (context, index) {
@@ -252,15 +395,11 @@ class _AccountPillRailState extends ConsumerState<_AccountPillRail> {
               ),
             ),
           ),
-
-          // ── Left Scroll Arrow ──────────────────────────────────────────────
           if (_canScrollLeft)
             Positioned(
               left: 0, top: 0, bottom: 0,
               child: _ScrollArrow(icon: Icons.chevron_left, onTap: () => _scrollBy(-150)),
             ),
-
-          // ── Right Scroll Arrow ─────────────────────────────────────────────
           if (_canScrollRight)
             Positioned(
               right: 0, top: 0, bottom: 0,
@@ -271,8 +410,6 @@ class _AccountPillRailState extends ConsumerState<_AccountPillRail> {
     );
   }
 }
-
-// ─── Internal Arrow Widget ────────────────────────────────────────────────────
 
 class _ScrollArrow extends StatelessWidget {
   final IconData icon;
@@ -300,7 +437,8 @@ class _ScrollArrow extends StatelessWidget {
     );
   }
 }
-// ─── Batch results list (Auto-dismisses) ─────────────────────────────────────
+
+// ─── Batch results list ──────────────────────────────────────────────────────
 
 class _BatchResultsPanel extends ConsumerStatefulWidget {
   final Map<String, BatchResult> results;

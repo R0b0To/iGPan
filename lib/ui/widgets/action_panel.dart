@@ -11,7 +11,6 @@ import '../../providers/providers.dart';
 import '../../providers/session_provider.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../models/car_data.dart';
-import 'car_repair_sheet.dart';
 import 'car_research_sheet.dart';
  
 /// Full-screen action panel for the currently selected account.
@@ -24,6 +23,7 @@ class ActionPanel extends ConsumerWidget {
     final sessionAsync = ref.watch(sessionStateProvider(accountEmail));
     
     return sessionAsync.when(
+      skipLoadingOnRefresh: true,
       loading: () => const _LoadingPanel(),
       error:   (e, _) => _ErrorPanel(message: e.toString()),
       data:    (session) {
@@ -37,23 +37,23 @@ class ActionPanel extends ConsumerWidget {
     );
   }
 }
-
+ 
 /// A "Ghost" widget that shows a loader and triggers re-login
 class _BackgroundReLoginTrigger extends ConsumerStatefulWidget {
   final String accountEmail;
   const _BackgroundReLoginTrigger({required this.accountEmail});
-
+ 
   @override
   ConsumerState<_BackgroundReLoginTrigger> createState() => _BackgroundReLoginTriggerState();
 }
-
+ 
 class _BackgroundReLoginTriggerState extends ConsumerState<_BackgroundReLoginTrigger> {
   @override
   void initState() {
     super.initState();
     _performAutoLogin();
   }
-
+ 
   // Handle case where user switches account while this is loading
   @override
   void didUpdateWidget(_BackgroundReLoginTrigger oldWidget) {
@@ -124,12 +124,6 @@ class _PanelContent extends ConsumerWidget {
           childAspectRatio: 2.4,
           children: [
             _ActionButton(
-              icon:  Icons.build_rounded,
-              label: 'Repair car',
-              sub:   _repairSub(accountData),
-              onTap: () => _openRepair(context, accountData),
-            ),
-            _ActionButton(
               icon:  Icons.people_rounded,
               label: 'Drivers',
               sub:   '${accountData.numDrivers} active',
@@ -144,6 +138,15 @@ class _PanelContent extends ConsumerWidget {
               ),
           ],
         ),
+        // ── Car condition ─────────────────────────────────────
+        if (accountData.carData?.car1Condition != null) ...[
+          const SizedBox(height: 10),
+          _CarConditionCard(
+            carData:      accountData.carData!,
+            accountEmail: accountEmail,
+            numCars:      accountData.numCars,
+          ),
+        ],
         const SizedBox(height: 12),
         const _HDivider(),
         const SizedBox(height: 10),
@@ -170,35 +173,6 @@ class _PanelContent extends ConsumerWidget {
       ],
     );
   }
-void _openRepair(BuildContext context, AccountData data) {
-    if (data.carData == null) return;
-    showModalBottomSheet(
-      context:            context,
-      isScrollControlled: true,
-      backgroundColor:    AppTheme.surfaceCard,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (_) => CarRepairSheet(
-        carData:      data.carData!,
-        accountEmail: accountEmail,
-        numCars:      data.numCars,
-      ),
-    );
-  }
- 
-  static String _repairSub(AccountData data) {
-    final c1 = data.carData?.car1Condition;
-    if (c1 == null) return 'Parts & engine';
-    final c2 = data.numCars >= 2 ? data.carData?.car2Condition : null;
-    // Show the worst condition value so the user sees if action is needed
-    final vals = [c1.partsValue, c1.engineValue,
-                  if (c2 != null) c2.partsValue,
-                  if (c2 != null) c2.engineValue];
-    final worst = vals.reduce((a, b) => a < b ? a : b);
-    if (worst >= 50) return 'Parts ${c1.partsValue}% · Eng ${c1.engineValue}%';
-    return '⚠ Parts ${c1.partsValue}% · Eng ${c1.engineValue}%';
-  }
- 
 void _openResearch(BuildContext context, CarData carData) {
     showModalBottomSheet(
       context:            context,
@@ -1683,6 +1657,279 @@ class _MiniCircleBtn extends StatelessWidget {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(shape: BoxShape.circle, color: AppTheme.surfaceRaised),
         child: Icon(icon, size: 14, color: AppTheme.onSurfaceDim),
+      ),
+    );
+  }
+}
+ 
+// ─── Car condition card ───────────────────────────────────────────────────────
+ 
+/// Inline compact card showing parts + engine condition for up to 2 cars.
+/// Lives inside _PanelContent so it rebuilds automatically when the session
+/// refreshes after a repair — no stale data problem.
+class _CarConditionCard extends ConsumerStatefulWidget {
+  final CarData carData;
+  final String  accountEmail;
+  final int     numCars;
+ 
+  const _CarConditionCard({
+    required this.carData,
+    required this.accountEmail,
+    required this.numCars,
+  });
+ 
+  @override
+  ConsumerState<_CarConditionCard> createState() => _CarConditionCardState();
+}
+ 
+class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
+  // 'c1-parts', 'c1-engine', 'c2-parts', 'c2-engine'
+  final Set<String> _loading = {};
+ 
+  bool _isLoading(int carNum, String type) =>
+      _loading.contains('c$carNum-$type');
+ 
+  Future<void> _repair(CarCondition cond, String type) async {
+    final key = 'c${cond.carNumber}-$type';
+    if (_loading.contains(key)) return;
+    setState(() => _loading.add(key));
+    try {
+      final svc = ref.read(carServiceProvider);
+      if (type == 'parts') {
+        await svc.repairParts(widget.accountEmail,
+            carId: cond.carId, carNumber: cond.carNumber);
+      } else {
+        await svc.replaceEngine(widget.accountEmail,
+            carId: cond.carId, carNumber: cond.carNumber);
+      }
+      // Session refresh triggers _PanelContent rebuild with fresh carData
+      await ref
+          .read(sessionStateProvider(widget.accountEmail).notifier)
+          .refresh();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Repair failed: $e')));
+    } finally {
+      if (mounted) setState(() => _loading.remove(key));
+    }
+  }
+ 
+  @override
+  Widget build(BuildContext context) {
+    final c1 = widget.carData.car1Condition;
+    final c2 = widget.numCars >= 2 ? widget.carData.car2Condition : null;
+    if (c1 == null) return const SizedBox.shrink();
+ 
+    return Container(
+      padding:    const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      decoration: BoxDecoration(
+        color:        AppTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(12),
+        border:       Border.all(color: AppTheme.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('CAR CONDITION',
+              style: TextStyle(
+                  fontSize: 10, fontWeight: FontWeight.w600,
+                  color: AppTheme.onSurfaceDim, letterSpacing: 0.5)),
+          const SizedBox(height: 10),
+          _CarRow(
+            cond:          c1,
+            partsLoading:  _isLoading(1, 'parts'),
+            engineLoading: _isLoading(1, 'engine'),
+            onRepairParts:  c1.partsLocked ? null : () => _repair(c1, 'parts'),
+            onRepairEngine: c1.engineLocked ? null : () => _repair(c1, 'engine'),
+          ),
+          if (c2 != null) ...[
+            const SizedBox(height: 8),
+            const Divider(color: AppTheme.border, thickness: 0.5, height: 0),
+            const SizedBox(height: 8),
+            _CarRow(
+              cond:          c2,
+              partsLoading:  _isLoading(2, 'parts'),
+              engineLoading: _isLoading(2, 'engine'),
+              onRepairParts:  c2.partsLocked ? null : () => _repair(c2, 'parts'),
+              onRepairEngine: c2.engineLocked ? null : () => _repair(c2, 'engine'),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+ 
+class _CarRow extends StatelessWidget {
+  final CarCondition  cond;
+  final bool          partsLoading;
+  final bool          engineLoading;
+  final VoidCallback? onRepairParts;
+  final VoidCallback? onRepairEngine;
+ 
+  const _CarRow({
+    required this.cond,
+    required this.partsLoading,
+    required this.engineLoading,
+    this.onRepairParts,
+    this.onRepairEngine,
+  });
+ 
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('CAR ${cond.carNumber}',
+            style: const TextStyle(
+                fontSize: 9, fontWeight: FontWeight.w600,
+                color: AppTheme.onSurfaceDim, letterSpacing: 0.4)),
+        const SizedBox(height: 6),
+        Row(children: [
+          Expanded(
+            child: _ConditionItem(
+              label:   'Parts',
+              value:   cond.partsValue,
+              cost:    cond.partsCost,
+              locked:  cond.partsLocked,
+              loading: partsLoading,
+              onTap:   onRepairParts,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _ConditionItem(
+              label:   'Engine',
+              value:   cond.engineValue,
+              cost:    cond.engineCost,
+              locked:  cond.engineLocked,
+              loading: engineLoading,
+              onTap:   onRepairEngine,
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+}
+ 
+class _ConditionItem extends StatelessWidget {
+  final String        label;
+  final int           value;   // 0-100
+  final int           cost;
+  final bool          locked;
+  final bool          loading;
+  final VoidCallback? onTap;
+ 
+  const _ConditionItem({
+    required this.label,
+    required this.value,
+    required this.cost,
+    required this.locked,
+    required this.loading,
+    this.onTap,
+  });
+ 
+  Color get _color {
+    if (value >= 100) return AppTheme.success;
+    if (value >= 80) return const Color.fromARGB(255, 232, 232, 32);
+    if (value >= 50) return const Color(0xFFE8A020);
+    return AppTheme.error;
+  }
+ 
+  @override
+  Widget build(BuildContext context) {
+    final needsRepair = value < 100;
+    final canRepair   = needsRepair && !locked && onTap != null;
+ 
+    return Row(children: [
+      // Condition circle
+      SizedBox(
+        width: 32, height: 32,
+        child: Stack(alignment: Alignment.center, children: [
+          CircularProgressIndicator(
+            value:           value / 100,
+            strokeWidth:     2.5,
+            backgroundColor: AppTheme.border,
+            valueColor:      AlwaysStoppedAnimation<Color>(_color),
+          ),
+          Text('$value',
+              style: TextStyle(
+                  fontSize: 9, fontWeight: FontWeight.w700,
+                  color: _color)),
+        ]),
+      ),
+      const SizedBox(width: 6),
+      // Label
+      Expanded(
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w500,
+                color: AppTheme.onSurface)),
+      ),
+      // Repair button or checkmark
+      if (needsRepair)
+        _InlineRepairBtn(
+          cost:    cost,
+          loading: loading,
+          active:  canRepair,
+          onTap:   canRepair ? onTap : null,
+        )
+      else
+        const Icon(Icons.check_circle_outline_rounded,
+            size: 14, color: AppTheme.success),
+    ]);
+  }
+}
+ 
+class _InlineRepairBtn extends StatelessWidget {
+  final int           cost;
+  final bool          loading;
+  final bool          active;
+  final VoidCallback? onTap;
+ 
+  const _InlineRepairBtn({
+    required this.cost,
+    required this.loading,
+    required this.active,
+    this.onTap,
+  });
+ 
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color:        active
+              ? AppTheme.primary.withOpacity(0.12)
+              : AppTheme.surfaceRaised,
+          borderRadius: BorderRadius.circular(6),
+          border:       Border.all(
+            color: active ? AppTheme.primary : AppTheme.border,
+            width: 0.5,
+          ),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 12, height: 12,
+                child: CircularProgressIndicator(
+                    strokeWidth: 1.5, color: AppTheme.primary))
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                Text('$cost',
+                    style: TextStyle(
+                        fontSize: 11, fontWeight: FontWeight.w600,
+                        color: active
+                            ? AppTheme.primary
+                            : AppTheme.onSurfaceDim)),
+                const SizedBox(width: 2),
+                Icon(Icons.bolt, size: 10,
+                    color: active
+                        ? AppTheme.primary
+                        : AppTheme.onSurfaceDim),
+              ]),
       ),
     );
   }
