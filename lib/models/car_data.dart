@@ -166,6 +166,40 @@ class CarCondition {
     return int.tryParse(m?.group(1) ?? '') ?? 0;
   }
 }
+
+// ─── HqCollectable ────────────────────────────────────────────────────────────
+
+/// Represents ready-to-collect output from a single HQ facility.
+///
+/// Parsed from a non-empty collectBubble entry in
+/// preCache['p=headquarters']['vars']['json'].
+///
+/// Manufacturing facility  → parts + engines
+/// Design studio           → designPoints
+class HqCollectable {
+  /// Full URL for the collect request
+  /// (e.g. https://igpmanager.com/content/misc/igp/ajax/hqCollect.php?...).
+  final String collectUrl;
+
+  /// Manufactured turbo parts available to collect.
+  final int parts;
+
+  /// Manufactured engines available to collect.
+  final int engines;
+
+  /// Design points available to collect (design studio only).
+  final int designPoints;
+
+  const HqCollectable({
+    required this.collectUrl,
+    this.parts        = 0,
+    this.engines      = 0,
+    this.designPoints = 0,
+  });
+
+  bool get hasParts        => parts > 0 || engines > 0;
+  bool get hasDesignPoints => designPoints > 0;
+}
  
 // ─── CarData ──────────────────────────────────────────────────────────────────
  
@@ -204,6 +238,21 @@ class CarData {
   /// Combined TD + Chief Designer star rating (e.g. 4.5), from #carsResearch.
   /// Used in the estimated research gain formula.
   final double researchPower;
+
+  /// Total turbo parts currently in inventory (from vars.totalParts HTML).
+  final int totalParts;
+
+  /// Total engines currently in inventory (from vars.totalEngines HTML).
+  final int totalEngines;
+
+  /// Races remaining until the next engine restock (0 = unavailable/unknown).
+  final int restockRaces;
+
+  /// Manufacturing facility collect data, or null if nothing is ready.
+  final HqCollectable? manufacturingCollect;
+
+  /// Design studio collect data, or null if nothing is ready.
+  final HqCollectable? designCollect;
  
   /// Parts and engine repair state for car 1.
   /// Null when the vars keys are absent (e.g. fresh accounts).
@@ -224,6 +273,11 @@ class CarData {
     required this.designPoints,
     required this.dMax,
     required this.researchPower,
+    this.totalParts          = 0,
+    this.totalEngines        = 0,
+    this.restockRaces        = 0,
+    this.manufacturingCollect,
+    this.designCollect,
     this.car1Condition,
     this.car2Condition,
   });
@@ -256,13 +310,30 @@ class CarData {
       final liveryHtml  = vars['liveryTopRight']?.toString() ?? '';
       final dMax        = int.tryParse(vars['dMax']?.toString() ?? '') ?? 300;
       if (html.isEmpty) return null;
+
+      // Parts / engines inventory
+      final totalEnginesHtml = vars['totalEngines']?.toString() ?? '';
+      final totalPartsHtml   = vars['totalParts']?.toString()   ?? '';
+      final restockRaces     =
+          int.tryParse(vars['restockRaces']?.toString() ?? '') ?? 0;
+
+      // HQ collect data (manufacturing + design studio)
+      final hqVars = (preCache['p=headquarters'] as Map<String, dynamic>?)?['vars']
+          as Map<String, dynamic>?;
+      final hqJson    = hqVars?['json']?.toString() ?? '';
+      final hqCollect = _parseHqCollect(hqJson);
  
       return parseFromCarAttributesHtml(
         html, bonusesHtml,
-        liveryHtml:     liveryHtml,
-        dMax:           dMax,
-        car1Condition:  CarCondition.parseFromVars(vars, 1),
-        car2Condition:  CarCondition.parseFromVars(vars, 2),
+        liveryHtml:           liveryHtml,
+        dMax:                 dMax,
+        totalEngines:         _parseTotalEngines(totalEnginesHtml),
+        totalParts:           _parseTotalParts(totalPartsHtml),
+        restockRaces:         restockRaces,
+        manufacturingCollect: hqCollect.manufacturing,
+        designCollect:        hqCollect.design,
+        car1Condition:        CarCondition.parseFromVars(vars, 1),
+        car2Condition:        CarCondition.parseFromVars(vars, 2),
       );
     } catch (e) {
       debugPrint('[CarData] parseFromFireUp error: $e');
@@ -279,8 +350,13 @@ class CarData {
   static CarData? parseFromCarAttributesHtml(
     String html,
     String bonusesHtml, {
-    String         liveryHtml    = '',
-    int            dMax          = 300,
+    String         liveryHtml           = '',
+    int            dMax                 = 300,
+    int            totalEngines         = 0,
+    int            totalParts           = 0,
+    int            restockRaces         = 0,
+    HqCollectable? manufacturingCollect,
+    HqCollectable? designCollect,
     CarCondition?  car1Condition,
     CarCondition?  car2Condition,
   }) {
@@ -341,25 +417,34 @@ class CarData {
       }).toList();
  
       final data = CarData(
-        attributes:        attributes,
-        researchStrength:  strength  ?? '',
-        researchWeakness:  weakness  ?? '',
-        researchMaxEffect: maxEffect,
-        rankOnGrid:        rank,
-        carDesignId:       carId,
-        designLeagueId:    designLgId,
-        researchLeagueId:  researchLgId,
-        designPoints:      designPoints,
-        dMax:              dMax,
-        researchPower:     researchPower,
-        car1Condition:     car1Condition,
-        car2Condition:     car2Condition,
+        attributes:           attributes,
+        researchStrength:     strength  ?? '',
+        researchWeakness:     weakness  ?? '',
+        researchMaxEffect:    maxEffect,
+        rankOnGrid:           rank,
+        carDesignId:          carId,
+        designLeagueId:       designLgId,
+        researchLeagueId:     researchLgId,
+        designPoints:         designPoints,
+        dMax:                 dMax,
+        researchPower:        researchPower,
+        totalEngines:         totalEngines,
+        totalParts:           totalParts,
+        restockRaces:         restockRaces,
+        manufacturingCollect: manufacturingCollect,
+        designCollect:        designCollect,
+        car1Condition:        car1Condition,
+        car2Condition:        car2Condition,
       );
  
       debugPrint('[CarData] Parsed: rank=${data.rankOnGrid}, '
           'dp=${data.designPoints}, rPower=${data.researchPower}, '
           'strength=$strength, weakness=$weakness, '
-          'researching=${data.currentResearch}');
+          'researching=${data.currentResearch}, '
+          'parts=${data.totalParts}, engines=${data.totalEngines}, '
+          'restock=${data.restockRaces}, '
+          'mfgCollect=${data.manufacturingCollect != null}, '
+          'dsCollect=${data.designCollect != null}');
       return data;
     } catch (e) {
       debugPrint('[CarData] parseFromCarAttributesHtml error: $e');
@@ -480,6 +565,87 @@ class CarData {
     final full  = RegExp(r'<icon>star</icon>').allMatches(chunk).length;
     final half  = RegExp(r'<icon>star-half-empty</icon>').allMatches(chunk).length;
     return full + half * 0.5;
+  }
+
+  // ─── Inventory parsers (vars.totalEngines / vars.totalParts HTML) ───────
+
+  /// Total parts count from the totalParts span inside vars['totalParts'] HTML.
+  ///
+  /// Expected HTML: <span class="totalParts font-heading">746</span>
+  static int _parseTotalParts(String html) {
+    if (html.isEmpty) return 0;
+    final m = RegExp(r'class="totalParts[^"]*">(\d+)').firstMatch(html);
+    return int.tryParse(m?.group(1) ?? '') ?? 0;
+  }
+
+  /// Total engines count from the totalEngines span inside vars['totalEngines'] HTML.
+  ///
+  /// Expected HTML: <span class="totalEngines font-heading">6</span>
+  static int _parseTotalEngines(String html) {
+    if (html.isEmpty) return 0;
+    final m = RegExp(r'class="totalEngines[^"]*">(\d+)').firstMatch(html);
+    return int.tryParse(m?.group(1) ?? '') ?? 0;
+  }
+
+  // ─── HQ collect parser (preCache['p=headquarters']['vars']['json']) ─────
+
+  /// Parse collectable HQ facilities from the headquarters vars.json string.
+  ///
+  /// The JSON is an array of facility objects.  Each item with a non-empty
+  /// collectBubble is ready to collect.
+  ///
+  /// Manufacturing collectBubble shape:
+  ///   "<icon>turbo</icon> 59 <icon>engine</icon> 7 <br /><div data-href='URL' ...>Collect</div>"
+  ///
+  /// Design collectBubble shape:
+  ///   "<icon size='24'>igp-flask</icon> 136 DP<br /><div data-href='URL' ...>Collect</div>"
+  static ({HqCollectable? manufacturing, HqCollectable? design}) _parseHqCollect(
+      String jsonStr) {
+    if (jsonStr.isEmpty) return (manufacturing: null, design: null);
+    try {
+      final list = jsonDecode(jsonStr) as List<dynamic>;
+      HqCollectable? manufacturing;
+      HqCollectable? design;
+
+      for (final item in list) {
+        final m      = item as Map<String, dynamic>;
+        final bubble = m['collectBubble']?.toString() ?? '';
+        if (bubble.isEmpty) continue;
+
+        // data-href is single-quoted in the escaped HTML
+        final urlMatch = RegExp(r"data-href='([^']+)'").firstMatch(bubble);
+        final url = urlMatch?.group(1);
+        if (url == null || url.isEmpty) continue;
+
+        final svgId = m['svgId']?.toString() ?? '';
+
+        if (svgId == 'manufacturing') {
+          final parts   = _countAfterIcon(bubble, 'turbo');
+          final engines = _countAfterIcon(bubble, 'engine');
+          if (parts > 0 || engines > 0) {
+            manufacturing =
+                HqCollectable(collectUrl: url, parts: parts, engines: engines);
+          }
+        } else if (svgId == 'design') {
+          final dpMatch = RegExp(r'(\d+)\s*DP').firstMatch(bubble);
+          final dp = int.tryParse(dpMatch?.group(1) ?? '') ?? 0;
+          if (dp > 0) {
+            design = HqCollectable(collectUrl: url, designPoints: dp);
+          }
+        }
+      }
+      return (manufacturing: manufacturing, design: design);
+    } catch (e) {
+      debugPrint('[CarData] _parseHqCollect error: $e');
+      return (manufacturing: null, design: null);
+    }
+  }
+
+  /// Returns the integer immediately following `<icon[attrs]>name</icon>` in [html].
+  static int _countAfterIcon(String html, String iconName) {
+    final m =
+        RegExp('<icon[^>]*>$iconName</icon>\\s*(\\d+)').firstMatch(html);
+    return int.tryParse(m?.group(1) ?? '') ?? 0;
   }
  
   // ─── Generic helpers ────────────────────────────────────────────────────

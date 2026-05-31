@@ -28,7 +28,7 @@ class DriverData {
   final int age;
  
   // ─── Contract / salary ──────────────────────────────────
-  final String contractRaces; // e.g. "44 race(s)"
+  final String contractRaces; // e.g. "44 race(s)" or "44 gara/e"
   final String salary;        // e.g. "1m"
  
   // ─── Special ability ────────────────────────────────────
@@ -63,6 +63,25 @@ class DriverData {
   });
  
   String get fullName => '$firstName $lastName'.trim();
+
+  // ─── Contract helpers ────────────────────────────────────
+
+  /// Numeric races remaining on the current contract.
+  ///
+  /// Parses the first integer in [contractRaces] which may be
+  /// "44 race(s)", "44 gara/e", or any localised variant.
+  int get contractRacesNum {
+    final m = RegExp(r'(\d+)').firstMatch(contractRaces);
+    return int.tryParse(m?.group(1) ?? '') ?? 0;
+  }
+
+  /// True when the contract expires within the next 3 races.
+  bool get isContractExpiringSoon =>
+      contractRacesNum > 0 && contractRacesNum <= 3;
+
+  /// Contract colour tier (mirrors StaffMember logic).
+  bool get isContractExpiring => contractRacesNum > 3 && contractRacesNum <= 10;
+  bool get isContractSafe     => contractRacesNum > 10;
  
   /// Parse both drivers from the staff page drivers HTML block.
   /// Returns a list of up to 2 DriverData objects.
@@ -164,7 +183,6 @@ class DriverData {
     final block = matches[driverIndex].group(1) ?? '';
     // Count <icon>star</icon> (full) vs <icon>star-half-empty</icon>
     final full  = RegExp(r'<icon[^>]*>star</icon>').allMatches(block).length;
-    final half  = RegExp(r'star-half-empty').allMatches(block).length;
     return full; // return whole stars; half is bonus info
   }
  
@@ -181,5 +199,6 @@ class DriverData {
  
   @override
   String toString() =>
-      'Driver($fullName, H:${heightCm}cm, overall:$overall, age:$age)';
+      'Driver($fullName, H:${heightCm}cm, overall:$overall, age:$age, '
+      'contract:$contractRacesNum races)';
 }

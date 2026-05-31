@@ -1,5 +1,6 @@
 import 'car_data.dart';
-import '../models/driver_data.dart';
+import 'driver_data.dart';
+import 'staff_data.dart';
 import '../services/driver_service.dart';
 
 /// Live game data for one account, parsed from the fireUp endpoint.
@@ -18,6 +19,11 @@ class AccountData {
 
   // ─── Drivers ──────────────────────────────────────────────
   final List<DriverData> drivers;
+
+  // ─── Staff ────────────────────────────────────────────────
+  /// Chief Designer, Technical Director, Doctor, and reserve staff.
+  /// Null when the p=staff preCache entry is absent or unparseable.
+  final StaffData? staffData;
 
   // ─── Team ─────────────────────────────────────────────────
   final String  teamId;
@@ -64,10 +70,11 @@ class AccountData {
     required this.numDrivers,
     required this.numCars,
     required this.drivers,
+    this.staffData,
     this.nextRaceId,
     this.nextRaceTime,
     this.nextRaceNumber,
-    this.carData,           // optional — absent on accounts without car data
+    this.carData,
     required this.canClaimDailyReward,
   });
 
@@ -112,8 +119,9 @@ class AccountData {
       nextRaceNumber: int.tryParse(
         team['_nextLeagueRaceNum']?.toString() ?? '',
       ),
-      carData:               CarData.parseFromFireUp(json),
-      canClaimDailyReward:   canClaim,
+      carData:             CarData.parseFromFireUp(json),
+      staffData:           StaffData.parseFromFireUp(json),
+      canClaimDailyReward: canClaim,
     );
   }
 
@@ -135,6 +143,14 @@ class AccountData {
   bool get raceImminent {
     if (nextRaceTime == null) return false;
     return nextRaceTime!.difference(DateTime.now()).inHours < 1;
+  }
+
+  /// Total number of expiring contracts across drivers + staff.
+  int get expiringContractCount {
+    final driverExpiring =
+        drivers.where((d) => d.isContractExpiringSoon).length;
+    final staffExpiring = staffData?.expiringCount ?? 0;
+    return driverExpiring + staffExpiring;
   }
 
   @override

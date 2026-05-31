@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/car_data.dart';
+import '../../providers/game_provider.dart';
 import '../../providers/providers.dart';
 import '../../providers/session_provider.dart';
 import '../../ui/theme/app_theme.dart';
@@ -29,6 +30,7 @@ class _CarResearchSheetState extends ConsumerState<CarResearchSheet> {
   late Map<String, int> _designValues;
   late List<String> _recommendedKeys;
   bool _saving = false;
+  bool _collectingDp = false;
 
   int get _dpSpent => widget.carData.attributes.fold(
       0, (s, a) => s + max(0, (_designValues[a.key] ?? a.baseValue) - a.baseValue));
@@ -167,6 +169,31 @@ class _CarResearchSheetState extends ConsumerState<CarResearchSheet> {
     }
   }
 
+  /// Collect pending design points from the HQ design studio.
+  Future<void> _collectDp() async {
+    final dc = widget.carData.designCollect;
+    if (dc == null || _collectingDp) return;
+    setState(() => _collectingDp = true);
+    try {
+      await ref.read(gameServiceProvider).collectHqFacility(
+        widget.accountEmail,
+        collectUrl: dc.collectUrl,
+      );
+      await ref.read(sessionStateProvider(widget.accountEmail).notifier).refresh();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('+${dc.designPoints} DP collected!')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Collect failed: $e')));
+        setState(() => _collectingDp = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final car = widget.carData;
@@ -185,6 +212,7 @@ class _CarResearchSheetState extends ConsumerState<CarResearchSheet> {
             )
           ),
           const SizedBox(height: 14),
+          // ── Title row ─────────────────────────────────────
           Row(children: [
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -193,6 +221,15 @@ class _CarResearchSheetState extends ConsumerState<CarResearchSheet> {
                 Text('$strLabel ↑  $wkLabel ↓  ·  Max ${car.researchMaxEffect.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
               ])
             ),
+            // DP collect button — shown when HQ design studio has pending DP
+            if (car.designCollect != null) ...[
+              _CollectDpButton(
+                dp:        car.designCollect!.designPoints,
+                loading:   _collectingDp,
+                onTap:     _collectDp,
+              ),
+              const SizedBox(width: 8),
+            ],
             if (car.rankOnGrid > 0) _Chip(label: '${_ordinal(car.rankOnGrid)} on grid', color: AppTheme.primary),
           ]),
           const SizedBox(height: 10),
@@ -269,6 +306,49 @@ class _CarResearchSheetState extends ConsumerState<CarResearchSheet> {
   static String _ordinal(int n) {
     if (n >= 11 && n <= 13) return '${n}th';
     return switch (n % 10) { 1 => '${n}st', 2 => '${n}nd', 3 => '${n}rd', _ => '${n}th' };
+  }
+}
+
+// ─── Collect DP button ────────────────────────────────────────────────────────
+
+/// Pulsing chip shown in the sheet title when the HQ design studio
+/// has design points ready to collect.
+class _CollectDpButton extends StatelessWidget {
+  final int          dp;
+  final bool         loading;
+  final VoidCallback onTap;
+
+  const _CollectDpButton({
+    required this.dp,
+    required this.loading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: loading ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+        decoration: BoxDecoration(
+          color:        AppTheme.success.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(8),
+          border:       Border.all(color: AppTheme.success, width: 0.8),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 12, height: 12,
+                child: CircularProgressIndicator(strokeWidth: 1.8, color: AppTheme.success))
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.science_outlined, size: 12, color: AppTheme.success),
+                const SizedBox(width: 4),
+                Text('+$dp DP', style: const TextStyle(
+                    fontSize: 11, fontWeight: FontWeight.w700,
+                    color: AppTheme.success)),
+              ]),
+      ),
+    );
   }
 }
 
@@ -384,7 +464,7 @@ class _AttrRow extends StatelessWidget {
                 if (attr.isStrength) const _Badge(label: 'STR', color: AppTheme.success),
                 if (attr.isWeakness) const _Badge(label: 'WK', color: AppTheme.error),
                 if (attr.isAtLeagueMax) const _Badge(label: 'MAX', color: AppTheme.accent),
-                if (isRecommended && !attr.isAtLeagueMax) const _Badge(label: 'REC', color: Colors.orange), // Custom Recommended Badge
+                if (isRecommended && !attr.isAtLeagueMax) const _Badge(label: 'REC', color: Colors.orange),
                 const Spacer(),
                 RichText(
                     text: TextSpan(style: const TextStyle(fontSize: 10), children: [
@@ -394,7 +474,6 @@ class _AttrRow extends StatelessWidget {
                 ])),
               ]),
               const SizedBox(height: 4),
-              // Segmented Progress Bar replaces original Stacked Bar
               _SegmentedBar(
                 baseValue: attr.baseValue.toDouble(),
                 researchGain: estimGain.toDouble(),
@@ -466,7 +545,6 @@ class _SegmentedBar extends StatelessWidget {
         final wRes = getW(baseValue + researchGain) - wBase;
         final wDes = getW(baseValue + researchGain + designGain) - wBase - wRes;
 
-        // Gap border side used to create clean separation lines between chunks
         final gapBorder = Border(right: BorderSide(color: AppTheme.surfaceRaised, width: 1.5));
 
         return Container(

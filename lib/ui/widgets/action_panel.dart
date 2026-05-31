@@ -13,7 +13,9 @@ import '../../providers/providers.dart';
 import '../../providers/session_provider.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../models/car_data.dart';
+import '../../models/staff_data.dart';
 import 'car_research_sheet.dart';
+import 'staff_sheet.dart';
 
 /// Full-screen action panel for the currently selected account.
 class ActionPanel extends ConsumerWidget {
@@ -103,29 +105,20 @@ class _PanelContent extends ConsumerWidget {
         const SizedBox(height: 10),
         _SectionLabel('Actions'),
         const SizedBox(height: 6),
-        GridView.count(
-          crossAxisCount:   2,
-          shrinkWrap:       true,
-          physics:          const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 8,
-          mainAxisSpacing:  8,
-          childAspectRatio: 2.4,
-          children: [
-            _ActionButton(
-              icon:  Icons.people_rounded,
-              label: 'Drivers',
-              sub:   '${accountData.numDrivers} active',
-              onTap: () {},
-            ),
-            if (accountData.carData != null)
-              _ActionButton(
-                icon:  Icons.science_outlined,
-                label: 'Research',
-                sub:   _researchSub(accountData.carData!),
-                onTap: () => _openResearch(context, accountData.carData!),
-              ),
-          ],
+        // ── Drivers & Staff quick-view ──────────────────────────
+        _DriversStaffButton(
+          accountData: accountData,
+          onTap:       () => _openStaffSheet(context, accountData),
         ),
+        if (accountData.carData != null) ...[
+          const SizedBox(height: 8),
+          _ActionButton(
+            icon:  Icons.science_outlined,
+            label: 'Research',
+            sub:   _researchSub(accountData.carData!),
+            onTap: () => _openResearch(context, accountData.carData!),
+          ),
+        ],
         if (accountData.carData?.car1Condition != null) ...[
           const SizedBox(height: 10),
           _CarConditionCard(
@@ -167,6 +160,20 @@ class _PanelContent extends ConsumerWidget {
       builder: (_) => CarResearchSheet(
         carData:      carData,
         accountEmail: accountEmail,
+      ),
+    );
+  }
+
+  void _openStaffSheet(BuildContext context, AccountData data) {
+    showModalBottomSheet(
+      context:            context,
+      isScrollControlled: true,
+      backgroundColor:    AppTheme.surfaceCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => StaffSheet(
+        accountEmail: accountEmail,
+        numCars:      data.numCars,
       ),
     );
   }
@@ -1401,6 +1408,8 @@ class _MiniCircleBtn extends StatelessWidget {
   }
 }
 
+// ─── Car Condition Card ───────────────────────────────────────────────────────
+
 class _CarConditionCard extends ConsumerStatefulWidget {
   final CarData carData;
   final String  accountEmail;
@@ -1418,9 +1427,38 @@ class _CarConditionCard extends ConsumerStatefulWidget {
 
 class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
   final Set<String> _loading = {};
+  bool _collectingManufacturing = false;
 
   bool _isLoading(int carNum, String type) =>
       _loading.contains('c$carNum-$type');
+
+  /// Collect manufactured parts + engines from the HQ manufacturing facility.
+  Future<void> _collectManufacturing() async {
+    final mc = widget.carData.manufacturingCollect;
+    if (mc == null || _collectingManufacturing) return;
+    setState(() => _collectingManufacturing = true);
+    try {
+      await ref.read(gameServiceProvider).collectHqFacility(
+        widget.accountEmail,
+        collectUrl: mc.collectUrl,
+      );
+      await ref
+          .read(sessionStateProvider(widget.accountEmail).notifier)
+          .refresh();
+      if (mounted) {
+        final parts   = mc.parts > 0   ? '${mc.parts} parts'   : '';
+        final engines = mc.engines > 0 ? '${mc.engines} engines' : '';
+        final msg = [parts, engines].where((s) => s.isNotEmpty).join(' + ');
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Collected $msg!')));
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Collect failed: $e')));
+    } finally {
+      if (mounted) setState(() => _collectingManufacturing = false);
+    }
+  }
 
   Future<void> _repair(CarCondition cond, String type) async {
     final key = 'c${cond.carNumber}-$type';
@@ -1452,6 +1490,8 @@ class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
     final c2 = widget.numCars >= 2 ? widget.carData.car2Condition : null;
     if (c1 == null) return const SizedBox.shrink();
 
+    final cd = widget.carData;
+
     return Container(
       padding:    const EdgeInsets.fromLTRB(12, 10, 12, 12),
       decoration: BoxDecoration(
@@ -1462,10 +1502,56 @@ class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('CAR CONDITION',
+          // ── Header: label · inventory counts · collect button ──────────
+          Row(children: [
+            const Text(
+              'CAR CONDITION',
               style: TextStyle(
                   fontSize: 10, fontWeight: FontWeight.w600,
-                  color: AppTheme.onSurfaceDim, letterSpacing: 0.5)),
+                  color: AppTheme.onSurfaceDim, letterSpacing: 0.5),
+            ),
+            const Spacer(),
+            // Turbo parts count
+            if (cd.totalParts > 0) ...[
+              const Icon(Icons.build_outlined, size: 10, color: AppTheme.onSurfaceDim),
+              const SizedBox(width: 3),
+              Text('${cd.totalParts}',
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w600,
+                      color: AppTheme.onSurfaceDim)),
+              const SizedBox(width: 8),
+            ],
+            // Engine count
+            if (cd.totalEngines > 0) ...[
+              const Icon(Icons.offline_bolt_outlined, size: 10, color: AppTheme.onSurfaceDim),
+              const SizedBox(width: 3),
+              Text('${cd.totalEngines}',
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w600,
+                      color: AppTheme.onSurfaceDim)),
+              const SizedBox(width: 8),
+            ],
+            // Collect manufacturing button
+            if (cd.manufacturingCollect != null)
+              _CollectMfgButton(
+                collectable: cd.manufacturingCollect!,
+                loading:     _collectingManufacturing,
+                onTap:       _collectManufacturing,
+              ),
+          ]),
+          // ── Restock info ───────────────────────────────────────────────
+          if (cd.restockRaces > 0) ...[
+            const SizedBox(height: 4),
+            Row(children: [
+              const Icon(Icons.sync, size: 10, color: AppTheme.onSurfaceDim),
+              const SizedBox(width: 3),
+              Text(
+                'Engine restock in ${cd.restockRaces} '
+                'race${cd.restockRaces == 1 ? '' : 's'}',
+                style: const TextStyle(fontSize: 9, color: AppTheme.onSurfaceDim),
+              ),
+            ]),
+          ],
           const SizedBox(height: 10),
           _CarRow(
             cond:          c1,
@@ -1487,6 +1573,66 @@ class _CarConditionCardState extends ConsumerState<_CarConditionCard> {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ─── Collect manufacturing button ─────────────────────────────────────────────
+
+/// Compact amber chip shown next to CAR CONDITION when the HQ manufacturing
+/// facility has parts and/or engines ready to collect.
+class _CollectMfgButton extends StatelessWidget {
+  final HqCollectable  collectable;
+  final bool           loading;
+  final VoidCallback   onTap;
+
+  const _CollectMfgButton({
+    required this.collectable,
+    required this.loading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: loading ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color:        AppTheme.accent.withOpacity(0.14),
+          borderRadius: BorderRadius.circular(6),
+          border:       Border.all(color: AppTheme.accent, width: 0.8),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 11, height: 11,
+                child: CircularProgressIndicator(
+                    strokeWidth: 1.6, color: AppTheme.accent))
+            : Row(mainAxisSize: MainAxisSize.min, children: [
+                if (collectable.parts > 0) ...[
+                  const Icon(Icons.build_outlined,
+                      size: 10, color: AppTheme.accent),
+                  const SizedBox(width: 3),
+                  Text('${collectable.parts}',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.accent)),
+                  if (collectable.engines > 0) const SizedBox(width: 6),
+                ],
+                if (collectable.engines > 0) ...[
+                  const Icon(Icons.offline_bolt_outlined,
+                      size: 10, color: AppTheme.accent),
+                  const SizedBox(width: 3),
+                  Text('${collectable.engines}',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.accent)),
+                ],
+              ]),
       ),
     );
   }
@@ -1662,6 +1808,189 @@ class _InlineRepairBtn extends StatelessWidget {
       ),
     );
   }
+}
+
+
+// ─── Drivers & Staff Button ───────────────────────────────────────────────────
+
+/// Full-width button giving a quick contract health glance for all drivers
+/// and staff.  Tapping opens [StaffSheet] for full management.
+class _DriversStaffButton extends StatelessWidget {
+  final AccountData  accountData;
+  final VoidCallback onTap;
+
+  const _DriversStaffButton({
+    required this.accountData,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final drivers = accountData.drivers
+        .take(accountData.numCars.clamp(0, accountData.drivers.length))
+        .toList();
+    final staffData = accountData.staffData;
+    final expiringTotal = accountData.expiringContractCount;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+        decoration: BoxDecoration(
+          color:        AppTheme.surfaceCard,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: expiringTotal > 0
+                ? AppTheme.error.withOpacity(0.4)
+                : AppTheme.border,
+            width: expiringTotal > 0 ? 1.0 : 0.5,
+          ),
+        ),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // ── Left: icon ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(Icons.people_rounded,
+                size: 18, color: AppTheme.onSurfaceDim),
+          ),
+          const SizedBox(width: 10),
+
+          // ── Centre: compact list ─────────────────────────────────
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title row
+                Row(children: [
+                  const Text('Drivers & Staff',
+                      style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.onSurface)),
+                  if (expiringTotal > 0) ...[
+                    const SizedBox(width: 6),
+                    _ExpiryBadge(count: expiringTotal),
+                  ],
+                ]),
+                const SizedBox(height: 6),
+
+                // Driver rows
+                ...drivers.map((d) => _QuickRow(
+                      label: d.fullName.isNotEmpty ? d.fullName : 'Driver',
+                      races: d.contractRacesNum,
+                    )),
+
+                // Staff summary
+                if (staffData != null && staffData.mainStaff.isNotEmpty)
+                  _QuickRow(
+                    label: staffData.mainStaff
+                        .map((s) => s.roleCode)
+                        .join(' · '),
+                    races: -1,  // summary line — no single race count
+                    staffExpiring: staffData.expiringCount,
+                  ),
+              ],
+            ),
+          ),
+
+          // ── Right: chevron ───────────────────────────────────────
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(Icons.chevron_right,
+                size: 16, color: AppTheme.onSurfaceDim),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Single compact row inside [_DriversStaffButton].
+class _QuickRow extends StatelessWidget {
+  final String label;
+  final int    races;          // -1 = staff summary row
+  final int    staffExpiring;  // used only on summary row
+
+  const _QuickRow({
+    required this.label,
+    required this.races,
+    this.staffExpiring = 0,
+  });
+
+  Color get _raceColor {
+    if (races <= 0) return AppTheme.onSurfaceDim;
+    if (races <= 3) return AppTheme.error;
+    if (races <= 10) return AppTheme.accent;
+    return AppTheme.onSurfaceDim;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isSummary = races < 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: Row(children: [
+        Container(
+          width: 4, height: 4,
+          margin: const EdgeInsets.only(right: 6, top: 1),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: (!isSummary && races <= 3)
+                ? AppTheme.error
+                : AppTheme.onSurfaceFaint,
+          ),
+        ),
+        Expanded(
+          child: Text(label,
+              style: const TextStyle(
+                  fontSize: 11, color: AppTheme.onSurfaceDim),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ),
+        if (!isSummary) ...[
+          if (races <= 3)
+            const Icon(Icons.warning_amber_rounded,
+                size: 10, color: AppTheme.error),
+          const SizedBox(width: 2),
+          Text('${races}r',
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: _raceColor)),
+        ] else if (staffExpiring > 0) ...[
+          const Icon(Icons.warning_amber_rounded,
+              size: 10, color: AppTheme.error),
+          const SizedBox(width: 2),
+          Text('$staffExpiring expiring',
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.error)),
+        ],
+      ]),
+    );
+  }
+}
+
+/// Small red badge showing a count of expiring contracts.
+class _ExpiryBadge extends StatelessWidget {
+  final int count;
+  const _ExpiryBadge({required this.count});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color:        AppTheme.error.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(4),
+          border:       Border.all(color: AppTheme.error, width: 0.6),
+        ),
+        child: Text('⚠ $count',
+            style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.error)),
+      );
 }
 
 class _SectionLabel extends StatelessWidget {
@@ -2104,11 +2433,8 @@ class StrategyCalc {
     double bestTime = double.infinity;
 
     final tyres = ['SS', 'S', 'M', 'H'];
-    // 0.3s performance step between compounds
     final tyrePace = {'SS': 0.0, 'S': 0.3, 'M': 0.6, 'H': 0.9};
 
-    // Sanity limit to prevent evaluating an absurd number of stops in short races.
-    // e.g. a 20 lap race maxes out at 2 stints (1 stop). A 50 lap race allows 4 stints (3 stops).
     int maxStints = (raceLaps / 14).ceil() + 1;
     if (maxStints > 5) maxStints = 5;
 
@@ -2130,22 +2456,17 @@ class StrategyCalc {
         double bestWear = -1.0;
         double lowestPenalty = double.infinity;
 
-        // Find the fastest tyre that can survive the stint
         for (String t in tyres) {
           double wearLeft = getTyreWearPercentage(
             teAttr: teAttr, trackCode: trackCode, tyre: t, laps: laps, raceLaps: raceLaps
           );
           
-          // Soft wall: Below 40% starts severely costing lap time
           double penalty = 0.0;
           if (wearLeft < 45.0) {
-            // Adds 1.5 seconds of lost pace for every 1% it dips below 40
             penalty = (45.0 - wearLeft) * 1.5; 
           }
           
-          // Hard wall: Discard any tyre that finishes below 15% completely
           if (wearLeft > 15.0) {
-             // We want the tyre with the smallest combined performance penalty (pace + wear dropoff)
              double totalTyreCost = (laps * tyrePace[t]!) + penalty;
              if (totalTyreCost < lowestPenalty) {
                lowestPenalty = totalTyreCost;
@@ -2157,14 +2478,12 @@ class StrategyCalc {
 
         if (selectedTyre == null || bestWear < 15.0) {
           isValid = false; 
-          break; // Stint length is impossible on any tyre
+          break;
         }
 
-        // Add the base pace difference + wear dropoff penalty
         double tTyre = lowestPenalty; 
         double tFuel = 0.0;
         
-        // Slower lap time from carrying heavy fuel (~0.025s per liter per lap)
         if (refuelling) {
            double averageFuelLiters = (laps * fuelPerLap) / 2.0;
            tFuel = laps * (averageFuelLiters * 0.025);
@@ -2184,7 +2503,6 @@ class StrategyCalc {
         bestStints = currentStints;
       }
     }
-    // Failsafe: if every strategy blew the tyres before 15%, return a conservative H 5-stop
     if (bestStints == null) {
       int bLaps = raceLaps ~/ 5;
       int rem = raceLaps % 5;
