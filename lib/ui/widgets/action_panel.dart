@@ -15,6 +15,7 @@ import '../../ui/theme/app_theme.dart';
 import '../../models/car_data.dart';
 import '../../models/staff_data.dart';
 import 'car_research_sheet.dart';
+import 'hq_sheet.dart';
 import 'staff_sheet.dart';
 
 /// Full-screen action panel for the currently selected account.
@@ -110,14 +111,27 @@ class _PanelContent extends ConsumerWidget {
           accountData: accountData,
           onTap:       () => _openStaffSheet(context, accountData),
         ),
-        if (accountData.carData != null) ...[
+        if (accountData.carData != null || accountData.hqData != null) ...[
           const SizedBox(height: 8),
-          _ActionButton(
-            icon:  Icons.science_outlined,
-            label: 'Research',
-            sub:   _researchSub(accountData.carData!),
-            onTap: () => _openResearch(context, accountData.carData!),
-          ),
+          Row(children: [
+            if (accountData.carData != null)
+              Expanded(child: _ActionButton(
+                icon:  Icons.science_outlined,
+                label: 'Research',
+                sub:   _researchSub(accountData.carData!),
+                onTap: () => _openResearch(context, accountData.carData!),
+              )),
+            if (accountData.carData != null && accountData.hqData != null)
+              const SizedBox(width: 8),
+            if (accountData.hqData != null)
+              Expanded(child: _ActionButton(
+                icon:  Icons.domain_outlined,
+                label: 'Headquarters',
+                sub:   '${accountData.hqData!.facilities.length} facilities'
+                       '${accountData.hqData!.hasCollectables ? " · ready" : ""}',
+                onTap: () => _openHqSheet(context, accountData),
+              )),
+          ]),
         ],
         if (accountData.carData?.car1Condition != null) ...[
           const SizedBox(height: 10),
@@ -174,6 +188,20 @@ class _PanelContent extends ConsumerWidget {
       builder: (_) => StaffSheet(
         accountEmail: accountEmail,
         numCars:      data.numCars,
+      ),
+    );
+  }
+
+  void _openHqSheet(BuildContext context, AccountData data) {
+    showModalBottomSheet(
+      context:            context,
+      isScrollControlled: true,
+      backgroundColor:    AppTheme.surfaceCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => HqSheet(
+        accountEmail: accountEmail,
+        facilities:   data.hqData?.facilities ?? [],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'car_data.dart';
 import 'driver_data.dart';
+import 'hq_data.dart';
 import 'staff_data.dart';
 import '../services/driver_service.dart';
 
@@ -21,6 +22,11 @@ class AccountData {
   final List<DriverData> drivers;
 
   // ─── Staff ────────────────────────────────────────────────
+  /// Chief Designer, Technical Director, Doctor, and reserve staff.
+  /// HQ facilities list.
+  /// Null when the p=headquarters preCache entry is absent.
+  final HqData? hqData;
+
   /// Chief Designer, Technical Director, Doctor, and reserve staff.
   /// Null when the p=staff preCache entry is absent or unparseable.
   final StaffData? staffData;
@@ -70,6 +76,7 @@ class AccountData {
     required this.numDrivers,
     required this.numCars,
     required this.drivers,
+    this.hqData,
     this.staffData,
     this.nextRaceId,
     this.nextRaceTime,
@@ -120,6 +127,7 @@ class AccountData {
         team['_nextLeagueRaceNum']?.toString() ?? '',
       ),
       carData:             CarData.parseFromFireUp(json),
+      hqData:              HqData.parseFromFireUp(json),
       staffData:           StaffData.parseFromFireUp(json),
       canClaimDailyReward: canClaim,
     );

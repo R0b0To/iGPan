@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../services/car_service.dart';
 import '../services/finance_service.dart';
 import '../services/race_service.dart';
+import '../services/hq_service.dart';
 import '../services/staff_service.dart';
  
 /// Single HttpClient instance — already initialized in main().
@@ -45,6 +46,11 @@ final financeServiceProvider = Provider<FinanceService>((ref) {
 /// CarService wired to shared HttpClient.
 final carServiceProvider = Provider<CarService>((ref) {
   return CarService(httpClient: ref.watch(httpClientProvider));
+});
+
+/// HqService wired to shared HttpClient.
+final hqServiceProvider = Provider<HqService>((ref) {
+  return HqService(httpClient: ref.watch(httpClientProvider));
 });
 
 /// StaffService wired to shared HttpClient.

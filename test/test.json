@@ -1,27 +1,74 @@
 [
   {
+    "id": "11",
+    "img": "hq1-yda",
+    "name": "Youth academy <icon size=\"16\">ios-build</icon>",
+    "svgId": "yda",
+    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 50%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star-o&lt;/icon&gt;&lt;/span&gt;",
+    "x": 1305,
+    "y": 2188,
+    "state": 1,
+    "collectBubble": "",
+    "condition": 50
+  },
+  {
+    "id": "2",
+    "img": "hq1-offices",
+    "name": "Offices <icon size=\"16\">ios-build</icon>",
+    "svgId": "offices",
+    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 50%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star-o&lt;/icon&gt;&lt;/span&gt;",
+    "x": 1569,
+    "y": 2908,
+    "state": 1,
+    "collectBubble": "",
+    "condition": 50
+  },
+  {
     "id": "1",
     "img": "hq1-manufacturing",
     "name": "Manufacturing <icon size=\"16\">ios-build</icon>",
     "svgId": "manufacturing",
-    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 15%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star-half-empty&lt;/icon&gt;&lt;/span&gt;",
+    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 80%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star-half-empty&lt;/icon&gt;&lt;/span&gt;",
     "x": 377,
     "y": 2278,
     "state": 1,
-    "collectBubble": "<icon>turbo</icon> 59 <icon>engine</icon> 7 <br /><div data-href=\u0027https://igpmanager.com/content/misc/igp/ajax/hqCollect.php?ajax=1&fId=9841010\u0027 class=\u0027btn fill-w !text-[0.75em] collectLink\u0027>Collect</div>",
-    "condition": 15
+    "collectBubble": "",
+    "condition": 80
   },
   {
     "id": "8",
     "img": "hq1-design",
     "name": "Design <icon size=\"16\">ios-build</icon>",
     "svgId": "design",
-    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 65%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;/span&gt;",
+    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 80%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star-half-empty&lt;/icon&gt;&lt;/span&gt;",
     "x": 1830,
     "y": 1321,
     "state": 1,
-    "collectBubble": "<icon size=\"24\">igp-flask</icon> 136 DP<br /><div data-href=\u0027https://igpmanager.com/content/misc/igp/ajax/hqCollect.php?ajax=1&fId=9841012&leagueId=7332\u0027 class=\u0027btn fill-w !text-[0.75em] collectLink\u0027>Collect</div>",
-    "condition": 65
+    "collectBubble": "",
+    "condition": 80
+  },
+  {
+    "id": "7",
+    "img": "hq1-technology",
+    "name": "Technology <icon size=\"16\">ios-build</icon>",
+    "svgId": "technology",
+    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 50%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star-half-empty&lt;/icon&gt;&lt;/span&gt;",
+    "x": 2377,
+    "y": 1701,
+    "state": 1,
+    "collectBubble": "",
+    "condition": 50
+  },
+  {
+    "id": "3",
+    "img": "hq1-simulator",
+    "name": "Simulator <icon size=\"16\">ios-build</icon>",
+    "svgId": "simulator",
+    "stars": "&lt;div class=&quot;ratingBar-s&quot;&gt;&lt;div style=&quot;width: 56%&quot; class=&quot; orange&quot;&gt;&lt;/div&gt;&lt;/div&gt;&lt;br /&gt;&lt;span class=&#039;ratingStar in&#039;&gt;&lt;icon size=&#039;16&#039;&gt;star&lt;/icon&gt;&lt;icon size=&#039;16&#039;&gt;star-half-empty&lt;/icon&gt;&lt;/span&gt;",
+    "x": 2020,
+    "y": 1543,
+    "state": 1,
+    "collectBubble": "",
+    "condition": 55
   }
-
 ]
