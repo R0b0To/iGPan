@@ -16,6 +16,7 @@ import '../../models/car_data.dart';
 import '../../models/staff_data.dart';
 import 'car_research_sheet.dart';
 import 'hq_sheet.dart';
+import 'league_sheet.dart';
 import 'staff_sheet.dart';
 
 /// Full-screen action panel for the currently selected account.
@@ -133,6 +134,15 @@ class _PanelContent extends ConsumerWidget {
               )),
           ]),
         ],
+        if (accountData.leagueId.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _ActionButton(
+            icon:  Icons.emoji_events_outlined,
+            label: 'League',
+            sub:   'Tier ${accountData.tier}',
+            onTap: () => _openLeagueSheet(context, accountData),
+          ),
+        ],
         if (accountData.carData?.car1Condition != null) ...[
           const SizedBox(height: 10),
           _CarConditionCard(
@@ -202,6 +212,20 @@ class _PanelContent extends ConsumerWidget {
       builder: (_) => HqSheet(
         accountEmail: accountEmail,
         facilities:   data.hqData?.facilities ?? [],
+      ),
+    );
+  }
+
+  void _openLeagueSheet(BuildContext context, AccountData data) {
+    showModalBottomSheet(
+      context:            context,
+      isScrollControlled: true,
+      backgroundColor:    AppTheme.surfaceCard,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (_) => LeagueSheet(
+        accountEmail: accountEmail,
+        leagueId:     data.leagueId,
       ),
     );
   }
