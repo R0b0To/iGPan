@@ -17,6 +17,7 @@ import '../../models/staff_data.dart';
 import 'car_research_sheet.dart';
 import 'hq_sheet.dart';
 import 'league_sheet.dart';
+import 'sponsor_picker_sheet.dart';
 import 'staff_sheet.dart';
 
 /// Full-screen action panel for the currently selected account.
@@ -284,7 +285,30 @@ class _CompactOverview extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: finance.sponsors.map((s) =>
-                    Expanded(child: _SponsorChip(sponsor: s))
+                    Expanded(
+                      child: s.name.isEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context:            context,
+                                isScrollControlled: true,
+                                backgroundColor:    AppTheme.surfaceCard,
+                                shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                        top: Radius.circular(16))),
+                                builder: (_) => SponsorPickerSheet(
+                                  accountEmail: accountEmail,
+                                  isPrimary:    s.isPrimary,
+                                ),
+                              ).then((_) {
+                                ref.invalidate(financeDataProvider(accountEmail));
+                                ref.read(sessionStateProvider(accountEmail).notifier).refresh();
+                              });
+                            },
+                            child: _EmptySponsorSlot(sponsor: s),
+                          )
+                        : _SponsorChip(sponsor: s),
+                    )
                   ).toList(),
                 ),
               ]);
@@ -404,6 +428,41 @@ class _SponsorChip extends StatelessWidget {
         maxLines: 1, overflow: TextOverflow.ellipsis),
       if (sponsor.income.isNotEmpty)
         Text(sponsor.income, style: const TextStyle(fontSize: 10, color: AppTheme.success)),
+    ],
+  );
+}
+
+/// Shown in place of [_SponsorChip] when a sponsor slot has no active
+/// contract (sponsor.name is empty).  Tapping opens [SponsorPickerSheet].
+class _EmptySponsorSlot extends StatelessWidget {
+  final SponsorInfo sponsor;
+  const _EmptySponsorSlot({required this.sponsor});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(sponsor.label,
+          style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
+      const SizedBox(height: 3),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(
+          color:        AppTheme.primary.withOpacity(0.09),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+              color: AppTheme.primary.withOpacity(0.45), width: 0.7),
+        ),
+        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.add_rounded, size: 12, color: AppTheme.primary),
+          SizedBox(width: 4),
+          Text('Select',
+              style: TextStyle(
+                  fontSize:   12,
+                  fontWeight: FontWeight.w600,
+                  color:      AppTheme.primary)),
+        ]),
+      ),
     ],
   );
 }

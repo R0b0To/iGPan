@@ -50,12 +50,6 @@ class FinanceData {
       String html, String s1Name, String s2Name) {
     final sponsors = <SponsorInfo>[];
 
-    // Extract each c-wrap block — one per sponsor
-    final blockRe = RegExp(
-      r'<div class="c-wrap[^"]*">(.*?)</div>\s*</div>\s*</div>',
-      dotAll: true,
-    );
-
     // Simpler approach: just extract rows from tables inside the HTML
     final tableRe = RegExp(
       r'<table[^>]*>(.*?)</table>',
@@ -133,4 +127,81 @@ class SponsorInfo {
   });
 
   String get label => isPrimary ? 'Primary' : 'Secondary';
+}
+
+// ─── SponsorOption ────────────────────────────────────────────────────────────
+
+/// One available sponsor from the sponsor selection endpoint.
+///
+/// Source: GET /index.php?action=fetch&d=sponsor&location={1|2}
+/// → response.vars.row1 … row5  (parallel <td> lists, one per sponsor)
+///
+/// row1 → logo image URL
+/// row2 → token income per race (primary only; 0 for secondary)
+/// row3 → cash bonus per race
+/// row5 → sign action link containing eType=5 & eId
+class SponsorOption {
+  final int    eId;
+  final String logoUrl;
+  final int    tokens;     // 0 when secondary sponsor or no token income
+  final String cashBonus;  // e.g. "3.6m" or "960k"
+
+  const SponsorOption({
+    required this.eId,
+    required this.logoUrl,
+    required this.tokens,
+    required this.cashBonus,
+  });
+
+  static List<SponsorOption> parseFromVars(Map<String, dynamic> vars) {
+    final row1 = _extractTds(vars['row1']?.toString() ?? '');
+    final row2 = _extractTds(vars['row2']?.toString() ?? '');
+    final row3 = _extractTds(vars['row3']?.toString() ?? '');
+    final row5 = _extractTds(vars['row5']?.toString() ?? '');
+
+    final options = <SponsorOption>[];
+    for (var i = 0; i < row1.length; i++) {
+      // Logo URL from <img src="...">
+      final logoUrl =
+          RegExp(r'<img src="([^"]+)"').firstMatch(row1[i])?.group(1) ?? '';
+
+      // Token income from <span class="token-cost">N</span>
+      final tokens = i < row2.length
+          ? int.tryParse(
+                  RegExp(r'class="token-cost">(\d+)')
+                      .firstMatch(row2[i])
+                      ?.group(1) ??
+                      '')
+              ?? 0
+          : 0;
+
+      // Cash bonus: strip all HTML, trim
+      final cashBonus = i < row3.length
+          ? row3[i].replaceAll(RegExp(r'<[^>]*>'), '').trim()
+          : '';
+
+      // eId from the sign action nested in data-tip
+      final eId = i < row5.length
+          ? int.tryParse(
+                  RegExp(r'eId=(\d+)').firstMatch(row5[i])?.group(1) ?? '')
+              ?? 0
+          : 0;
+
+      if (eId > 0) {
+        options.add(SponsorOption(
+          eId:      eId,
+          logoUrl:  logoUrl,
+          tokens:   tokens,
+          cashBonus: cashBonus,
+        ));
+      }
+    }
+    return options;
+  }
+
+  static List<String> _extractTds(String html) =>
+      RegExp(r'<td[^>]*>(.*?)</td>', dotAll: true)
+          .allMatches(html)
+          .map((m) => m.group(1) ?? '')
+          .toList();
 }
