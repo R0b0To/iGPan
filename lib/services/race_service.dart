@@ -1,13 +1,10 @@
 import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
-
 import '../core/app_config.dart';
 import '../core/exceptions.dart';
 import '../models/race_data.dart';
 import '../network/http_client.dart';
-import '../network/interceptors/csrf_interceptor.dart';
+
 
 /// Handles race-related API calls for a single account.
 ///

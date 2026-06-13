@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../../core/strategy_calc.dart';
 import '../../models/account_data.dart';
 import '../../models/driver_data.dart';
@@ -12,7 +11,6 @@ import '../../providers/providers.dart';
 import '../../providers/session_provider.dart';
 import '../../ui/theme/app_theme.dart';
 import '../../models/car_data.dart';
-import '../../models/staff_data.dart';
 import '../screens/account_webview_screen.dart';
 import 'car_research_sheet.dart';
 import 'hq_sheet.dart';
