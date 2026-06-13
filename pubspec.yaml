@@ -1,7 +1,7 @@
 name: igpan
 description: "Multi-account manager for iGP Manager"
 publish_to: 'none'
-version: 2.0.3+1
+version: 2.0.4+1
 
 environment:
   sdk: ^3.12.0
@@ -19,9 +19,11 @@ dependencies:
   dio: ^5.4.0
   dio_cookie_manager: ^3.1.1
   cookie_jar: ^4.0.8
-  
+
+  webview_flutter: ^4.14.0
+  webview_win_floating: ^3.0.3
   # Storage
-  flutter_secure_storage: ^9.0.0
+  flutter_secure_storage: ^10.3.1
   path_provider: ^2.1.0
 
   # State management

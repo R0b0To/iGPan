@@ -4,6 +4,9 @@ class AppConfig {
   // ─── Server ───────────────────────────────────────────────
   static const String baseUrl = 'https://igpmanager.com';
 
+  // ─── Home Page ───────────────────────────────────────────────
+  static const String homePage = 'https://igpmanager.com/app/';
+
   // ─── Auth endpoints ───────────────────────────────────────
   static const String loginEndpoint =
       '/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1';

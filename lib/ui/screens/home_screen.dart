@@ -206,8 +206,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 BatchBar(
                   selectedCount: batchSelected.length,
                   isRunning:     batchState.isRunning,
+                  onAutoSetupAll: () => ref
+                      .read(batchActionProvider.notifier)
+                      .autoSetupAll(batchSelected.toList()),
                   onClaimAll:    () => _claimAll(ref, batchSelected.toList()),
-                  onRepairAll:   () {}, 
+                  onRepairAll:   () => ref
+                      .read(batchActionProvider.notifier)
+                      .repairAllAccounts(batchSelected.toList()),
                   onClear:       () => ref.read(batchSelectionProvider.notifier).clear(),
                 ),
 
@@ -552,20 +557,32 @@ class _BatchResultsPanelState extends ConsumerState<_BatchResultsPanel> {
             final success  = result.success;
             final account  = accounts.firstWhere(
               (a) => a.email == email, orElse: () => accounts.first);
-            
+
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppTheme.border, width: 0.5))),
-              child: Row(children: [
-                Expanded(child: Text(account.nickname,
-                  style: const TextStyle(fontSize: 13, color: AppTheme.onSurface))),
-                Icon(success ? Icons.check : Icons.close,
-                    size: 14, color: success ? AppTheme.success : AppTheme.error),
-                const SizedBox(width: 4),
-                Text(success ? 'Done' : 'Failed',
-                    style: TextStyle(fontSize: 12, color: success ? AppTheme.success : AppTheme.error)),
-              ]),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Expanded(child: Text(account.nickname,
+                      style: const TextStyle(fontSize: 13, color: AppTheme.onSurface))),
+                    Icon(success ? Icons.check : Icons.close,
+                        size: 14, color: success ? AppTheme.success : AppTheme.error),
+                    const SizedBox(width: 4),
+                    Text(success ? 'Done' : 'Failed',
+                        style: TextStyle(fontSize: 12, color: success ? AppTheme.success : AppTheme.error)),
+                  ]),
+                  if (!success && (result.error?.isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 2),
+                    Text(result.error!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 10, color: AppTheme.onSurfaceDim)),
+                  ],
+                ],
+              ),
             );
           }),
         ],

@@ -7,6 +7,7 @@ import '../../ui/theme/app_theme.dart';
 class BatchBar extends StatelessWidget {
   final int          selectedCount;
   final bool         isRunning;
+  final VoidCallback onAutoSetupAll;
   final VoidCallback onClaimAll;
   final VoidCallback onRepairAll;
   final VoidCallback onClear;
@@ -15,6 +16,7 @@ class BatchBar extends StatelessWidget {
     super.key,
     required this.selectedCount,
     required this.isRunning,
+    required this.onAutoSetupAll,
     required this.onClaimAll,
     required this.onRepairAll,
     required this.onClear,
@@ -50,14 +52,30 @@ class BatchBar extends StatelessWidget {
               ),
             ),
           ] else ...[
-            _BatchAction(
-              label:   'Claim all',
-              onTap:   onClaimAll,
-            ),
-            const SizedBox(width: 8),
-            _BatchAction(
-              label:   'Repair all',
-              onTap:   onRepairAll,
+            Flexible(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                reverse: true,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _BatchAction(
+                      label: 'Auto setup',
+                      onTap: onAutoSetupAll,
+                    ),
+                    const SizedBox(width: 8),
+                    _BatchAction(
+                      label:   'Claim all',
+                      onTap:   onClaimAll,
+                    ),
+                    const SizedBox(width: 8),
+                    _BatchAction(
+                      label:   'Repair all',
+                      onTap:   onRepairAll,
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
 
