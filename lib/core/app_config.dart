@@ -2,42 +2,42 @@ class AppConfig {
   AppConfig._();
 
   // ─── Server ───────────────────────────────────────────────
-  static const String baseUrl = 'https://igpmanager.com';
-
-  // ─── Home Page ───────────────────────────────────────────────
+  static const String baseUrl  = 'https://igpmanager.com';
   static const String homePage = 'https://igpmanager.com/app/';
 
   // ─── Auth endpoints ───────────────────────────────────────
   static const String loginEndpoint =
       '/index.php?action=send&addon=igp&type=login&jsReply=login&ajax=1';
 
-  /// Returns full account state: team, manager, preCache pages, notify, csrf
+  /// Returns full account state: team, manager, preCache pages, notify, csrf.
   static const String fireUpEndpoint =
       '/index.php?action=fireUp&addon=igp&ajax=1&jsReply=fireUp&uwv=false';
 
   // ─── Race endpoints ───────────────────────────────────────
-  /// Returns {vars: {...}, page: "..."} — all race/setup/strategy data
   static const String raceEndpoint =
       '/index.php?action=fetch&p=race&csrfName=&csrfToken=';
 
+  // ─── Save all ─────────────────────────────────────────────
+  /// Saves setup + strategy for both cars in one POST.
+  /// Body: JSON map with keys d1setup, d1strategy, d1strategyAdvanced,
+  ///       d2setup, d2strategy, d2strategyAdvanced.
+  static const String saveAllEndpoint =
+      '/index.php?action=send&type=saveAll&addon=igp&ajax=1&jsReply=saveAll&pageId=race';
+
   // ─── Game action endpoints ────────────────────────────────
-  /// Daily reward — GET, no params
   static const String dailyRewardEndpoint =
       '/content/misc/igp/ajax/dailyReward.php';
 
-  /// Repair car parts — append &car={carId}&btn=c{n}PartSwap
   static const String repairPartsBase =
       '/index.php?action=send&type=fix&jsReply=fix&csrfName=&csrfToken=';
 
-  /// Replace engine — append &car={carId}&btn=c{n}EngSwap
   static const String replaceEngineBase =
       '/index.php?action=send&type=engine&jsReply=fix&csrfName=&csrfToken=';
 
-  /// Setup save (practice lap + save) — GET with query params
   static const String setupEndpoint =
       '/index.php?action=send&addon=igp&type=setup&ajax=1';
 
-  // ─── Other endpoints ──────────────────────────────────────
+  // ─── Other fetch endpoints ────────────────────────────────
   static const String historyEndpoint =
       '/index.php?action=send&type=history&jsReply=scrollLoader&el=history&csrfName=&csrfToken=';
 
@@ -55,8 +55,6 @@ class AppConfig {
 
   static const String sponsorEndpoint =
       '/index.php?action=fetch&d=sponsor&csrfName=&csrfToken=';
-  static const String saveAllEndpoint =
-      '/index.php?action=send&type=saveAll&addon=igp&ajax=1&jsReply=saveAll&pageId=race';
 
   // ─── Timeouts ─────────────────────────────────────────────
   static const Duration connectTimeout = Duration(seconds: 15);
@@ -66,9 +64,6 @@ class AppConfig {
   // ─── Session ──────────────────────────────────────────────
   static const Duration sessionDuration = Duration(hours: 24);
 
-  // ─── Misc ─────────────────────────────────────────────────
+  // ─── Debug ────────────────────────────────────────────────
   static const bool enableDioLogging = true;
 }
-
-  // Added: saveAll endpoint — saves setup + strategy in one POST
-  // POST body: JSON map with keys d1setup, d1strategy, d1strategyAdvanced, d2setup, d2st

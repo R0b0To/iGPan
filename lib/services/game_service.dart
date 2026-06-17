@@ -7,8 +7,10 @@ import '../core/exceptions.dart';
 import '../models/account_data.dart';
 import '../network/http_client.dart';
 
-/// Handles all game actions for a single account.
-/// Methods are stateless — they take [accountEmail] and return data.
+/// Handles game actions that are not car-specific or race-specific.
+///
+/// Car repair/research/design → [CarService].
+/// Race setup/strategy/save   → [RaceService].
 class GameService {
   final HttpClient _httpClient;
 
@@ -38,7 +40,6 @@ class GameService {
   // ─── Daily reward ─────────────────────────────────────────
 
   /// Claim the daily reward.
-  /// Endpoint: GET /content/misc/igp/ajax/dailyReward.php
   Future<Map<String, dynamic>> claimDailyReward(String accountEmail) async {
     debugPrint('[GameService] Claiming daily reward for $accountEmail');
 
@@ -50,63 +51,21 @@ class GameService {
     return _parseJson(response.data, 'claimDailyReward', accountEmail);
   }
 
-  // ─── Car repair ───────────────────────────────────────────
-
-  /// Repair car parts for car [carNumber] (1 or 2).
-  /// [carId] is the numeric car ID from fireUp preCache → p=cars → vars → c1Id / c2Id.
-  ///
-  /// Endpoint: GET /index.php?action=send&type=fix&car={carId}&btn=c{n}PartSwap&jsReply=fix
-  Future<Map<String, dynamic>> repairCarParts(
-    String accountEmail, {
-    required String carId,
-    required int carNumber,
-  }) async {
-    debugPrint('[GameService] Repairing car $carNumber parts for $accountEmail');
-
-    final url =
-        '${AppConfig.repairPartsBase}&car=$carId&btn=c${carNumber}PartSwap';
-
-    final response = await _httpClient.get<String>(
-      url,
-      accountEmail: accountEmail,
-    );
-
-    return _parseJson(response.data, 'repairCarParts', accountEmail);
-  }
-
-  /// Replace engine on car [carNumber].
-  /// [carId] is from fireUp preCache → p=cars → vars → c1Id / c2Id.
-  ///
-  /// Endpoint: GET /index.php?action=send&type=engine&car={carId}&btn=c{n}EngSwap&jsReply=fix
-  Future<Map<String, dynamic>> replaceEngine(
-    String accountEmail, {
-    required String carId,
-    required int carNumber,
-  }) async {
-    debugPrint('[GameService] Replacing engine on car $carNumber for $accountEmail');
-
-    final url =
-        '${AppConfig.replaceEngineBase}&car=$carId&btn=c${carNumber}EngSwap';
-
-    final response = await _httpClient.get<String>(
-      url,
-      accountEmail: accountEmail,
-    );
-
-    return _parseJson(response.data, 'replaceEngine', accountEmail);
-  }
-
   // ─── HQ collect ───────────────────────────────────────────
 
   /// Collect resources from an HQ facility.
-  /// [collectUrl] is the full URL from fireUp preCache → p=headquarters → vars → json collectBubble href.
+  ///
+  /// [collectUrl] is the full URL from the collectBubble data-href attribute.
   Future<Map<String, dynamic>> collectHqFacility(
     String accountEmail, {
     required String collectUrl,
   }) async {
     debugPrint('[GameService] Collecting HQ facility for $accountEmail');
 
-    final path = collectUrl.replaceFirst(AppConfig.baseUrl, '');
+    final path = collectUrl.startsWith('http')
+        ? collectUrl.replaceFirst(AppConfig.baseUrl, '')
+        : collectUrl;
+
     final response = await _httpClient.get<String>(
       path,
       accountEmail: accountEmail,
@@ -118,10 +77,9 @@ class GameService {
   // ─── History ──────────────────────────────────────────────
 
   /// Fetch race history list.
-  /// Returns the raw vars map — parsing is done by caller.
   Future<Map<String, dynamic>> fetchHistory(
     String accountEmail, {
-    int start = 0,
+    int start      = 0,
     int numResults = 10,
   }) async {
     final response = await _httpClient.get<String>(
@@ -180,33 +138,12 @@ class GameService {
     return Map.fromEntries(await Future.wait(futures));
   }
 
-  /// Repair car parts for multiple accounts concurrently.
-  /// [emailToCarInfo] maps email → {carId, carNumber}.
-  Future<Map<String, BatchResult>> repairCarPartsAll(
-    Map<String, ({String carId, int carNumber})> emailToCarInfo,
-  ) async {
-    final futures = emailToCarInfo.entries.map((entry) async {
-      try {
-        final data = await repairCarParts(
-          entry.key,
-          carId:     entry.value.carId,
-          carNumber: entry.value.carNumber,
-        );
-        return MapEntry(entry.key, BatchResult.success(data));
-      } catch (e) {
-        return MapEntry(entry.key, BatchResult.failure(e.toString()));
-      }
-    });
-
-    return Map.fromEntries(await Future.wait(futures));
-  }
-
   // ─── Internal ─────────────────────────────────────────────
 
   Map<String, dynamic> _parseJson(
-    String? raw,
-    String operation,
-    String accountEmail,
+    String?  raw,
+    String   operation,
+    String   accountEmail,
   ) {
     if (raw == null || raw.isEmpty) {
       throw ApiException('Empty response from $operation for $accountEmail');
@@ -227,7 +164,9 @@ class GameService {
   }
 }
 
-/// Result of a batch operation for one account.
+// ─── BatchResult ──────────────────────────────────────────────────────────────
+
+/// Outcome of a batch operation for one account.
 class BatchResult {
   final bool                  success;
   final Map<String, dynamic>? data;

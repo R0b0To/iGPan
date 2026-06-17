@@ -8,42 +8,40 @@ import '../models/setup_suggestion.dart';
 import '../services/game_service.dart';
 export '../services/game_service.dart' show BatchResult;
 import 'providers.dart';
-import 'session_provider.dart'; 
- 
+import 'session_provider.dart';
+
 // ─── Service providers ────────────────────────────────────────────────────────
- 
+
 final gameServiceProvider = Provider<GameService>((ref) {
   return GameService(httpClient: ref.watch(httpClientProvider));
 });
- 
 
 // ─── Per-account race data ────────────────────────────────────────────────────
- 
+
 /// Race data for one account.
-///
-/// Usage:  ref.watch(raceDataProvider('user@example.com'))
+/// Usage: ref.watch(raceDataProvider('user@example.com'))
 final raceDataProvider =
     FutureProvider.family<RaceData, String>((ref, email) async {
   return ref.watch(raceServiceProvider).fetchRaceData(email);
 });
- 
+
 // ─── Batch action state ───────────────────────────────────────────────────────
- 
+
 /// Tracks in-progress and completed batch action results.
 class BatchActionState {
-  final bool                    isRunning;
-  final Map<String, BatchResult> results;  // email → result
- 
+  final bool                     isRunning;
+  final Map<String, BatchResult> results; // email → result
+
   const BatchActionState({
     this.isRunning = false,
     this.results   = const {},
   });
- 
+
   bool get hasResults => results.isNotEmpty;
   bool get allSuccess => results.values.every((r) => r.success);
- 
+
   BatchActionState copyWith({
-    bool?                    isRunning,
+    bool?                     isRunning,
     Map<String, BatchResult>? results,
   }) {
     return BatchActionState(
@@ -52,46 +50,25 @@ class BatchActionState {
     );
   }
 }
- 
+
 class BatchActionNotifier extends Notifier<BatchActionState> {
   @override
   BatchActionState build() => const BatchActionState();
- 
+
+  // ─── Claim daily reward ─────────────────────────────────────────────────
+
   /// Claim daily reward for all [emails] concurrently.
   Future<void> claimDailyRewardAll(List<String> emails) async {
+    if (emails.isEmpty) return;
     state = const BatchActionState(isRunning: true, results: {});
- 
+
     final results = await ref
         .read(gameServiceProvider)
         .claimDailyRewardAll(emails);
- 
+
     state = BatchActionState(isRunning: false, results: results);
- 
-    // 🟢 Tell the SessionNotifier to refresh. This automatically pulls 
-    // fresh AccountData for all dependent providers instantly!
-    for (final entry in results.entries) {
-      if (entry.value.success) {
-        ref.read(sessionStateProvider(entry.key).notifier).refresh();
-      }
-    }
-  }
- 
-  /// Repair car for multiple accounts concurrently.
-  /// [emailToCarId] maps each email to its primary car ID.
-  Future<void> repairCarAll(Map<String, String> emailToCarId) async {
-    state = const BatchActionState(isRunning: true, results: {});
- 
-    // Uncomment and implement when your backend logic is ready
-    // final results = await ref
-    //     .read(gameServiceProvider)
-    //     .repairCarAll(emailToCarId); 
-    
-    // 🟢 Temporarily an empty map instead of `null` so `.entries` below doesn't crash
-    final results = <String, BatchResult>{}; 
- 
-    state = BatchActionState(isRunning: false, results: results);
- 
-    // 🟢 Refresh session state instead of invalidating a FutureProvider
+
+    // Refresh session state for successful accounts so the UI updates.
     for (final entry in results.entries) {
       if (entry.value.success) {
         ref.read(sessionStateProvider(entry.key).notifier).refresh();
@@ -99,12 +76,14 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
     }
   }
 
-  /// Apply the suggested setup (ride/susp/wing based on circuit + driver
-  /// height) and an optimal strategy (respecting the 2-tyre rule when
-  /// active) to all [emails], then save everything in one go.
+  // ─── Auto setup ─────────────────────────────────────────────────────────
+
+  /// Apply suggested setup (ride/susp/wing) and optimal strategy to all
+  /// [emails] concurrently, then save.
   ///
-  /// Skips accounts with no upcoming race or a race that's already live.
+  /// Skips accounts with no upcoming race or a race that is already live.
   Future<void> autoSetupAll(List<String> emails) async {
+    if (emails.isEmpty) return;
     state = const BatchActionState(isRunning: true, results: {});
 
     final futures = emails.map((email) async {
@@ -130,7 +109,7 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
   Future<BatchResult> _autoSetupForAccount(String email) async {
     final accountData = ref.read(accountDataProvider(email));
     if (accountData == null) {
-      return BatchResult.failure('Account data unavailable');
+      return BatchResult.failure('Account data unavailable for $email');
     }
 
     final raceService = ref.read(raceServiceProvider);
@@ -152,8 +131,8 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
     final drivers   = accountData.drivers;
     final twoCars   = accountData.numCars >= 2;
 
-    // ── Setup suggestion (ride/susp/wing per car, from driver height) ──
-    final height1 = drivers.isNotEmpty ? drivers[0].heightCm : 170;
+    // ── Setup suggestion (ride/susp/wing per car, from driver height) ──────
+    final height1     = drivers.isNotEmpty ? drivers[0].heightCm : 170;
     final suggestion1 = SetupSuggestion.forTrack(trackCode, height1, overrides: overrides);
 
     final ride1 = suggestion1?.ride       ?? raceData.d1Ride;
@@ -164,7 +143,7 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
     var susp2 = raceData.d2Suspension;
     var wing2 = raceData.d2Aerodynamics;
     if (twoCars) {
-      final height2 = drivers.length > 1 ? drivers[1].heightCm : 170;
+      final height2     = drivers.length > 1 ? drivers[1].heightCm : 170;
       final suggestion2 = SetupSuggestion.forTrack(trackCode, height2, overrides: overrides);
       if (suggestion2 != null) {
         ride2 = suggestion2.ride;
@@ -173,16 +152,18 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
       }
     }
 
-    // ── Strategy (respects the 2-tyre rule when active) ────────────────
-    var fuelAttr = 50;
-    var teAttr   = 50;
+    // ── Car attributes (fuel economy index 4, tyre economy index 7) ───────
+    int fuelAttr = 50;
+    int teAttr   = 50;
     final car = accountData.carData;
     if (car != null && car.attributes.length > 7) {
-      fuelAttr = car.attributes[4].currentValue;  // fuel_economy
-      teAttr   = car.attributes[7].currentValue;  // tyre_economy
+      fuelAttr = car.attributes[4].currentValue;
+      teAttr   = car.attributes[7].currentValue;
     }
 
-    final fuelPerLap1 = StrategyCalc.getFuelPerLap(fuelAttr, trackCode, raceData.d1PushLevel);
+    // ── Strategy for car 1 ─────────────────────────────────────────────────
+    final fuelPerLap1 = StrategyCalc.getFuelPerLap(
+        fuelAttr, trackCode, raceData.d1PushLevel);
     final stints1 = StrategyCalc.getOptimalStrategy(
       raceLaps:    raceData.raceLaps,
       fuelPerLap:  fuelPerLap1,
@@ -191,12 +172,19 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
       refuelling:  raceData.refuelling,
       twoTyreRule: raceData.twoTyreRule,
     );
-    final advancedFuel1 = (raceData.raceLaps * fuelPerLap1).ceil();
 
+    if (stints1.isEmpty) {
+      return BatchResult.failure('Could not compute a valid strategy for car 1');
+    }
+
+    final advancedFuel1 = (raceData.raceLaps * fuelPerLap1).ceil().clamp(1, 200);
+
+    // ── Strategy for car 2 ─────────────────────────────────────────────────
     var stints2       = <Map<String, dynamic>>[];
     var advancedFuel2 = 0;
     if (twoCars) {
-      final fuelPerLap2 = StrategyCalc.getFuelPerLap(fuelAttr, trackCode, raceData.d2PushLevel);
+      final fuelPerLap2 = StrategyCalc.getFuelPerLap(
+          fuelAttr, trackCode, raceData.d2PushLevel);
       final s2 = StrategyCalc.getOptimalStrategy(
         raceLaps:    raceData.raceLaps,
         fuelPerLap:  fuelPerLap2,
@@ -205,11 +193,16 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
         refuelling:  raceData.refuelling,
         twoTyreRule: raceData.twoTyreRule,
       );
+
+      if (s2.isEmpty) {
+        return BatchResult.failure('Could not compute a valid strategy for car 2');
+      }
+
       stints2       = s2.map((s) => s.toMap()).toList();
-      advancedFuel2 = (raceData.raceLaps * fuelPerLap2).ceil();
+      advancedFuel2 = (raceData.raceLaps * fuelPerLap2).ceil().clamp(1, 200);
     }
 
-    // ── Save ─────────────────────────────────────────────────────────
+    // ── Save ───────────────────────────────────────────────────────────────
     final data = await raceService.saveAll(
       accountEmail:   email,
       raceId:         raceData.raceId,
@@ -232,13 +225,17 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
       d2NumPits:      twoCars ? (stints2.length - 1) : 0,
       d2PushLevel:    raceData.d2PushLevel,
       d2AdvancedFuel: advancedFuel2,
+      d2Saved:        twoCars,  // ← was missing; marks car-2 strategy as saved
     );
 
     return BatchResult.success(data);
   }
 
-  /// Repair worn parts/engines (where allowed) for all [emails].
+  // ─── Repair all ─────────────────────────────────────────────────────────
+
+  /// Repair worn parts and engines for all [emails] concurrently.
   Future<void> repairAllAccounts(List<String> emails) async {
+    if (emails.isEmpty) return;
     state = const BatchActionState(isRunning: true, results: {});
 
     final futures = emails.map((email) async {
@@ -264,7 +261,7 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
     final accountData = ref.read(accountDataProvider(email));
     final carData     = accountData?.carData;
     if (carData == null) {
-      return BatchResult.failure('No car data');
+      return BatchResult.failure('No car data available');
     }
 
     final conditions = [
@@ -274,7 +271,7 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
     ];
 
     if (conditions.isEmpty) {
-      return BatchResult.failure('No cars found');
+      return BatchResult.failure('No car conditions found');
     }
 
     final carService = ref.read(carServiceProvider);
@@ -283,51 +280,52 @@ class BatchActionNotifier extends Notifier<BatchActionState> {
 
     for (final cond in conditions) {
       if (cond.partsValue < 100 && !cond.partsLocked) {
-        lastData = await carService.repairParts(
-          email, carId: cond.carId, carNumber: cond.carNumber);
+        lastData  = await carService.repairParts(
+            email, carId: cond.carId, carNumber: cond.carNumber);
         didRepair = true;
       }
       if (cond.engineValue < 100 && !cond.engineLocked) {
-        lastData = await carService.replaceEngine(
-          email, carId: cond.carId, carNumber: cond.carNumber);
+        lastData  = await carService.replaceEngine(
+            email, carId: cond.carId, carNumber: cond.carNumber);
         didRepair = true;
       }
     }
 
-    if (!didRepair) {
-      return BatchResult.success(const {'message': 'Already in good condition'});
-    }
-    return BatchResult.success(lastData);
+    return didRepair
+        ? BatchResult.success(lastData)
+        : BatchResult.success(const {'message': 'Already in good condition'});
   }
- 
+
+  // ─── Reset ──────────────────────────────────────────────────────────────
+
   void clear() => state = const BatchActionState();
 }
- 
+
 final batchActionProvider =
     NotifierProvider<BatchActionNotifier, BatchActionState>(
   BatchActionNotifier.new,
 );
- 
+
 // ─── Finance / sponsor provider ───────────────────────────────────────────────
- 
+
 final financeDataProvider =
     FutureProvider.family<FinanceData, String>((ref, email) async {
   return ref.read(financeServiceProvider).fetchFinances(email);
 });
- 
+
 // ─── Driver provider ──────────────────────────────────────────────────────────
 
-/// Per-account drivers, synchronously pulled from the cached AccountData
+/// Per-account drivers, synchronously pulled from the cached AccountData.
 final driversProvider = Provider.family<List<DriverData>, String>((ref, email) {
   final accountData = ref.watch(accountDataProvider(email));
   return accountData?.drivers ?? [];
 });
- 
+
 // ─── Setup overrides provider ─────────────────────────────────────────────────
- 
+
 final setupOverridesStorageProvider =
     Provider<SetupOverridesStorage>((_) => SetupOverridesStorage());
- 
+
 /// All circuits (defaults merged with account overrides) for one account.
 final circuitsProvider =
     FutureProvider.family<Map<String, CircuitSetup>, String>((ref, email) async {
