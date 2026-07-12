@@ -2,7 +2,7 @@
 
 Multi-account interface for igpmanager, continuation of [iGPeasy](https://github.com/R0b0To/iGPeasy) but with cross-platform in mind.
 
-<img width="450" height="1018" alt="image" src="https://github.com/user-attachments/assets/8c28e916-e808-4b1b-b054-09c3bf6914a3" />
+<img width="450" height="1018" alt="image" src="https://github.com/user-attachments/assets/dc491e8c-3a69-416f-9580-b69a766edcb4" />
 
 
 
